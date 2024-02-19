@@ -2,8 +2,6 @@ Package: gfoRmulaICE
 Type: Package
 Title: ICE
 Version: 0.1.0
-Author: 
-Maintainer:  
 Description: Implements the parametric g-formula iterative conditional estimator (ICE) algorithms. 
     The ICE estimator can be used to estimate the causal effects of time-varying 
     treatment interventions on risk of a survival outcome from longitudinal data with 
@@ -11,21 +9,19 @@ Description: Implements the parametric g-formula iterative conditional estimator
     The package supports 1) both singly robust and doubly robust estimators; 
     2) static, dynamic, deterministic, stochastic, and threshold interventions; 3) censoring event; 
     4) competing event; 5) user-defined intervention strategies. 
-License: 
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports: 
     data.table,
     ggplot2,
     nnet,
-    parallel,
     doParallel, 
-    foreach, 
-    doRNG,
     stats,
     stringr,
-    survival,
-    tidyverse
+    tidyverse,
+    reshape2,
+    rlang
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

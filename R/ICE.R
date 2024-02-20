@@ -1170,7 +1170,7 @@ ice <- function(data, time_points, id, time_name,
     nc_interventions <- list(nc_interventions)
     
     if (any(!is.na(unlist(compModels)))) {
-      if (any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F) & (ref_total_effect == F)) {
+      if ((any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F) & (ref_total_effect == F)) | (any(str_detect(as.character(substitute(estimator)), "weight")) & (hazard == F) & (ref_total_effect == F)) {
       warning("The competing model is used for nonparametric risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
       } 
     }
@@ -1216,7 +1216,7 @@ ice <- function(data, time_points, id, time_name,
       }
       
       if (any(!is.na(unlist(compModels)))) {
-        if (any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F) & (ref_total_effect == F)) {
+        if ((any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F) & (ref_total_effect == F)) | (any(str_detect(as.character(substitute(estimator)), "weight")) & (hazard == F) & (ref_total_effect == F)) {
           warning("The competing model is used for nonparametric risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
         } 
       }

@@ -65,6 +65,8 @@
 #' Similarly, because the keyword argument for competing model is not specified for intervention 1, the competing model for intervention 1 is
 #' \code{D ~ L1 + L2} as specified in \code{competing_model}.
 #' Please see more examples in the examples section.
+#' Note that for stratified ICE in the case of direct effect, the keyword argument competing model statement inputs are ignored since 
+#' the competing model is used for nonparametric risk estimation.
 #'
 #' Users could specify user-defined interventions or implement built-in interventions provided by the package
 #' using the intervention input convention described in the parameter description section.
@@ -195,7 +197,7 @@
 #' \item{boot.rmse}{A list containing the root mean square error (RMSE) values of the fitted models on the bootstrapped samples.}
 #' \item{estimator.type}{A string specifying the type of ICE estimator.}
 #' @export
-#' @import tidyverse, stringr, data.table, reshape2
+#' @import tidyverse stringr data.table reshape2
 #'
 #' @references Wen L, Young JG, Robins JM, Hernán MA. Parametric g-formula implementations for causal survival analyses. Biometrics. 2021;77(2):740-753.
 #' @references McGrath S, Lin V, Zhang Z, Petito LC, Logan RW, Hernán MA, and JG Young. gfoRmula: An R package for estimating the effects of sustained treatment strategies via the parametric g-formula. Patterns. 2020;1:100008.
@@ -210,8 +212,9 @@
 #'
 #' @examples
 #'
-#' dynamic_cat <- case_when(comp_and_censor_data$L2 < 0 ~ 1,
-#' comp_and_censor_data$L2 >= 0 & comp_and_censor_data$L2 < 2 ~ 2,
+#' data <- gfoRmulaICE::data
+#' dynamic_cat <- case_when(data$L2 < 0 ~ 1,
+#' data$L2 >= 0 & data$L2 < 2 ~ 2,
 #' T ~ 3)
 #'
 #' # For the following examples, we consider two interventions.
@@ -226,7 +229,7 @@
 #' # bootstrap with 1000 samples with normal quantile,
 #' # natural course as the reference intervention
 #'
-#' ice_strat_haz <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_strat_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' outcome_model = Y ~ L1 + L2, censor_model = C ~ L1 + L2,
@@ -254,7 +257,7 @@
 #' # bootstrap with 1000 samples with normal quantile,
 #' # natural course as the reference intervention
 #'
-#' ice_strat_haz <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_strat_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' outcome_model = Y ~ L1, censor_model = C ~ L1,
@@ -280,7 +283,7 @@
 #' # bootstrap with 1000 samples using empirical quantile,
 #' # natural course as the reference intervention.
 #'
-#' ice_pool_classic <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_pool_classic <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
@@ -304,7 +307,7 @@
 #' # bootstrap with 1000 samples using empirical quantile,
 #' # always treat as the reference intervention.
 #'
-#' ice_pool_haz <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_pool_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
@@ -330,7 +333,7 @@
 #' # bootstrap with 1000 samples using normal quantile,
 #' # natural course as the reference intervention.
 #'
-#' ice_weight <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_weight <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
@@ -358,7 +361,7 @@
 #' # bootstrap with 1000 samples using normal quantile,
 #' # natural course as the reference intervention.
 #'
-#' ice_weight <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_weight <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
@@ -393,7 +396,7 @@
 #' # bootstrap with 1000 samples using empirical quantile,
 #' # natural course as the reference intervention.
 #'
-#' ice_pool_grace_period <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_pool_grace_period <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
@@ -452,7 +455,7 @@ ice <- function(data, time_points, id, time_name,
   unique_time_names <- unique(data[, time_name])
 
   if (K > length(unique_time_names)) {
-    stop("Please enter a number of total time points below the maximum time units in the data.s")
+    stop("Please enter a number of total time points below the maximum time units in the data.")
   }
 
   map_time_column <- function(time_name, data, total_times) {
@@ -1148,6 +1151,14 @@ ice <- function(data, time_points, id, time_name,
     }
 
     nc_interventions <- list(nc_interventions)
+    
+    if (any(!is.na(unlist(compModels)))) {
+      if (any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F)) {
+      warning("The competing model is used for nonparametric risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
+      } else {
+        warning(paste0("The keyword argument competing model statments are ignored for nonparametric risk estimation. The default global option input ", paste0(as.character(competing_model)[c(2, 1, 3)], collapse = ""), "is used for nonparametric estimation."))
+      }
+    }
 
     ref <- ice_strat(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,
                      censor_name = censor_name, competing_name = competing_name, total_effect = ref_total_effect,
@@ -1186,6 +1197,14 @@ ice <- function(data, time_points, id, time_name,
       if (is.character(unlist(ref_intervention_varlist))) {
         if (any(unlist(ref_intervention_varlist) %in% dta_cols) == F) {
           stop("The input treatment variable must be one of the columns in the data.")
+        }
+      }
+      
+      if (any(!is.na(unlist(compModels)))) {
+        if (any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F)) {
+          warning("The competing model is used for nonparametric risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
+        } else {
+          warning(paste0("The keyword argument competing model statments are ignored for nonparametric risk estimation. The default global option input ", paste0(as.character(competing_model)[c(2, 1, 3)], collapse = ""), "is used for nonparametric estimation."))
         }
       }
 
@@ -1276,13 +1295,13 @@ ice <- function(data, time_points, id, time_name,
         
         this_outcome_formula <- outcomeModels[[int]]
         
-        if (is.na(this_outcome_formula)) {
+        if (any(is.na(as.character(this_outcome_formula)))) {
           this_outcome_formula <- outcome_model
         }
         
         this_comp_formula <- compModels[[int]]
         
-        if (is.na(this_comp_formula)) {
+        if (any(is.na(as.character(this_comp_formula)))) {
           this_comp_formula <- competing_model
         }
       }

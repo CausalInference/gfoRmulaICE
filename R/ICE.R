@@ -195,7 +195,7 @@
 #' \item{boot.rmse}{A list containing the root mean square error (RMSE) values of the fitted models on the bootstrapped samples.}
 #' \item{estimator.type}{A string specifying the type of ICE estimator.}
 #' @export
-#' @import tidyverse, stringr, data.table, reshape2
+#' @import tidyverse stringr data.table reshape2
 #'
 #' @references Wen L, Young JG, Robins JM, Hernán MA. Parametric g-formula implementations for causal survival analyses. Biometrics. 2021;77(2):740-753.
 #' @references McGrath S, Lin V, Zhang Z, Petito LC, Logan RW, Hernán MA, and JG Young. gfoRmula: An R package for estimating the effects of sustained treatment strategies via the parametric g-formula. Patterns. 2020;1:100008.
@@ -210,8 +210,9 @@
 #'
 #' @examples
 #'
-#' dynamic_cat <- case_when(comp_and_censor_data$L2 < 0 ~ 1,
-#' comp_and_censor_data$L2 >= 0 & comp_and_censor_data$L2 < 2 ~ 2,
+#' data <- gfoRmulaICE::data
+#' dynamic_cat <- case_when(data$L2 < 0 ~ 1,
+#' data$L2 >= 0 & data$L2 < 2 ~ 2,
 #' T ~ 3)
 #'
 #' # For the following examples, we consider two interventions.
@@ -226,7 +227,7 @@
 #' # bootstrap with 1000 samples with normal quantile,
 #' # natural course as the reference intervention
 #'
-#' ice_strat_haz <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_strat_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' outcome_model = Y ~ L1 + L2, censor_model = C ~ L1 + L2,
@@ -254,7 +255,7 @@
 #' # bootstrap with 1000 samples with normal quantile,
 #' # natural course as the reference intervention
 #'
-#' ice_strat_haz <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_strat_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' outcome_model = Y ~ L1, censor_model = C ~ L1,
@@ -280,7 +281,7 @@
 #' # bootstrap with 1000 samples using empirical quantile,
 #' # natural course as the reference intervention.
 #'
-#' ice_pool_classic <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_pool_classic <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
@@ -304,7 +305,7 @@
 #' # bootstrap with 1000 samples using empirical quantile,
 #' # always treat as the reference intervention.
 #'
-#' ice_pool_haz <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_pool_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
@@ -330,7 +331,7 @@
 #' # bootstrap with 1000 samples using normal quantile,
 #' # natural course as the reference intervention.
 #'
-#' ice_weight <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_weight <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
@@ -358,7 +359,7 @@
 #' # bootstrap with 1000 samples using normal quantile,
 #' # natural course as the reference intervention.
 #'
-#' ice_weight <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_weight <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
@@ -393,7 +394,7 @@
 #' # bootstrap with 1000 samples using empirical quantile,
 #' # natural course as the reference intervention.
 #'
-#' ice_pool_grace_period <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+#' ice_pool_grace_period <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
@@ -1276,13 +1277,13 @@ ice <- function(data, time_points, id, time_name,
         
         this_outcome_formula <- outcomeModels[[int]]
         
-        if (is.na(this_outcome_formula)) {
+        if (any(is.na(as.character(this_outcome_formula)))) {
           this_outcome_formula <- outcome_model
         }
         
         this_comp_formula <- compModels[[int]]
         
-        if (is.na(this_comp_formula)) {
+        if (any(is.na(as.character(this_comp_formula)))) {
           this_comp_formula <- competing_model
         }
       }

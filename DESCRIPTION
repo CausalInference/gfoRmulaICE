@@ -17,6 +17,8 @@ Imports:
     ggplot2,
     nnet,
     doParallel, 
+    parallel,
+    foreach,
     stats,
     stringr,
     tidyverse,

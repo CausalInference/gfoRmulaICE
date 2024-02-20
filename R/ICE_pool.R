@@ -53,7 +53,7 @@
 #' \item{model_stderr}{A list containing the standard errors of the coefficients of the fitted models.}
 #' \item{model_vcov}{A list containing the variance-covariance matrices of the parameters of the fitted models.}
 #' \item{model_rmse}{A list containing the root mean square error (RMSE) values of the fitted models.}
-#' @import reshape2, tidyverse
+#' @import reshape2 tidyverse
 #' @export
 #'
 #' @references Wen L, Young JG, Robins JM, Hernán MA. Parametric g-formula implementations for causal survival analyses. Biometrics. 2021;77(2):740-753.
@@ -216,21 +216,30 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
 
   if (compute_nc_risk) {
 
-    obs_treatment_varname <- intervention_varnames[[1]]
+    obs_treatment_varname <- unlist(intervention_varnames[[1]])
+    
+    censor_covar_nc <- censor_covar
+    for (i in 1:length(obs_treatment_varname)) {
+      iobs_treat <- obs_treatment_varname[i]
 
-    if (length(which(censor_covar == obs_treatment_varname)) > 0) {
-      censor_covar_nc <- censor_covar[-which(censor_covar == obs_treatment_varname)]
-    } else {
-      censor_covar_nc <- censor_covar
+    if (length(which(censor_covar_nc == iobs_treat)) > 0) {
+      censor_covar_nc <- censor_covar_nc[-which(censor_covar_nc == iobs_treat)]
+    } 
     }
 
     if (!is.null(competing_varname)) {
-      if (length(which(competing_covar == obs_treatment_varname)) > 0) {
-        competing_covar_nc <- competing_covar[-which(competing_covar == obs_treatment_varname)]
-      } else if (is.null(competing_model)) {
-        competing_covar_nc <- outcome_covar[-which(outcome_covar == obs_treatment_varname)]
+      
+      if (is.null(competing_model)) {
+        competing_covar_nc <- outcome_covar
       } else {
         competing_covar_nc <- competing_covar
+      }
+
+      for (i in 1:length(obs_treatment_varname)) {
+        iobs_treat <- obs_treatment_varname[i]
+      if (length(which(competing_covar_nc == iobs_treat)) > 0) {
+        competing_covar_nc <- competing_covar_nc[-which(competing_covar_nc == iobs_treat)]
+      } 
       }
 
       if (total_effect == F) {

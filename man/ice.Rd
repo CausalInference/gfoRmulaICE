@@ -245,8 +245,9 @@ the competing event as censoring or total effect through \code{total_effect}.
 }
 \examples{
 
-dynamic_cat <- case_when(comp_and_censor_data$L2 < 0 ~ 1,
-comp_and_censor_data$L2 >= 0 & comp_and_censor_data$L2 < 2 ~ 2,
+data <- gfoRmulaICE::data
+dynamic_cat <- case_when(data$L2 < 0 ~ 1,
+data$L2 >= 0 & data$L2 < 2 ~ 2,
 T ~ 3)
 
 # For the following examples, we consider two interventions.
@@ -261,7 +262,7 @@ T ~ 3)
 # bootstrap with 1000 samples with normal quantile,
 # natural course as the reference intervention
 
-ice_strat_haz <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+ice_strat_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 censor_name = "C", outcome_name = "Y",
 compevent_name = "D",
 outcome_model = Y ~ L1 + L2, censor_model = C ~ L1 + L2,
@@ -289,7 +290,7 @@ plot_risk(ice_strat_haz)
 # bootstrap with 1000 samples with normal quantile,
 # natural course as the reference intervention
 
-ice_strat_haz <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+ice_strat_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 censor_name = "C", outcome_name = "Y",
 compevent_name = "D",
 outcome_model = Y ~ L1, censor_model = C ~ L1,
@@ -315,7 +316,7 @@ plot_risk(ice_strat_haz)
 # bootstrap with 1000 samples using empirical quantile,
 # natural course as the reference intervention.
 
-ice_pool_classic <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+ice_pool_classic <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 censor_name = "C", outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
@@ -339,7 +340,7 @@ plot_risk(ice_pool_classic)
 # bootstrap with 1000 samples using empirical quantile,
 # always treat as the reference intervention.
 
-ice_pool_haz <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+ice_pool_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 censor_name = "C", outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
@@ -365,7 +366,7 @@ plot_risk(ice_pool_haz)
 # bootstrap with 1000 samples using normal quantile,
 # natural course as the reference intervention.
 
-ice_weight <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+ice_weight <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 censor_name = "C", outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
@@ -393,7 +394,7 @@ plot_risk(ice_weight)
 # bootstrap with 1000 samples using normal quantile,
 # natural course as the reference intervention.
 
-ice_weight <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+ice_weight <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 censor_name = "C", outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
@@ -428,7 +429,7 @@ plot_risk(ice_weight)
 # bootstrap with 1000 samples using empirical quantile,
 # natural course as the reference intervention.
 
-ice_pool_grace_period <- ice(data = comp_and_censor_data, time_points = 4, id = "id", time_name = "t0",
+ice_pool_grace_period <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
 censor_name = "C", outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,

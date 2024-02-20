@@ -219,13 +219,6 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
     obs_treatment_varname <- unlist(intervention_varnames[[1]])
     
     censor_covar_nc <- censor_covar
-    for (i in 1:length(obs_treatment_varname)) {
-      iobs_treat <- obs_treatment_varname[i]
-
-    if (length(which(censor_covar_nc == iobs_treat)) > 0) {
-      censor_covar_nc <- censor_covar_nc[-which(censor_covar_nc == iobs_treat)]
-    } 
-    }
 
     if (!is.null(competing_varname)) {
       
@@ -233,13 +226,6 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         competing_covar_nc <- outcome_covar
       } else {
         competing_covar_nc <- competing_covar
-      }
-
-      for (i in 1:length(obs_treatment_varname)) {
-        iobs_treat <- obs_treatment_varname[i]
-      if (length(which(competing_covar_nc == iobs_treat)) > 0) {
-        competing_covar_nc <- competing_covar_nc[-which(competing_covar_nc == iobs_treat)]
-      } 
       }
 
       if (total_effect == F) {

@@ -65,6 +65,8 @@
 #' Similarly, because the keyword argument for competing model is not specified for intervention 1, the competing model for intervention 1 is
 #' \code{D ~ L1 + L2} as specified in \code{competing_model}.
 #' Please see more examples in the examples section.
+#' Note that for stratified ICE in the case of direct effect, the keyword argument competing model statement inputs are ignored since 
+#' the competing model is used for nonparametric risk estimation.
 #'
 #' Users could specify user-defined interventions or implement built-in interventions provided by the package
 #' using the intervention input convention described in the parameter description section.
@@ -453,7 +455,7 @@ ice <- function(data, time_points, id, time_name,
   unique_time_names <- unique(data[, time_name])
 
   if (K > length(unique_time_names)) {
-    stop("Please enter a number of total time points below the maximum time units in the data.s")
+    stop("Please enter a number of total time points below the maximum time units in the data.")
   }
 
   map_time_column <- function(time_name, data, total_times) {
@@ -1149,6 +1151,14 @@ ice <- function(data, time_points, id, time_name,
     }
 
     nc_interventions <- list(nc_interventions)
+    
+    if (any(!is.na(unlist(compModels)))) {
+      if (any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F)) {
+      warning("The competing model is used for nonparametric risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
+      } else {
+        warning(paste0("The keyword argument competing model statments are ignored for nonparametric risk estimation. The default global option input ", paste0(as.character(competing_model)[c(2, 1, 3)], collapse = ""), "is used for nonparametric estimation."))
+      }
+    }
 
     ref <- ice_strat(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,
                      censor_name = censor_name, competing_name = competing_name, total_effect = ref_total_effect,
@@ -1187,6 +1197,14 @@ ice <- function(data, time_points, id, time_name,
       if (is.character(unlist(ref_intervention_varlist))) {
         if (any(unlist(ref_intervention_varlist) %in% dta_cols) == F) {
           stop("The input treatment variable must be one of the columns in the data.")
+        }
+      }
+      
+      if (any(!is.na(unlist(compModels)))) {
+        if (any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F)) {
+          warning("The competing model is used for nonparametric risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
+        } else {
+          warning(paste0("The keyword argument competing model statments are ignored for nonparametric risk estimation. The default global option input ", paste0(as.character(competing_model)[c(2, 1, 3)], collapse = ""), "is used for nonparametric estimation."))
         }
       }
 

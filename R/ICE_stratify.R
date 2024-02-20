@@ -212,13 +212,6 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
     obs_treatment_varname <- intervention_varnames[[1]]
     
     censor_covar_nc <- censor_covar
-    for (i in 1:length(unlist(obs_treatment_varname))) {
-      iobs_treat <- unlist(obs_treatment_varname)[i]
-      
-      if (length(which(censor_covar_nc == iobs_treat)) > 0) {
-        censor_covar_nc <- censor_covar_nc[-which(censor_covar_nc == iobs_treat)]
-      } 
-    }
     
     if (!is.null(competing_varname)) {
       
@@ -226,13 +219,6 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         competing_covar_nc <- outcome_covar
       } else {
         competing_covar_nc <- competing_covar
-      }
-      
-      for (i in 1:length(unlist(obs_treatment_varname))) {
-        iobs_treat <- unlist(obs_treatment_varname)[i]
-        if (length(which(competing_covar_nc == iobs_treat)) > 0) {
-          competing_covar_nc <- competing_covar_nc[-which(competing_covar_nc == iobs_treat)]
-        } 
       }
 
       if (total_effect == F) {
@@ -575,7 +561,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
       stratify_dta_combine <- paste0(stratify_dta_all, collapse = "&")
 
-      pred_data <- tmpdata %>% filter(eval(parse(text = stratify_dta_combine)))
+      pred_data <- tmpdata %>% dplyr::filter(eval(parse(text = stratify_dta_combine)))
 
       treat_as_covar <- all_treat_vars[!all_treat_vars %in% interv_treat]
 
@@ -674,7 +660,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
 
         stratify_dta_combine <- paste0(stratify_dta_all, collapse = "&")
-        pred_data <- tmpdata %>% filter(eval(parse(text = stratify_dta_combine)))
+        pred_data <- tmpdata %>% dplyr::filter(eval(parse(text = stratify_dta_combine)))
 
         treat_as_covar <- all_treat_vars[!all_treat_vars %in% interv_treat]
 
@@ -824,7 +810,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           }
 
           stratify_names_extra_combine <- paste0(stratify_names_extra_all, collapse = "&")
-          fitdata <- tmpdata %>% filter(eval(parse(text = stratify_names_extra_combine)))
+          fitdata <- tmpdata %>% dplyr::filter(eval(parse(text = stratify_names_extra_combine)))
           if (hazard_based) {
             fitdata[, paste0("y", t, "pred")] <- predict(this_fit, newdata = fitdata, type="response")
           }
@@ -968,7 +954,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         if (q == 0) {
           fitdata <- tmpdata
         } else {
-          fitdata <- tmpdata %>% filter(eval(parse(text = stratify_names_combine)))
+          fitdata <- tmpdata %>% dplyr::filter(eval(parse(text = stratify_names_combine)))
         }
 
         if (weighted & hazard_based == F) {

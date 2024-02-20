@@ -211,6 +211,8 @@ Because the keyword argument for outcome model is not specified for intervention
 Similarly, because the keyword argument for competing model is not specified for intervention 1, the competing model for intervention 1 is
 \code{D ~ L1 + L2} as specified in \code{competing_model}.
 Please see more examples in the examples section.
+Note that for stratified ICE in the case of direct effect, the keyword argument competing model statement inputs are ignored since 
+the competing model is used for nonparametric risk estimation.
 
 Users could specify user-defined interventions or implement built-in interventions provided by the package
 using the intervention input convention described in the parameter description section.

@@ -1153,11 +1153,9 @@ ice <- function(data, time_points, id, time_name,
     nc_interventions <- list(nc_interventions)
     
     if (any(!is.na(unlist(compModels)))) {
-      if (any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F)) {
+      if (any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F) & (ref_total_effect == F)) {
       warning("The competing model is used for nonparametric risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
-      } else {
-        warning(paste0("The keyword argument competing model statments are ignored for nonparametric risk estimation. The default global option input ", paste0(as.character(competing_model)[c(2, 1, 3)], collapse = ""), "is used for nonparametric estimation."))
-      }
+      } 
     }
 
     ref <- ice_strat(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,
@@ -1201,11 +1199,9 @@ ice <- function(data, time_points, id, time_name,
       }
       
       if (any(!is.na(unlist(compModels)))) {
-        if (any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F)) {
+        if (any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F) & (ref_total_effect == F)) {
           warning("The competing model is used for nonparametric risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
-        } else {
-          warning(paste0("The keyword argument competing model statments are ignored for nonparametric risk estimation. The default global option input ", paste0(as.character(competing_model)[c(2, 1, 3)], collapse = ""), "is used for nonparametric estimation."))
-        }
+        } 
       }
 
       ref <- ice_strat(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,

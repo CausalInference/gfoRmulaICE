@@ -90,8 +90,8 @@ plot_risk <- function(..., plot_np = T, label = 0) {
 
   if ("SE" %in% colnames(risk_df)) {
     risk_df$Risk <- as.numeric(risk_df$Risk)
-    risk_df <- risk_df %>% mutate(lower = Risk - Critical_Value * SE,
-                      upper = Risk + Critical_Value * SE)
+    risk_df <- risk_df %>% mutate(lower = Risk - Critical_Value_Lower * SE,
+                      upper = Risk + Critical_Value_Upper * SE)
     risk_plot <- risk_df %>% ggplot(aes(as.numeric(Time), as.numeric(Risk), colour = as.factor(Intervention))) +
       geom_point() + geom_line() +
       geom_errorbar( aes(ymin = lower, ymax = upper),width = 0.2) +

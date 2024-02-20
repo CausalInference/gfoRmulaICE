@@ -198,14 +198,23 @@ bootstrap_ice <- function(f, K, nboot, sig_level, parallel, ncores, ref_descript
     ref_ipw_se_all <- agg_result[(7+2*K):(length(agg_result))]
 
 
-    quantile_result <- apply(result, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
-    ice_cv <- quantile_result[1]
-    ref_cv <- quantile_result[2]
-    rr_cv <- quantile_result[3]
-    rd_cv <- quantile_result[4]
-    ice_cv_all <- quantile_result[5:(5+K)]
-    ref_cv_all <- quantile_result[(6+K):(6+2*K)]
-    ref_ipw_cv_all <- quantile_result[(7+2*K):(length(agg_result))]
+    quantile_result_upper <- apply(result, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
+    ice_cv_upper <- quantile_result_upper[1]
+    ref_cv_upper <- quantile_result_upper[2]
+    rr_cv_upper <- quantile_result_upper[3]
+    rd_cv_upper <- quantile_result_upper[4]
+    ice_cv_all_upper <- quantile_result_upper[5:(5+K)]
+    ref_cv_all_upper <- quantile_result_upper[(6+K):(6+2*K)]
+    ref_ipw_cv_all_upper <- quantile_result_upper[(7+2*K):(length(quantile_result_upper))]
+    
+    quantile_result_lower <- apply(result, 2, quantile, probs = sig_level/2, na.rm = T)
+    ice_cv_lower <- quantile_result_lower[1]
+    ref_cv_lower <- quantile_result_lower[2]
+    rr_cv_lower <- quantile_result_lower[3]
+    rd_cv_lower <- quantile_result_lower[4]
+    ice_cv_all_lower <- quantile_result_lower[5:(5+K)]
+    ref_cv_all_lower <- quantile_result_lower[(6+K):(6+2*K)]
+    ref_ipw_cv_all_lower <- quantile_result_lower[(7+2*K):(length(quantile_result_lower))]
 
     boot_data_all <- boot_result[names(boot_result) == "data"]
     fit_all <- boot_result[names(boot_result) == "fit_all"]
@@ -215,7 +224,6 @@ bootstrap_ice <- function(f, K, nboot, sig_level, parallel, ncores, ref_descript
     fit_rmse <- boot_result[names(boot_result) == "fit_rmse"]
     
     stopCluster(cl)
-    # setwd(old_dir)
 
   } else {
     boot_data_all <- c()
@@ -320,20 +328,28 @@ bootstrap_ice <- function(f, K, nboot, sig_level, parallel, ncores, ref_descript
     }
     
     ice_se <- sd(unlist(ice_boot), na.rm = T)
-    ice_cv <- quantile(unlist(ice_boot), probs = 1 - sig_level/2, na.rm = T)
+    ice_cv_upper <- quantile(unlist(ice_boot), probs = 1 - sig_level/2, na.rm = T)
+    ice_cv_lower <- quantile(unlist(ice_boot), probs = sig_level/2, na.rm = T)
     ref_se <- sd(unlist(ref_boot), na.rm = T)
-    ref_cv <- quantile(unlist(ref_boot), probs = 1 - sig_level/2, na.rm = T)
+    ref_cv_upper <- quantile(unlist(ref_boot), probs = 1 - sig_level/2, na.rm = T)
+    ref_cv_lower <- quantile(unlist(ref_boot), probs = sig_level/2, na.rm = T)
     rr_se <- sd(unlist(rr_boot), na.rm = T)
-    rr_cv <- quantile(unlist(rr_boot), probs = 1 - sig_level/2, na.rm = T)
+    rr_cv_upper <- quantile(unlist(rr_boot), probs = 1 - sig_level/2, na.rm = T)
+    rr_cv_lower <- quantile(unlist(rr_boot), probs = sig_level/2, na.rm = T)
     rd_se <- sd(unlist(rd_boot), na.rm = T)
-    rd_cv <- quantile(unlist(rd_boot), probs = 1 - sig_level/2, na.rm = T)
+    rd_cv_upper <- quantile(unlist(rd_boot), probs = 1 - sig_level/2, na.rm = T)
+    rd_cv_lower <- quantile(unlist(rd_boot), probs = sig_level/2, na.rm = T)
     ice_se_all <- apply(ice_boot_all, 2, sd, na.rm = T)
     ref_se_all <- apply(ref_boot_all, 2, sd, na.rm = T)
     ref_ipw_se_all <- apply(ref_ipw_boot_all, 2, sd, na.rm = T)
     
-    ice_cv_all <- apply(ice_boot_all, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
-    ref_cv_all <- apply(ref_boot_all, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
-    ref_ipw_cv_all <- apply(ref_ipw_boot_all, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
+    ice_cv_all_upper <- apply(ice_boot_all, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
+    ref_cv_all_upper <- apply(ref_boot_all, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
+    ref_ipw_cv_all_upper <- apply(ref_ipw_boot_all, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
+    
+    ice_cv_all_lower <- apply(ice_boot_all, 2, quantile, probs = sig_level/2, na.rm = T)
+    ref_cv_all_lower <- apply(ref_boot_all, 2, quantile, probs = sig_level/2, na.rm = T)
+    ref_ipw_cv_all_lower <- apply(ref_ipw_boot_all, 2, quantile, probs = sig_level/2, na.rm = T)
     
     data_err <- na.omit(data_err)
     model_err <- na.omit(model_err)
@@ -363,9 +379,11 @@ bootstrap_ice <- function(f, K, nboot, sig_level, parallel, ncores, ref_descript
   }
 
   return(list(ice_se = ice_se_all, ref_se = ref_se_all, rr_se = rr_se, rd_se = rd_se,
-              ice_cv = ice_cv, ref_cv = ref_cv, rr_cv = rr_cv, rd_cv = rd_cv,
-              ice_cv_all = ice_cv_all, ref_cv_all = ref_cv_all,
-              ref_ipw_se = ref_ipw_se_all, ref_ipw_cv_all = ref_ipw_cv_all,
+              ice_cv_upper = ice_cv_upper, ref_cv_upper = ref_cv_upper, rr_cv_upper = rr_cv_upper, rd_cv_upper = rd_cv_upper,
+              ice_cv_all_upper = ice_cv_all_upper, ref_cv_all_upper = ref_cv_all_upper,
+              ice_cv_lower = ice_cv_lower, ref_cv_lower = ref_cv_lower, rr_cv_lower = rr_cv_lower, rd_cv_lower = rd_cv_lower,
+              ice_cv_all_lower = ice_cv_all_lower, ref_cv_all_lower = ref_cv_all_lower,
+              ref_ipw_se = ref_ipw_se_all, ref_ipw_cv_all_upper = ref_ipw_cv_all_upper, ref_ipw_cv_all_lower = ref_ipw_cv_all_lower,
               boot_data = boot_data_all, boot_models = fit_all,
               boot_summary = fit_summary, boot_stderr = fit_stderr,
               boot_vcov = fit_vcov, boot_rmse = fit_rmse))

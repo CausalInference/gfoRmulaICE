@@ -764,8 +764,8 @@ ice <- function(data, time_points, id, time_name,
                            paste0("RD ", 100*(1-significance_level),"% Lower Bound"),
                            paste0("RD ", 100*(1-significance_level),"% Upper Bound"))
 
-    risk_time <- as.data.frame(matrix(NA, ncol = 5, nrow = (K+1)*(ninterv+2)))
-    colnames(risk_time) <- c("Intervention", "Risk", "Time", "SE", "Critical_Value")
+    risk_time <- as.data.frame(matrix(NA, ncol = 6, nrow = (K+1)*(ninterv+2)))
+    colnames(risk_time) <- c("Intervention", "Risk", "Time", "SE", "Critical_Value_Upper", "Critical_Value_Lower")
     risk_time$Time <- rep(0:K, (ninterv+2))
   } else {
     summary <- as.data.frame(matrix(NA, nrow = (ninterv + 1), ncol = 4))
@@ -908,7 +908,7 @@ ice <- function(data, time_points, id, time_name,
 
     ninterv_new <- length(intervention_descriptions)
 
-    ice_critical_value <- rr_critical_value <- rd_critical_value  <- matrix(NA, nrow = 1, ncol = ninterv + 1)
+    ice_critical_value <- rr_critical_value <- rd_critical_value  <- matrix(NA, nrow = 2, ncol = ninterv + 1)
 
     if (bootstrap) {
       fit_all_boot <- fit_summary_boot <- fit_stderr_boot <- fit_vcov_boot <- fit_rmse_boot <- data_boot_all <- c()
@@ -918,7 +918,7 @@ ice <- function(data, time_points, id, time_name,
 
     if (ninterv_new > 0) {
       
-      critical_value_all <- se_all <- c()
+      critical_value_all_lower <- critical_value_all_upper <- se_all <- c()
 
     for (int in 1:ninterv_new) {
       
@@ -1011,9 +1011,12 @@ ice <- function(data, time_points, id, time_name,
       this_rr_se <- this_boot$rr_se
       this_rd_se <- this_boot$rd_se
 
-      this_cv <- this_boot$ice_cv
-      this_rr_cv <- this_boot$rr_cv
-      this_rd_cv <- this_boot$rd_cv
+      this_cv_upper <- this_boot$ice_cv_upper
+      this_cv_lower <- this_boot$ice_cv_lower
+      this_rr_cv_upper <- this_boot$rr_cv_upper
+      this_rr_cv_lower <- this_boot$rr_cv_lower
+      this_rd_cv_upper <- this_boot$rd_cv_upper
+      this_rd_cv_lower <- this_boot$rd_cv_lower
 
       this_model_boot <- list(this_boot$boot_models)
       names(this_model_boot) <- this_descript
@@ -1040,7 +1043,8 @@ ice <- function(data, time_points, id, time_name,
       fit_rmse_boot <- c(fit_rmse_boot, this_rmse_boot)
       data_boot_all <- c(data_boot_all, this_data_boot)
       
-      critical_value_all <- append_list(this_boot, str_to_title(this_descript), critical_value_all, "ice_cv_all")
+      critical_value_all_upper <- append_list(this_boot, str_to_title(this_descript), critical_value_all_upper, "ice_cv_all_upper")
+      critical_value_all_lower <- append_list(this_boot, str_to_title(this_descript), critical_value_all_lower, "ice_cv_all_lower")
       
       se_all <- append_list(this_boot, str_to_title(this_descript), se_all, "ice_se")
 
@@ -1056,23 +1060,34 @@ ice <- function(data, time_points, id, time_name,
       if (ref_idx == 0) {
         
         if (this_descript != "Natural Course") {
-        ice_critical_value[, int+1] <- this_cv
-        rr_critical_value[, int+1] <- this_rr_cv
-        rd_critical_value[, int+1] <- this_rd_cv
+          ice_critical_value[1, int+1] <- this_cv_lower
+          rr_critical_value[1, int+1] <- this_rr_cv_lower
+          rd_critical_value[1, int+1] <- this_rd_cv_lower
+          ice_critical_value[2, int+1] <- this_cv_upper
+          rr_critical_value[2, int+1] <- this_rr_cv_upper
+          rd_critical_value[2, int+1] <- this_rd_cv_upper
         } else {
-          critical_value_all <- append_list(this_boot, "Natural Course NP", critical_value_all, "ref_ipw_cv_all")
+          critical_value_all_upper <- append_list(this_boot, "Natural Course NP", critical_value_all_upper, "ref_ipw_cv_all_upper")
+          critical_value_all_lower <- append_list(this_boot, "Natural Course NP", critical_value_all_lower, "ref_ipw_cv_all_lower")
           se_all <- append_list(this_boot, "Natural Course NP", se_all, "ref_ipw_se")
         }
       } else {
         if (this_descript != "Natural Course") {
-          ice_critical_value[, int+1] <- this_cv
-          rr_critical_value[, int+1] <- this_rr_cv
-          rd_critical_value[, int+1] <- this_rd_cv
+          ice_critical_value[1, int+1] <- this_cv_lower
+          rr_critical_value[1, int+1] <- this_rr_cv_lower
+          rd_critical_value[1, int+1] <- this_rd_cv_lower
+          ice_critical_value[2, int+1] <- this_cv_upper
+          rr_critical_value[2, int+1] <- this_rr_cv_upper
+          rd_critical_value[2, int+1] <- this_rd_cv_upper
         } else {
-          ice_critical_value[, 1] <- this_cv
-          rr_critical_value[, 1] <- this_rr_cv
-          rd_critical_value[, 1] <- this_rd_cv
-          critical_value_all <- append_list(this_boot, "Natural Course NP", critical_value_all, "ref_ipw_cv_all")
+          ice_critical_value[1, 1] <- this_cv_lower
+          rr_critical_value[1, 1] <- this_rr_cv_lower
+          rd_critical_value[1, 1] <- this_rd_cv_lower
+          ice_critical_value[2, 1] <- this_cv_upper
+          rr_critical_value[2, 1] <- this_rr_cv_upper
+          rd_critical_value[2, 1] <- this_rd_cv_upper
+          critical_value_all_upper <- append_list(this_boot, "Natural Course NP", critical_value_all_upper, "ref_ipw_cv_all_upper")
+          critical_value_all_lower <- append_list(this_boot, "Natural Course NP", critical_value_all_lower, "ref_ipw_cv_all_lower")
           se_all <- append_list(this_boot, "Natural Course NP", se_all, "ref_ipw_se")
         }
       }
@@ -1082,7 +1097,8 @@ ice <- function(data, time_points, id, time_name,
         summary[ref_idx + 1, 5] <- this_boot$ref_se[K+1]
 
         if (ref_idx == 0) {
-          ice_critical_value[, 1] <- this_boot$ref_cv
+          ice_critical_value[1, 1] <- this_boot$ref_cv_lower
+          ice_critical_value[2, 1] <- this_boot$ref_cv_upper
         }
       }
 
@@ -1097,7 +1113,8 @@ ice <- function(data, time_points, id, time_name,
       risk_time <- match_boot_values(risk_time, data.frame(se_all), "SE")
       
       if (normal_quantile == F) {
-      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all), "Critical_Value")
+      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper), "Critical_Value_Upper")
+      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower), "Critical_Value_Lower")
       }
     }
 
@@ -1250,7 +1267,7 @@ ice <- function(data, time_points, id, time_name,
 
     ninterv_new <- length(intervention_descriptions)
 
-    ice_critical_value <- rr_critical_value <- rd_critical_value  <- matrix(NA, nrow = 1, ncol = ninterv + 1)
+    ice_critical_value <- rr_critical_value <- rd_critical_value  <- matrix(NA, nrow = 2, ncol = ninterv + 1)
 
     if (bootstrap) {
       fit_all_boot <- fit_summary_boot <- fit_stderr_boot <- fit_vcov_boot <- fit_rmse_boot <- data_boot_all <- c()
@@ -1260,7 +1277,7 @@ ice <- function(data, time_points, id, time_name,
 
     if (ninterv_new > 0) {
       
-      critical_value_all <- se_all <- c()
+      critical_value_all_upper <- critical_value_all_lower <- se_all <- c()
 
     for (int in 1:ninterv_new) {
       
@@ -1367,9 +1384,12 @@ ice <- function(data, time_points, id, time_name,
         this_rr_se <- this_boot$rr_se
         this_rd_se <- this_boot$rd_se
 
-        this_cv <- this_boot$ice_cv
-        this_rr_cv <- this_boot$rr_cv
-        this_rd_cv <- this_boot$rd_cv
+        this_cv_upper <- this_boot$ice_cv_upper
+        this_cv_lower <- this_boot$ice_cv_lower
+        this_rr_cv_upper <- this_boot$rr_cv_upper
+        this_rr_cv_lower <- this_boot$rr_cv_lower
+        this_rd_cv_upper <- this_boot$rd_cv_upper
+        this_rd_cv_lower <- this_boot$rd_cv_lower
 
         this_model_boot <- list(this_boot$boot_models)
         names(this_model_boot) <- this_descript
@@ -1396,7 +1416,8 @@ ice <- function(data, time_points, id, time_name,
         fit_rmse_boot <- c(fit_rmse_boot, this_rmse_boot)
         data_boot_all <- c(data_boot_all, this_data_boot)
         
-        critical_value_all <- append_list(this_boot, str_to_title(this_descript), critical_value_all, "ice_cv_all")
+        critical_value_all_upper <- append_list(this_boot, str_to_title(this_descript), critical_value_all_upper, "ice_cv_all_upper")
+        critical_value_all_lower <- append_list(this_boot, str_to_title(this_descript), critical_value_all_lower, "ice_cv_all_lower")
         
         se_all <- append_list(this_boot, str_to_title(this_descript), se_all, "ice_se")
 
@@ -1409,24 +1430,34 @@ ice <- function(data, time_points, id, time_name,
         if (ref_idx == 0) {
           
           if (this_descript != "Natural Course") {
-          ice_critical_value[, int+1] <- this_cv
-          rr_critical_value[, int+1] <- this_rr_cv
-          rd_critical_value[, int+1] <- this_rd_cv
-          critical_value_all <- append_list(this_boot, "Natural Course NP", critical_value_all, "ref_ipw_cv_all")
-          se_all <- append_list(this_boot, "Natural Course NP", se_all, "ref_ipw_se")
+          ice_critical_value[1, int+1] <- this_cv_lower
+          rr_critical_value[1, int+1] <- this_rr_cv_lower
+          rd_critical_value[1, int+1] <- this_rd_cv_lower
+          ice_critical_value[2, int+1] <- this_cv_upper
+          rr_critical_value[2, int+1] <- this_rr_cv_upper
+          rd_critical_value[2, int+1] <- this_rd_cv_upper
           } else {
-            
+            critical_value_all_upper <- append_list(this_boot, "Natural Course NP", critical_value_all_upper, "ref_ipw_cv_all_upper")
+            critical_value_all_lower <- append_list(this_boot, "Natural Course NP", critical_value_all_lower, "ref_ipw_cv_all_lower")
+            se_all <- append_list(this_boot, "Natural Course NP", se_all, "ref_ipw_se")
           }
         } else {
           if (this_descript != "Natural Course") {
-            ice_critical_value[, int+1] <- this_cv
-            rr_critical_value[, int+1] <- this_rr_cv
-            rd_critical_value[, int+1] <- this_rd_cv
+            ice_critical_value[1, int+1] <- this_cv_lower
+            rr_critical_value[1, int+1] <- this_rr_cv_lower
+            rd_critical_value[1, int+1] <- this_rd_cv_lower
+            ice_critical_value[2, int+1] <- this_cv_upper
+            rr_critical_value[2, int+1] <- this_rr_cv_upper
+            rd_critical_value[2, int+1] <- this_rd_cv_upper
           } else {
-            ice_critical_value[, 1] <- this_cv
-            rr_critical_value[, 1] <- this_rr_cv
-            rd_critical_value[, 1] <- this_rd_cv
-            critical_value_all <- append_list(this_boot, "Natural Course NP", critical_value_all, "ref_ipw_cv_all")
+            ice_critical_value[1, 1] <- this_cv_lower
+            rr_critical_value[1, 1] <- this_rr_cv_lower
+            rd_critical_value[1, 1] <- this_rd_cv_lower
+            ice_critical_value[2, 1] <- this_cv_upper
+            rr_critical_value[2, 1] <- this_rr_cv_upper
+            rd_critical_value[2, 1] <- this_rd_cv_upper
+            critical_value_all_upper <- append_list(this_boot, "Natural Course NP", critical_value_all_upper, "ref_ipw_cv_all_upper")
+            critical_value_all_lower <- append_list(this_boot, "Natural Course NP", critical_value_all_lower, "ref_ipw_cv_all_lower")
             se_all <- append_list(this_boot, "Natural Course NP", se_all, "ref_ipw_se")
           }
         }
@@ -1435,7 +1466,8 @@ ice <- function(data, time_points, id, time_name,
         summary[ref_idx + 1, 5] <- this_boot$ref_se[K+1]
 
         if (ref_idx == 0) {
-          ice_critical_value[, 1] <- this_boot$ref_cv
+          ice_critical_value[1, 1] <- this_boot$ref_cv_lower
+          ice_critical_value[2, 1] <- this_boot$ref_cv_upper
         }
       }
 
@@ -1450,7 +1482,8 @@ ice <- function(data, time_points, id, time_name,
       risk_time <- match_boot_values(risk_time, data.frame(se_all), "SE")
       
       if (normal_quantile == F) {
-        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all), "Critical_Value")
+        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper), "Critical_Value_Upper")
+        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower), "Critical_Value_Lower")
       }
     }
 
@@ -1467,28 +1500,34 @@ ice <- function(data, time_points, id, time_name,
   if (bootstrap) {
 
     if (normal_quantile) {
-      ice_critical_value <- rr_critical_value <- rd_critical_value <- qnorm(1 - significance_level/2)
+      ice_critical_value_lower <- rr_critical_value_lower <- rd_critical_value_lower <- ice_critical_value_upper <- rr_critical_value_upper <- rd_critical_value_upper <- qnorm(1 - significance_level/2)
     } else {
       
-      ice_critical_value <- as.vector(ice_critical_value[1, ])
+      ice_critical_value_lower <- as.vector(ice_critical_value[1, ])
+      ice_critical_value_upper <- as.vector(ice_critical_value[2, ])
       if (ref_idx != 0) {
-        rr_critical_value <- as.vector(rr_critical_value[1, ])[-ref_idx]
-        rd_critical_value <- as.vector(rd_critical_value[1, ])[-ref_idx]
+        rr_critical_value_lower <- as.vector(rr_critical_value[1, ])[-ref_idx]
+        rd_critical_value_lower <- as.vector(rd_critical_value[1, ])[-ref_idx]
+        rr_critical_value_upper <- as.vector(rr_critical_value[2, ])[-ref_idx]
+        rd_critical_value_upper <- as.vector(rd_critical_value[2, ])[-ref_idx]
       } else {
-        rr_critical_value <- as.vector(rr_critical_value[1, ])[-1]
-        rd_critical_value <- as.vector(rd_critical_value[1, ])[-1]
+        rr_critical_value_lower <- as.vector(rr_critical_value[1, ])[-1]
+        rd_critical_value_lower <- as.vector(rd_critical_value[1, ])[-1]
+        rr_critical_value_upper <- as.vector(rr_critical_value[2, ])[-1]
+        rd_critical_value_upper <- as.vector(rd_critical_value[2, ])[-1]
       }
     }
 
-    summary[1:(ninterv + 1), 8] <- summary[1:(ninterv + 1), 2] - ice_critical_value * summary[1:(ninterv + 1), 5]
-    summary[1:(ninterv + 1), 9] <- summary[1:(ninterv + 1), 2] + ice_critical_value * summary[1:(ninterv + 1), 5]
-    summary[-(ref_idx + 1), 10] <- summary[-(ref_idx + 1), 2] - rr_critical_value * summary[-(ref_idx + 1), 6]
-    summary[-(ref_idx + 1), 11] <- summary[2:(ninterv + 1), 2] + rr_critical_value * summary[-(ref_idx + 1), 6]
-    summary[-(ref_idx + 1), 12] <- summary[2:(ninterv + 1), 2] - rd_critical_value * summary[-(ref_idx + 1), 7]
-    summary[-(ref_idx + 1), 13] <- summary[2:(ninterv + 1), 2] + rd_critical_value * summary[-(ref_idx + 1), 7]
+    summary[1:(ninterv + 1), 8] <- summary[1:(ninterv + 1), 2] - ice_critical_value_lower * summary[1:(ninterv + 1), 5]
+    summary[1:(ninterv + 1), 9] <- summary[1:(ninterv + 1), 2] + ice_critical_value_upper * summary[1:(ninterv + 1), 5]
+    summary[-(ref_idx + 1), 10] <- summary[-(ref_idx + 1), 2] - rr_critical_value_lower * summary[-(ref_idx + 1), 6]
+    summary[-(ref_idx + 1), 11] <- summary[2:(ninterv + 1), 2] + rr_critical_value_upper * summary[-(ref_idx + 1), 6]
+    summary[-(ref_idx + 1), 12] <- summary[2:(ninterv + 1), 2] - rd_critical_value_lower * summary[-(ref_idx + 1), 7]
+    summary[-(ref_idx + 1), 13] <- summary[2:(ninterv + 1), 2] + rd_critical_value_upper * summary[-(ref_idx + 1), 7]
     
     if (normal_quantile) {
-    risk_time$Critical_Value <- ice_critical_value
+    risk_time$Critical_Value_Lower <- ice_critical_value_lower
+    risk_time$Critical_Value_Upper <- ice_critical_value_upper
     }
 
   }

@@ -204,6 +204,141 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
     data[, outcome_varname] <- ifelse(data[, competing_varname] == 1, 0, data[, outcome_varname])
 
   }
+  
+  ## first create lag terms
+  
+  outcome_covar_lags <- outcome_covar[str_detect(outcome_covar, "lag[0-9999]_")]
+  censor_covar_lags <- censor_covar[str_detect(censor_covar, "lag[0-9999]_")]
+  competing_covar_lags <- competing_covar[str_detect(competing_covar, "lag[0-9999]_")]
+  
+  # all_lags <- as.set(unlist(union(outcome_covar_lags, censor_covar_lags)))
+  # all_lags <- unlist(union(all_lags, competing_covar_lags))
+  
+  all_lags <- c(outcome_covar_lags, censor_covar_lags, competing_covar_lags)
+  all_lags <- unique(all_lags)
+  
+  # detach("package:sets", unload = T)
+  
+  data$factor_id <- as.factor(data[, id])
+  
+  for (i in 1:length(all_lags)) {
+    ilag <- all_lags[i]
+    lag_components <- str_split(ilag, "_")
+    lag_unit <- as.numeric(str_replace_all(lag_components[[1]][1], "lag", ""))
+    lag_var <- lag_components[[1]][2]
+    
+    
+    group_dta <- data %>% group_by(factor_id)
+    group_dta[, "lag_var_new"] <- data[, lag_var]
+    group_dta <- group_dta %>%
+      mutate(lagged_var = dplyr::lag(lag_var_new, n = lag_unit, default = 0))
+    
+    data[, ilag] <- group_dta$lagged_var
+    
+  }
+  
+  ## need to rebuild covars by calling the transform functions
+  ## outcome covar
+  outcome_covar_new <- c()
+  data_add <- data
+  for (i in 1:length(outcome_covar)) {
+    
+    icovar <- outcome_covar[i]
+    
+    column_name <- get_column_name_covar(icovar)
+    
+    if (!column_name %in% colnames(data)) {
+      old_ncol <- ncol(data_add)
+      data_add <- data %>% mutate(eval(parse(text = icovar)))
+      new_ncol <- ncol(data_add)
+      
+      new_column <- data_add[, (old_ncol+ 1) : new_ncol]
+      new_column <- as.matrix(new_column)
+      
+      ## create new columns
+      
+      if (ncol(new_column) > 1) {
+        multiple_varname <- paste0(paste0(column_name, "."), 1:(ncol(new_column)))
+        data[, multiple_varname] <- new_column
+        outcome_covar_new <- c(outcome_covar_new, multiple_varname)
+      } else {
+        data[, column_name] <- as.vector(new_column)
+        outcome_covar_new <- c(outcome_covar_new, column_name)
+      }
+    } else {
+      outcome_covar_new <- c(outcome_covar_new, icovar)
+    }
+  }
+  
+  ## censor covar
+  censor_covar_new <- c()
+  data_add <- data
+  for (i in 1:length(censor_covar)) {
+    
+    icovar <- censor_covar[i]
+    
+    column_name <- get_column_name_covar(icovar)
+    
+    if (!column_name %in% colnames(data)) {
+      old_ncol <- ncol(data_add)
+      data_add <- data %>% mutate(eval(parse(text = icovar)))
+      new_ncol <- ncol(data_add)
+      
+      new_column <- data_add[, (old_ncol+ 1) : new_ncol]
+      new_column <- as.matrix(new_column)
+      
+      ## create new columns
+      
+      if (ncol(new_column) > 1) {
+        multiple_varname <- paste0(paste0(column_name, "."), 1:(ncol(new_column)))
+        data[, multiple_varname] <- new_column
+        censor_covar_new <- c(censor_covar_new, multiple_varname)
+      } else {
+        data[, column_name] <- as.vector(new_column)
+        censor_covar_new <- c(censor_covar_new, column_name)
+      }
+    } else {
+      censor_covar_new <- c(censor_covar_new, icovar)
+    }
+  }
+  
+  ## competing covar
+  competing_covar_new <- c()
+  data_add <- data
+  for (i in 1:length(competing_covar)) {
+    
+    icovar <- competing_covar[i]
+    
+    column_name <- get_column_name_covar(icovar)
+    
+    if (!column_name %in% colnames(data)) {
+      old_ncol <- ncol(data_add)
+      data_add <- data %>% mutate(eval(parse(text = icovar)))
+      new_ncol <- ncol(data_add)
+      
+      new_column <- data_add[, (old_ncol+ 1) : new_ncol]
+      new_column <- as.matrix(new_column)
+      
+      ## create new columns
+      
+      if (ncol(new_column) > 1) {
+        multiple_varname <- paste0(paste0(column_name, "."), 1:(ncol(new_column)))
+        data[, multiple_varname] <- new_column
+        competing_covar_new <- c(competing_covar_new, multiple_varname)
+      } else {
+        data[, column_name] <- as.vector(new_column)
+        competing_covar_new <- c(competing_covar_new, column_name)
+      }
+    } else {
+      competing_covar_new <- c(competing_covar_new, icovar)
+    }
+  }
+  
+  
+  ## replace the old covar
+  outcome_covar <- outcome_covar_new
+  censor_covar <- censor_covar_new
+  competing_covar <- competing_covar_new
 
 
   ## 1. compute the IPW hazard for natural course

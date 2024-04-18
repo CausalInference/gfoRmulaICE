@@ -425,8 +425,26 @@ ice <- function(data, time_points, id, time_name,
                 nsamples = 0, seed = 1,
                 significance_level = 0.05, parallel = F, ncores = 2,
                 ...) {
-
+  
+  ## check if argument names are specified correctly
+  input_args <- c(list(...), as.list(environment()))
+  input_arg_names <- names(input_args)
+  contain_interv <- which(str_detect(input_arg_names, "intervention"))
+  input_arg_names <- input_arg_names[-contain_interv]
+  named_args <- formalArgs(ice)
+  
+  for (i in 1:length(input_arg_names)) {
+    
+    iarg <- input_arg_names[i]
+    
+    if (!iarg %in% named_args) {
+      stop(paste0("Please check the input argument name: ", iarg, ". An error occurs probably because of a typo in argument name."))
+    }
+  }
+  
   ## pre-process user inputs
+  
+  data <- as.data.frame(data)
 
   set_seed <- seed
   K <- time_points

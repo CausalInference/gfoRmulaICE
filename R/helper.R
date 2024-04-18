@@ -101,85 +101,85 @@ natural_course_ipweighted <- function(data, id, censor_varname,
   return(list(risk_weighted = risk_weighted, logit_censor = logit_censor))
 }
 
-#' Dynamic Intervention Function
-#'
-#' This function implements the dynamic intervention strategy. Dynamic intervention strategy refers to the class of treatment mechanisms that depend on the covariate values. This function provides an example of dynamic intervention strategy. The specific mechanism is described as following:
-#' \itemize{
-#' \item For \code{type} being \code{compare}, the treatment is determined based on the condition of \code{direction} and \code{value}.
-#' For example, if \code{direction} is >, then treat if \code{var} > \code{value}, and not treat otherwise.
-#' \item For \code{type} being \code{absorbing}, the initiation of treatment is based on the same mechanism as \code{type} being \code{compare}, and
-#' adopts always treat once the treatment is initiated for each individual.
+#' #' Dynamic Intervention Function
+#' #'
+#' #' This function implements the dynamic intervention strategy. Dynamic intervention strategy refers to the class of treatment mechanisms that depend on the covariate values. This function provides an example of dynamic intervention strategy. The specific mechanism is described as following:
+#' #' \itemize{
+#' #' \item For \code{type} being \code{compare}, the treatment is determined based on the condition of \code{direction} and \code{value}.
+#' #' For example, if \code{direction} is >, then treat if \code{var} > \code{value}, and not treat otherwise.
+#' #' \item For \code{type} being \code{absorbing}, the initiation of treatment is based on the same mechanism as \code{type} being \code{compare}, and
+#' #' adopts always treat once the treatment is initiated for each individual.
+#' #' }
+#' #' Possible \code{direction} includes \code{>, <, >=, <=, =, !=}.
+#' #'
+#' #' @param type a character string specifying the type of dynamic intervention. Possible inputs are \code{compare} and \code{absorbing}.
+#' #' @param var a character string specifying the intervention variable name in \code{data}.
+#' #' @param direction a character string specifying the comparison of \code{var} and \code{value}.
+#' #' Possible inputs are \code{>, <, >=, <=, =, !=}.
+#' #' @param value a numeric specifying the comparison value on \code{var}.
+#' #' @param id a character string specifying the id variable in \code{data}.
+#' #' @param data a data frame containing the observed data.
+#' #'
+#' #' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
+#' #' @export
+#' #'
+#' #' @examples
+#' #' data <- readRDS("test_data_competing.rds")
+#' #' dynamic <- dynamic(type = "absorbing", var = "L1", value = 0, direction = ">", id = "id", data = data)
+#' #' dynamic
+#' dynamic <- function(type, var, direction, value, id = id_var, data = interv_data) {
+#' 
+#'   if (type == "compare" | type == "absorbing") {
+#' 
+#'     if (direction == ">") {
+#' 
+#'       interv_it <- ifelse(data[, var] > value, 1, 0)
+#' 
+#'     } else if (direction == "<") {
+#' 
+#'       interv_it <- ifelse(data[, var] < value, 1, 0)
+#' 
+#'     } else if (direction == "<=") {
+#' 
+#'       interv_it <- ifelse(data[, var] <= value, 1, 0)
+#' 
+#'     } else if (direction == ">=") {
+#' 
+#'       interv_it <- ifelse(data[, var] >= value, 1, 0)
+#' 
+#'     } else if (direction == "=") {
+#' 
+#'       interv_it <- ifelse(data[, var] == value, 1, 0)
+#' 
+#'     } else if (direction == "!=") {
+#' 
+#'       interv_it <- ifelse(data[, var] != value, 1, 0)
+#'     }
+#'     data[, paste0("interv_it")] <- interv_it
+#'     data$interv_it_compare <- interv_it
+#'   }
+#' 
+#'   if (type == "absorbing") {
+#' 
+#'     data[, paste0("interv_it")] <- NA
+#' 
+#'     for (i in 1:length(unique(data[, id]))) {
+#' 
+#'       interv_index <- which(data[data[, id] == unique(data[, id])[i], ]$interv_it_compare == 1)[1]
+#'       interv_it <- data[data[, id] == unique(data[, id])[i], ]$interv_it_compare
+#'       if (is.na(interv_index)) {
+#'         data[data[, id] == unique(data[, id])[i], paste0("interv_it")] <- interv_it
+#'       } else {
+#'         interv_it[interv_index:length(interv_it)] <- 1
+#'         data[data[, id] == unique(data[, id])[i], paste0("interv_it")] <- interv_it
+#'       }
+#'     }
+#'   }
+#' 
+#'   interv_it <- data[, paste0("interv_it")]
+#' 
+#'   return(interv_it)
 #' }
-#' Possible \code{direction} includes \code{>, <, >=, <=, =, !=}.
-#'
-#' @param type a character string specifying the type of dynamic intervention. Possible inputs are \code{compare} and \code{absorbing}.
-#' @param var a character string specifying the intervention variable name in \code{data}.
-#' @param direction a character string specifying the comparison of \code{var} and \code{value}.
-#' Possible inputs are \code{>, <, >=, <=, =, !=}.
-#' @param value a numeric specifying the comparison value on \code{var}.
-#' @param id a character string specifying the id variable in \code{data}.
-#' @param data a data frame containing the observed data.
-#'
-#' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
-#' @export
-#'
-#' @examples
-#' data <- readRDS("test_data_competing.rds")
-#' dynamic <- dynamic(type = "absorbing", var = "L1", value = 0, direction = ">", id = "id", data = data)
-#' dynamic
-dynamic <- function(type, var, direction, value, id = id_var, data = interv_data) {
-
-  if (type == "compare" | type == "absorbing") {
-
-    if (direction == ">") {
-
-      interv_it <- ifelse(data[, var] > value, 1, 0)
-
-    } else if (direction == "<") {
-
-      interv_it <- ifelse(data[, var] < value, 1, 0)
-
-    } else if (direction == "<=") {
-
-      interv_it <- ifelse(data[, var] <= value, 1, 0)
-
-    } else if (direction == ">=") {
-
-      interv_it <- ifelse(data[, var] >= value, 1, 0)
-
-    } else if (direction == "=") {
-
-      interv_it <- ifelse(data[, var] == value, 1, 0)
-
-    } else if (direction == "!=") {
-
-      interv_it <- ifelse(data[, var] != value, 1, 0)
-    }
-    data[, paste0("interv_it")] <- interv_it
-    data$interv_it_compare <- interv_it
-  }
-
-  if (type == "absorbing") {
-
-    data[, paste0("interv_it")] <- NA
-
-    for (i in 1:length(unique(data[, id]))) {
-
-      interv_index <- which(data[data[, id] == unique(data[, id])[i], ]$interv_it_compare == 1)[1]
-      interv_it <- data[data[, id] == unique(data[, id])[i], ]$interv_it_compare
-      if (is.na(interv_index)) {
-        data[data[, id] == unique(data[, id])[i], paste0("interv_it")] <- interv_it
-      } else {
-        interv_it[interv_index:length(interv_it)] <- 1
-        data[data[, id] == unique(data[, id])[i], paste0("interv_it")] <- interv_it
-      }
-    }
-  }
-
-  interv_it <- data[, paste0("interv_it")]
-
-  return(interv_it)
-}
 
 #' Intervention with Grace Period Strategy
 #'
@@ -682,3 +682,78 @@ get_column_name_covar <- function(icovar) {
   
   return(covar_name)
 }
+
+#' Dynamic Intervention Function
+#' 
+#' This function implements the dynamic intervention strategy. Dynamic intervention strategy refers to the class of treatment mechanisms that depend on the covariate values. 
+#' This function provides an example of dynamic intervention strategy. The specific mechanism is described below:
+#' \itemize{
+#' \item Follow the strategy specified in \code{strategy_before} until a user-defined condition dependent on covariate values is met. 
+#' \item Upon the user-defined condition is met, the strategy specified in \code{strategy_after} is initiated.
+#' }
+#'
+#' @param condition a character string that specifies a logical expression, upon which is met, the strategy specified in \code{strategy_after} is followed.
+#' @param strategy_before a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed after the condition in \code{condition} is met.
+#' @param strategy_after a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed before the condition in \code{condition} is met.
+#' @param first a logical indicating whether the strategy specified in \code{strategy_after} starts upon the first time when the condition specified in \code{condition} is met.
+#' @param id a character string indicating the ID variable name in \code{data}.
+#' @param time a character string indicating the time variable name in \code{data}.
+#' @param data a data frame containing the observed data.
+#'
+#' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
+#' @export
+#'
+#' @examples
+#' data <- readRDS("test_data_competing.rds")
+#' dynamic <- grace_period(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), first = TRUE, 
+#'                              id = "id", time_name = "t0", data = data)
+#' dynamic
+dynamic <- function(condition, strategy_before, strategy_after, first = TRUE, id = id_var, time = time0var, data = interv_data) {
+  strategy_before_values <- strategy_before
+  strategy_after_values <- strategy_after
+  
+  interv_values <- get_dynamic_interv_values(condition, strategy_before_values, 
+                                             strategy_after_values, first, id, time, data)
+  
+  
+  return(interv_values)
+}
+
+#' Calculate intervened values for dynamic intervention strategy.
+#'
+#' @param condition a character string that specifies a logical expression, upon which is met, the strategy specified in \code{strategy_after} is followed.
+#' @param strategy_before_values a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed after the condition in \code{condition} is met.
+#' @param strategy_after_values a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed before the condition in \code{condition} is met.
+#' @param first a logical indicating whether the strategy specified in \code{strategy_after} starts upon the first time when the condition specified in \code{condition} is met.
+#' @param id a character string indicating the ID variable name in \code{data}.
+#' @param time a character string indicating the time variable name in \code{data}.
+#' @param data a data frame containing the observed data.
+#'
+#' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
+#' @internal
+get_dynamic_interv_values <- function(condition, strategy_before_values, strategy_after_values, first, id, time, data) {
+  
+  unique_times <- unique(data[, time])
+  
+  if (first) {
+  init_info <- data %>% group_by(id) %>%
+    mutate(first_init = unique_times[which(eval(parse(text = condition)))[1]]) %>%
+    ungroup()
+  
+  init_info[, "is_init"] <- init_info[, time] >= init_info[, "first_init"]
+  } else {
+    init_info <- data %>% 
+      mutate(is_init = eval(parse(text = condition)))
+  }
+  
+  init_info[is.na(init_info$is_init), "is_init"] <- FALSE
+  init_info[, "strategy_before"] <- strategy_before_values
+  init_info[, "strategy_after"] <- strategy_after_values
+  
+  init_info <- init_info %>% 
+    mutate(interv_values = ifelse(is_init, strategy_after_values, strategy_before_values))
+  
+  return(init_info[, "interv_values"]) 
+  
+}
+

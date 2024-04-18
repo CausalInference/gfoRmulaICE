@@ -214,6 +214,8 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   
   # detach("package:sets", unload = T)
   
+  if (length(all_lags) > 0) {
+  
   data$factor_id <- as.factor(data[, id])
   
   for (i in 1:length(all_lags)) {
@@ -230,6 +232,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
     
     data[, ilag] <- group_dta$lagged_var
     
+  }
   }
   
   ## need to rebuild covars by calling the transform functions

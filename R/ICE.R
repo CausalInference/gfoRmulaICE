@@ -5,7 +5,8 @@
 #' estimator. This function allows users to access all singly robust and doubly robust ICE estimators:
 #' classical pooling over treatment history ICE estimator, classical stratifying on treatment history ICE estimator,
 #' hazard-based pooling over treatment history ICE estimator, hazard-based stratifying on treatment history ICE estimator,
-#' and a doubly robust inverse probability weighted ICE estimator. Please see Wen et al. (2021) more details regarding the parameter g-formula
+#' and a doubly robust inverse probability weighted ICE estimator. Logistic regression is used for outcome model and hazard of death (if applicable).
+#' Please see Wen et al. (2021) more details regarding the parametric g-formula
 #' iterative conditional expectation estimator.
 #'
 #' Users could specify which version ICE estimator to use through \code{estimator}.

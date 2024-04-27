@@ -412,6 +412,9 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   data <- as.data.frame(data)
 
   interv_data <<- data
+  
+  # all_treat_lags <- c()
+  # treat_lag_abar <- list()
 
   for (i in 1:length(intervention_varnames[[1]])) {
 
@@ -428,9 +431,46 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       interv_data[, paste0("interv_it_", treatment_varname, "_", treat)] <- interv_it
       my.arrayofA <- paste0("interv_it_", treatment_varname, "_", treat)
     }
+    
+    ## check if this treatment variable is lagged
+    
+    lag_treat_ind <- str_detect(unique(c(outcome_covar, censor_covar, competing_covar)), paste0("lag[0-9999]_", treatment_varname))
+
+    if (any(lag_treat_ind)) {
+      
+      stop("Lagging treatment variables in stratified ICE is invalid. It is valid in pooled ICE.")
+    #   
+    #   lag_treat_names <- unique(c(outcome_covar, censor_covar, competing_covar))[lag_treat_ind]
+    #   # lag_treat_names_list <- list(treatment_varname = lag_treat_names)
+    #   all_treat_lags <- c(all_treat_lags, lag_treat_names)
+    #   
+    #   lags <- sapply(str_split(lag_treat_names, "_"), function(x) {as.numeric(str_replace(x[1], "lag", ""))})
+    #   
+    #   for (i in 1:length(lags)) {
+    #     lag_unit <- lags[i]
+    #     data_interv_tmp <- interv_data
+    #     data_interv_tmp$lag_var <- interv_data[, paste0("interv_it_", treatment_varname, "_", treat)]
+    #     
+    #     data_interv_tmp <- data_interv_tmp %>%
+    #       mutate(lagged_treatment = dplyr::lag(lag_var, n = lag_unit, default = 0))
+    #     
+    #     interv_data[, paste0("interv_it_", lag_treat_names[i], "_", treat)] <- data_interv_tmp$lagged_treatment
+    #     abar_lag <- paste0("interv_it_", lag_treat_names[i], "_", treat)
+    #     treat_lag_abar <- c(treat_lag_abar, list(abar_lag))
+    #   }
+    #   
+    }
 
     abar_all[[treat]] <- my.arrayofA
   }
+  
+  ## add lag variables as intervention variables
+  
+  # if (length(all_treat_lags) > 0) {
+  #   intervention_varnames <- list(c(intervention_varnames[[1]], as.list(all_treat_lags)))
+  #   intervention_times <- list(c(intervention_times[[1]], rep_list(0:(K-1), length(all_treat_lags))))
+  #   abar_all <- c(abar_all, treat_lag_abar)
+  # }
 
   data <- interv_data
 

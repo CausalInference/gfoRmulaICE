@@ -210,6 +210,8 @@ natural_course_ipweighted <- function(data, id, censor_varname,
 #' grace_period <- grace_period(type = "uniform", nperiod = 2, var = "L1", value = 1, data = data,
 #'                              id = "id", time_name = "t0", outcome_name = "Y")
 #' grace_period
+
+## maybe I'll also make grace period as an option in dynamic
 grace_period <- function(type, nperiod, var, value, data = interv_data, id = idvar, time_name = time0var, outcome_name = outcomevar) {
   
   my.arrayofA <- 0
@@ -755,5 +757,23 @@ get_dynamic_interv_values <- function(condition, strategy_before_values, strateg
   
   return(init_info[, "interv_values"]) 
   
+}
+
+#' Replicate lists
+#'
+#' @param v a vector that needs to be replicated into list(s).
+#' @param n a numerical indicating the number of replicates.
+#'
+#' @return a list containing the replicates of the specified vector.
+#' @internal
+rep_list <- function(v, n) {
+  
+  out <- list()
+  
+  for (i in 1:n) {
+    out <- c(out, list(v))
+  }
+  
+  return(out)
 }
 

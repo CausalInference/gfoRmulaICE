@@ -427,6 +427,11 @@ ice <- function(data, time_points, id, time_name,
                 significance_level = 0.05, parallel = F, ncores = 2,
                 ...) {
   
+  interv_data <<- data
+  idvar <<- id
+  time0var <<- time_name
+  outcomevar <<- outcome_name
+  
   ## check if argument names are specified correctly
   input_args <- c(list(...), as.list(environment()))
   input_arg_names <- names(input_args)
@@ -463,11 +468,6 @@ ice <- function(data, time_points, id, time_name,
   } else {
     normal_quantile <- F
   }
-
-  interv_data <<- data
-  idvar <<- id
-  time0var <<- time_name
-  outcomevar <<- outcome_name
 
   # preprocess the time index
 

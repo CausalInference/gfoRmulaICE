@@ -76,9 +76,15 @@ plot_risk <- function(..., plot_np = T, label = 0) {
   } else {
   stop("Please input a valid ICE model object.")
   }
+  
+  ## pre-process
+  
+  risk_df$Intervention <- ifelse(str_detect(risk_df$Intervention, "Natural Course") & !str_detect(risk_df$Intervention, "nonparametric"), 
+                                 paste0("Natural Course (parametric ICE)", str_split(risk_df$Intervention, "Natural Course")[[1]][2]), 
+                                 risk_df$Intervention)
 
   if (!plot_np) {
-    risk_df <- risk_df %>% filter(Intervention != "Natural Course NP")
+    risk_df <- risk_df %>% filter(Intervention != "Natural Course (nonparametric)")
   }
 
   if (label == 0) {

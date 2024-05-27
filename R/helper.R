@@ -777,3 +777,31 @@ rep_list <- function(v, n) {
   return(out)
 }
 
+#' Get model fits from ICE object
+#'
+#' @param this_fit an ICE object.
+#' @param model_name a character string specifying which model to be extracted.
+#' @param descript a character string specifying the description of the extracted models.
+#'
+#' @return a list containing the model information of the user-specified model name.
+#' @internal
+get_models <- function(this_fit, model_name, descript) {
+  this_by_step <- this_fit[[model_name]]
+  
+  this_model <- this_by_step$fit
+  this_summary <- this_by_step$summary
+  this_stderr <- this_by_step$stderr
+  this_vcov <- this_by_step$vcov
+  this_rmse <- this_by_step$rmse
+  
+  this_fit_all <- list(list(fit = this_model, 
+                            summary = this_summary, 
+                            stderr = this_stderr, 
+                            vcov = this_vcov, 
+                            rmse = this_rmse))
+  
+  names(this_fit_all) <- descript
+  
+  return(this_fit_all)
+}
+

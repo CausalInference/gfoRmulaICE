@@ -216,13 +216,22 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   
   all_lags <- c(outcome_covar_lags, censor_covar_lags, competing_covar_lags)
   all_lags <- unique(all_lags)
+  all_lags <- na.omit(all_lags)
   
   # detach("package:sets", unload = T)
+  
+  if (length(all_lags) > 0) {
   
   data$factor_id <- as.factor(data[, id])
   
   for (i in 1:length(all_lags)) {
     ilag <- all_lags[i]
+    
+    if (str_detect(ilag, "^[a-zA-Z._]+\\(")) {
+      ilag <- str_split(ilag, ",")[[1]][1]
+      ilag <- str_split(ilag, "\\(")[[1]][2]
+    }
+    
     lag_components <- str_split(ilag, "_")
     lag_unit <- as.numeric(str_replace_all(lag_components[[1]][1], "lag", ""))
     lag_var <- lag_components[[1]][2]
@@ -235,6 +244,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
     
     data[, ilag] <- group_dta$lagged_var
     
+  }
   }
   
   ## need to rebuild covars by calling the transform functions
@@ -252,7 +262,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       data_add <- data %>% mutate(eval(parse(text = icovar)))
       new_ncol <- ncol(data_add)
       
-      new_column <- data_add[, (old_ncol+ 1) : new_ncol]
+      new_column <- data_add[, new_ncol]
       new_column <- as.matrix(new_column)
       
       ## create new columns
@@ -272,6 +282,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   
   ## censor covar
   censor_covar_new <- c()
+  if (!is.null(censor_varname)) {
   data_add <- data
   for (i in 1:length(censor_covar)) {
     
@@ -284,7 +295,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       data_add <- data %>% mutate(eval(parse(text = icovar)))
       new_ncol <- ncol(data_add)
       
-      new_column <- data_add[, (old_ncol+ 1) : new_ncol]
+      new_column <- data_add[, new_ncol]
       new_column <- as.matrix(new_column)
       
       ## create new columns
@@ -301,9 +312,11 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       censor_covar_new <- c(censor_covar_new, icovar)
     }
   }
+  }
   
   ## competing covar
   competing_covar_new <- c()
+  if (!is.null(competing_varname)) {
   data_add <- data
   for (i in 1:length(competing_covar)) {
     
@@ -316,7 +329,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       data_add <- data %>% mutate(eval(parse(text = icovar)))
       new_ncol <- ncol(data_add)
       
-      new_column <- data_add[, (old_ncol+ 1) : new_ncol]
+      new_column <- data_add[, new_ncol]
       new_column <- as.matrix(new_column)
       
       ## create new columns
@@ -332,6 +345,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
     } else {
       competing_covar_new <- c(competing_covar_new, icovar)
     }
+  }
   }
   
   
@@ -364,26 +378,32 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       ## add in this competing fit
 
       fit_np <- fit_np_summary <- fit_np_stderr <- fit_np_vcov <- fit_np_rmse <- c()
-
+      
       this_np_fit <- list(competing_fit)
       this_np_summary <- list(get_summary(competing_fit))
       this_np_stderr <- list(get_stderr(competing_fit))
       this_np_vcov <- list(get_vcov(competing_fit))
       this_np_rmse <- list(get_rmse(competing_fit))
-
-      names(this_np_fit) <- names(this_np_summary) <- names(this_np_stderr) <- names(this_np_vcov) <- names(this_np_rmse) <- "NP"
-
+      
+      # names(this_np_fit) <- names(this_np_summary) <- names(this_np_stderr) <- names(this_np_vcov) <- names(this_np_rmse) <- "NP Risk"
+      
       fit_np <- c(fit_np, this_np_fit)
       fit_np_summary <- c(fit_np_summary, this_np_summary)
       fit_np_stderr <- c(fit_np_stderr, this_np_stderr)
       fit_np_vcov <- c(fit_np_vcov, this_np_vcov)
       fit_np_rmse <- c(fit_np_rmse, this_np_rmse)
+      
+      np_model <- list(fit = fit_np, 
+                       summary = fit_np_summary, 
+                       stderr = fit_np_stderr, 
+                       vcov = fit_np_stderr, 
+                       rmse = fit_np_rmse)
 
-      fit_all <- c(fit_all, list(fit_np))
-      fit_summary <- c(fit_summary, list(fit_np_summary))
-      fit_stderr <- c(fit_summary, list(fit_np_stderr))
-      fit_vcov <- c(fit_vcov, list(fit_np_vcov))
-      fit_rmse <- c(fit_rmse, list(fit_np_rmse))
+      # fit_all <- c(fit_all, list(fit_np))
+      # fit_summary <- c(fit_summary, list(fit_np_summary))
+      # fit_stderr <- c(fit_summary, list(fit_np_stderr))
+      # fit_vcov <- c(fit_vcov, list(fit_np_vcov))
+      # fit_rmse <- c(fit_rmse, list(fit_np_rmse))
       }
     }
 
@@ -601,21 +621,30 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
   ## add in this outcome fit
 
+  # fit_outcome_init <- fit_outcome_summary_init <- fit_outcome_stderr_init <- fit_outcome_vcov_init <- fit_outcome_rmse_init <- c()
+  
+  this_outcome_fit <- yfitog
+  this_outcome_summary <- get_summary(yfitog)
+  this_outcome_stderr <- get_stderr(yfitog)
+  this_outcome_vcov <- get_vcov(yfitog)
+  this_outcome_rmse <- get_rmse(yfitog)
+  
+  # names(this_outcome_fit) <- names(this_outcome_summary) <- names(this_outcome_stderr) <- names(this_outcome_vcov) <- names(this_outcome_rmse) <- "initial.outcome.model"
+  
+  # fit_outcome_init <- c(fit_outcome, this_outcome_fit)
+  # fit_outcome_summary_init <- c(fit_outcome_summary, this_outcome_summary)
+  # fit_outcome_stderr_init <- c(fit_outcome_stderr, this_outcome_stderr)
+  # fit_outcome_vcov_init <- c(fit_outcome_vcov, this_outcome_vcov)
+  # fit_outcome_rmse_init <- c(fit_outcome_rmse, this_outcome_rmse)
+  
+  outcome_init <- list(fit = this_outcome_fit, 
+                       summary = this_outcome_summary, 
+                       stderr = this_outcome_stderr, 
+                       vcov = this_outcome_vcov, 
+                       rmse = this_outcome_rmse)
+  
   fit_outcome <- fit_outcome_summary <- fit_outcome_stderr <- fit_outcome_vcov <- fit_outcome_rmse <- c()
-
-  this_outcome_fit <- list(yfitog)
-  this_outcome_summary <- list(get_summary(yfitog))
-  this_outcome_stderr <- list(get_stderr(yfitog))
-  this_outcome_vcov <- list(get_vcov(yfitog))
-  this_outcome_rmse <- list(get_rmse(yfitog))
-
-  names(this_outcome_fit) <- names(this_outcome_summary) <- names(this_outcome_stderr) <- names(this_outcome_vcov) <- names(this_outcome_rmse) <- "outcome"
-
-  fit_outcome <- c(fit_outcome, this_outcome_fit)
-  fit_outcome_summary <- c(fit_outcome_summary, this_outcome_summary)
-  fit_outcome_stderr <- c(fit_outcome_stderr, this_outcome_stderr)
-  fit_outcome_vcov <- c(fit_outcome_vcov, this_outcome_vcov)
-  fit_outcome_rmse <- c(fit_outcome_rmse, this_outcome_rmse)
+  fit_comp <- fit_comp_summary <- fit_comp_stderr <- fit_comp_vcov <- fit_comp_rmse <- c()
 
   ## 5. prepare data for regression at each time step
   for (i in 1:(K - 1)) {
@@ -655,6 +684,9 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
   tmpdata$Y_0 = tmpdata$C_0 = NULL
 
+  hazard_by_step <- c()
+  comp_by_step <- c()
+  
   if (hazard_based) {
     #### get outcome model for each time point ######
 
@@ -759,7 +791,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       this_haz_vcov <- list(get_vcov(tmp_fit))
       this_haz_rmse <- list(get_rmse(tmp_fit))
 
-      names(this_haz_fit) <- names(this_haz_summary) <- names(this_haz_stderr) <- names(this_haz_vcov) <- names(this_haz_rmse) <- "hazard"
+      names(this_haz_fit) <- names(this_haz_summary) <- names(this_haz_stderr) <- names(this_haz_vcov) <- names(this_haz_rmse) <- paste0("hazard.", "Time", i)
 
       fit_haz <- c(fit_haz, this_haz_fit)
       fit_haz_summary <- c(fit_haz_summary, this_haz_summary)
@@ -769,12 +801,18 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
     }
 
-    fit_all <- c(fit_all, list(fit_haz))
-    fit_summary <- c(fit_summary, list(fit_haz_summary))
-    fit_stderr <- c(fit_summary, list(fit_haz_stderr))
-    fit_vcov <- c(fit_vcov, list(fit_haz_vcov))
-    fit_rmse <- c(fit_rmse, list(fit_haz_rmse))
-
+    
+    hazard_by_step <- list(fit = fit_haz, 
+                            summary = fit_haz_summary, 
+                            stderr = fit_haz_stderr, 
+                            vcov = fit_haz_vcov, 
+                            rmse = fit_haz_rmse)
+    
+    # fit_all <- c(fit_all, list(fit_haz))
+    # fit_summary <- c(fit_summary, list(fit_haz_summary))
+    # fit_stderr <- c(fit_summary, list(fit_haz_stderr))
+    # fit_vcov <- c(fit_vcov, list(fit_haz_vcov))
+    # fit_rmse <- c(fit_rmse, list(fit_haz_rmse))
     if (!is.null(competing_varname) & total_effect == T) {
       comp_pred_times <- list()
       fit_comp <- fit_comp_summary <- fit_comp_stderr <- fit_comp_vcov <- fit_comp_rmse <- c()
@@ -856,7 +894,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         this_comp_vcov <- list(get_vcov(tmp_fit))
         this_comp_rmse <- list(get_rmse(tmp_fit))
 
-        names(this_comp_fit) <- names(this_comp_summary) <- names(this_comp_stderr) <- names(this_comp_vcov) <- names(this_comp_rmse) <- "competing"
+        names(this_comp_fit) <- names(this_comp_summary) <- names(this_comp_stderr) <- names(this_comp_vcov) <- names(this_comp_rmse) <- paste0("competing.", "Time", i)
 
         fit_comp <- c(fit_comp, this_comp_fit)
         fit_comp_summary <- c(fit_comp_summary, this_comp_summary)
@@ -865,12 +903,18 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         fit_comp_rmse <- c(fit_comp_rmse, this_comp_rmse)
 
       }
+      
+      comp_by_time <- list(fit = fit_comp, 
+                             summary = fit_comp_summary, 
+                             stderr = fit_comp_stderr, 
+                             vcov = fit_comp_vcov, 
+                             rmse = fit_comp_rmse)
 
-      fit_all <- c(fit_all, list(fit_comp))
-      fit_summary <- c(fit_summary, list(fit_comp_summary))
-      fit_stderr <- c(fit_summary, list(fit_comp_stderr))
-      fit_vcov <- c(fit_vcov, list(fit_comp_vcov))
-      fit_rmse <- c(fit_rmse, list(fit_comp_rmse))
+      # fit_all <- c(fit_all, list(fit_comp))
+      # fit_summary <- c(fit_summary, list(fit_comp_summary))
+      # fit_stderr <- c(fit_summary, list(fit_comp_stderr))
+      # fit_vcov <- c(fit_vcov, list(fit_comp_vcov))
+      # fit_rmse <- c(fit_rmse, list(fit_comp_rmse))
     }
   }
 
@@ -1044,7 +1088,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         this_outcome_vcov <- list(get_vcov(fit))
         this_outcome_rmse <- list(get_rmse(fit))
 
-        names(this_outcome_fit) <- names(this_outcome_summary) <- names(this_outcome_stderr) <- names(this_outcome_vcov) <- names(this_outcome_rmse) <- "outcome"
+        names(this_outcome_fit) <- names(this_outcome_summary) <- names(this_outcome_stderr) <- names(this_outcome_vcov) <- names(this_outcome_rmse) <- paste0("outcome.Time", t, ".Step", q)
 
         fit_outcome <- c(fit_outcome, this_outcome_fit)
         fit_outcome_summary <- c(fit_outcome_summary, this_outcome_summary)
@@ -1179,6 +1223,12 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   fit_stderr <- c(fit_summary, list(fit_outcome_stderr))
   fit_vcov <- c(fit_vcov, list(fit_outcome_vcov))
   fit_rmse <- c(fit_rmse, list(fit_outcome_rmse))
+  
+  outcome_by_step <- list(fit = fit_all, 
+                          summary = fit_summary, 
+                          stderr = fit_stderr, 
+                          vcov = fit_vcov, 
+                          rmse = fit_rmse)
 
   time_name <- c()
 
@@ -1192,7 +1242,9 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
   return(list(gformula_risk_last_time = meany[length(meany)], gformula_risk = meany,
               weight_h = risk_weighted, ipw_model = logit_censor,
-              fit_models = fit_all, model_summary = fit_summary,
-              model_stderr = fit_stderr, model_vcov = fit_vcov,
-              model_rmse = fit_rmse))
+              np_model = np_model, 
+              outcome_init = outcome_init, comp_init = c(),
+              outcome_by_step = outcome_by_step, 
+              hazard_by_step = hazard_by_step, 
+              comp_by_step = comp_by_step))
 }

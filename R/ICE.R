@@ -746,14 +746,14 @@ ice <- function(data, time_points, id, time_name,
 
   if (any(str_detect(as.character(substitute(estimator)), "pool"))) {
     if (estimator) {
-      ice_colname <- "HB Pooled ICE"
+      ice_colname <- "Hazard-Based Pooled ICE"
     } else {
       ice_colname <- "Classical Pooled ICE"
     }
 
   } else if (any(str_detect(as.character(substitute(estimator)), "strat"))) {
     if (estimator) {
-      ice_colname <- "HB Stratified ICE"
+      ice_colname <- "Hazard-Based Stratified ICE"
     } else {
       ice_colname <- "Classical Stratified ICE"
     }
@@ -830,7 +830,7 @@ ice <- function(data, time_points, id, time_name,
 
     risk_descript <- c()
     risk_interv <- c()
-    fit_all <- fit_summary <- fit_stderr <- fit_vcov <- fit_rmse <- c()
+    outcome_by_step <- outcome_init <- comp_init <- np_model <- c()
 
     nc_intervention_varlist <- list(obs_treatment_name)
     nc_descript <- "Natural Course"
@@ -897,28 +897,42 @@ ice <- function(data, time_points, id, time_name,
       }
     }
 
-    this_model <- list(ref$fit_models)
-    names(this_model) <- ref_description
+    this_outcome_init <- list(ref$outcome_init)
+    this_comp_init <- list(ref$comp_init)
+    this_np_model <- list(ref$np_model)
+    
+    names(this_outcome_init) <- names(this_np_model) <- names(this_comp_init) <- ref_description
+    
+    
+    
+    this_outcome_by_step <- ref$outcome_by_step
+    
+    this_model <- this_outcome_by_step$fit
+    this_summary <- this_outcome_by_step$summary
+    this_stderr <- this_outcome_by_step$stderr
+    this_vcov <- this_outcome_by_step$vcov
+    this_rmse <- this_outcome_by_step$rmse
 
-    this_summary <- list(ref$model_summary)
-    names(this_summary) <- ref_description
+    this_fit_all <- list(list(fit = this_model, 
+                         summary = this_summary, 
+                         stderr = this_stderr, 
+                         vcov = this_vcov, 
+                         rmse = this_rmse))
+    
+    names(this_fit_all) <- ref_description
+    
+    outcome_by_step <- c(outcome_by_step, this_fit_all)
 
-    this_stderr <- list(ref$model_stderr)
-    names(this_stderr) <- ref_description
+    # fit_all <- c(fit_all, this_model)
+    # fit_summary <- c(fit_summary, this_summary)
+    # fit_stderr <- c(fit_stderr, this_stderr)
+    # fit_vcov <- c(fit_vcov, this_vcov)
+    # fit_rmse <- c(fit_rmse, this_rmse)
+    outcome_init <- c(outcome_init, this_outcome_init)
+    comp_init <- c(comp_init, this_comp_init)
+    np_model <- c(np_model, this_np_model)
 
-    this_vcov <- list(ref$model_vcov)
-    names(this_vcov) <- ref_description
-
-    this_rmse <- list(ref$model_rmse)
-    names(this_rmse) <- ref_description
-
-    fit_all <- c(fit_all, this_model)
-    fit_summary <- c(fit_summary, this_summary)
-    fit_stderr <- c(fit_stderr, this_stderr)
-    fit_vcov <- c(fit_vcov, this_vcov)
-    fit_rmse <- c(fit_rmse, this_rmse)
-
-    risk_descript <- c(risk_descript, c(rep(str_to_title(ref_description), K+1), rep("Natural Course NP", K+1)))
+    risk_descript <- c(risk_descript, c(rep(str_to_title(ref_description), K+1), rep("Natural Course (nonparametric)", K+1)))
     risk_interv <- c(risk_interv, c(ref$gformula_risk[1, ], c(0, ref$weight_h$risk)))
 
     if (bootstrap) {
@@ -930,9 +944,11 @@ ice <- function(data, time_points, id, time_name,
     ice_critical_value <- rr_critical_value <- rd_critical_value  <- matrix(NA, nrow = 2, ncol = ninterv + 1)
 
     if (bootstrap) {
-      fit_all_boot <- fit_summary_boot <- fit_stderr_boot <- fit_vcov_boot <- fit_rmse_boot <- data_boot_all <- c()
+      outcome_init_boot <- comp_init_boot <- np_model_boot <- outcome_by_step_boot <- 
+        comp_by_step_boot <- hazard_by_step_boot <- data_boot_all <- c()
     } else {
-      fit_all_boot <- fit_summary_boot <- fit_stderr_boot <- fit_vcov_boot <- fit_rmse_boot <- data_boot_all <- NULL
+      outcome_init_boot <- comp_init_boot <- np_model_boot <- outcome_by_step_boot <- 
+        comp_by_step_boot <- hazard_by_step_boot <- data_boot_all <- NULL
     }
 
     if (ninterv_new > 0) {
@@ -982,27 +998,54 @@ ice <- function(data, time_points, id, time_name,
                            outcome_model = outcome_model, censor_model = censor_model, competing_model = competing_model,
                             interventions = this_interv, intervention_names = this_int_var, intervention_times = this_time,
                             hazard_based = hazard, intervention_description = this_descript )
+      
+      this_outcome_init <- list(this_fit$outcome_init)
+      this_comp_init <- list(this_fit$comp_init)
+      this_np_model <- list(this_fit$np_model)
+      
+      names(this_outcome_init) <- names(this_np_model) <- names(this_comp_init) <- this_descript
 
-      this_model <- list(this_fit$fit_models)
-      names(this_model) <- this_descript
-
-      this_summary <- list(this_fit$model_summary)
-      names(this_summary) <- this_descript
-
-      this_stderr <- list(this_fit$model_stderr)
-      names(this_stderr) <- this_descript
-
-      this_vcov <- list(this_fit$model_vcov)
-      names(this_vcov) <- this_descript
-
-      this_rmse <- list(this_fit$model_rmse)
-      names(this_rmse) <- this_descript
-
-      fit_all <- c(fit_all, this_model)
-      fit_summary <- c(fit_summary, this_summary)
-      fit_stderr <- c(fit_stderr, this_stderr)
-      fit_vcov <- c(fit_vcov, this_vcov)
-      fit_rmse <- c(fit_rmse, this_rmse)
+      this_fit_outcome <- this_fit$outcome_by_step
+      
+      this_model <- this_fit_outcome$fit
+      this_summary <- this_fit_outcome$summary
+      this_stderr <- this_fit_outcome$stderr
+      this_vcov <- this_fit_outcome$vcov
+      this_rmse <- this_fit_outcome$rmse
+      
+      this_fit_all <- list(list(fit = this_model, 
+                           summary = this_summary, 
+                           stderr = this_stderr, 
+                           vcov = this_vcov, 
+                           rmse = this_rmse))
+      
+      names(this_fit_all) <- this_descript
+      
+      outcome_by_step <- c(outcome_by_step, this_fit_all)
+      
+      # this_model <- list(this_fit_outcome$fit)
+      # names(this_model) <- this_descript
+      # 
+      # this_summary <- list(this_fit_outcome$summary)
+      # names(this_summary) <- this_descript
+      # 
+      # this_stderr <- list(this_fit_outcome$stderr)
+      # names(this_stderr) <- this_descript
+      # 
+      # this_vcov <- list(this_fit_outcome$vcov)
+      # names(this_vcov) <- this_descript
+      # 
+      # this_rmse <- list(this_fit_outcome$rmse)
+      # names(this_rmse) <- this_descript
+      # 
+      # fit_all <- c(fit_all, this_model)
+      # fit_summary <- c(fit_summary, this_summary)
+      # fit_stderr <- c(fit_stderr, this_stderr)
+      # fit_vcov <- c(fit_vcov, this_vcov)
+      # fit_rmse <- c(fit_rmse, this_rmse)
+      outcome_init <- c(outcome_init, this_outcome_init)
+      comp_init <- c(comp_init, this_comp_init)
+      np_model <- c(np_model, this_np_model)
 
 
       if (this_descript != "Natural Course") {
@@ -1036,30 +1079,48 @@ ice <- function(data, time_points, id, time_name,
       this_rr_cv_lower <- this_boot$rr_cv_lower
       this_rd_cv_upper <- this_boot$rd_cv_upper
       this_rd_cv_lower <- this_boot$rd_cv_lower
+      
+      this_outcome_init_boot <- list(this_boot$outcome_init)
+      this_comp_init_boot <- list(this_boot$comp_init)
+      this_np_model_boot <- list(this_boot$np_model)
+      this_outcome_by_step_boot <- list(this_boot$outcome_by_step)
+      this_comp_by_step_boot <- list(this_boot$comp_by_step)
+      this_hazard_by_step_boot <- list(this_boot$hazard_by_step)
+      
+      names(this_outcome_init_boot) <- names(this_np_model_boot) <- names(this_comp_init_boot) <- 
+        names(this_outcome_by_step_boot) <- names(this_comp_by_step_boot) <- names(this_hazard_by_step_boot) <- this_descript
+      
+      outcome_init_boot <- c(outcome_init_boot, this_outcome_init_boot)
+      comp_init_boot <- c(comp_init_boot, this_comp_init_boot)
+      np_model_boot <- c(np_model_boot, this_np_model_boot)
+      outcome_by_step_boot <- c(outcome_by_step_boot, this_outcome_by_step_boot)
+      comp_by_step_boot <- c(comp_by_step_boot, this_comp_by_step_boot)
+      hazard_by_step_boot <- c(hazard_by_step_boot, this_hazard_by_step_boot)
 
-      this_model_boot <- list(this_boot$boot_models)
-      names(this_model_boot) <- this_descript
 
-      this_summary_boot <- list(this_boot$boot_summary)
-      names(this_summary_boot) <- this_descript
-
-      this_stderr_boot <- list(this_boot$boot_stderr)
-      names(this_stderr_boot) <- this_descript
-
-      this_vcov_boot <- list(this_boot$boot_vcov)
-      names(this_vcov_boot) <- this_descript
-
-      this_rmse_boot <- list(this_boot$boot_rmse)
-      names(this_rmse_boot) <- this_descript
-
+      # this_model_boot <- list(this_boot$boot_models)
+      # names(this_model_boot) <- this_descript
+      # 
+      # this_summary_boot <- list(this_boot$boot_summary)
+      # names(this_summary_boot) <- this_descript
+      # 
+      # this_stderr_boot <- list(this_boot$boot_stderr)
+      # names(this_stderr_boot) <- this_descript
+      # 
+      # this_vcov_boot <- list(this_boot$boot_vcov)
+      # names(this_vcov_boot) <- this_descript
+      # 
+      # this_rmse_boot <- list(this_boot$boot_rmse)
+      # names(this_rmse_boot) <- this_descript
+      # 
       this_data_boot <- list(this_boot$boot_data)
       names(this_data_boot) <- this_descript
-
-      fit_all_boot <- c(fit_all_boot, this_model_boot)
-      fit_summary_boot <- c(fit_summary_boot, this_summary_boot)
-      fit_stderr_boot <- c(fit_stderr_boot, this_stderr_boot)
-      fit_vcov_boot <- c(fit_vcov_boot, this_vcov_boot)
-      fit_rmse_boot <- c(fit_rmse_boot, this_rmse_boot)
+      # 
+      # fit_all_boot <- c(fit_all_boot, this_model_boot)
+      # fit_summary_boot <- c(fit_summary_boot, this_summary_boot)
+      # fit_stderr_boot <- c(fit_stderr_boot, this_stderr_boot)
+      # fit_vcov_boot <- c(fit_vcov_boot, this_vcov_boot)
+      # fit_rmse_boot <- c(fit_rmse_boot, this_rmse_boot)
       data_boot_all <- c(data_boot_all, this_data_boot)
       
       critical_value_all_upper <- append_list(this_boot, str_to_title(this_descript), critical_value_all_upper, "ice_cv_all_upper")
@@ -1086,9 +1147,9 @@ ice <- function(data, time_points, id, time_name,
           rr_critical_value[2, int+1] <- this_rr_cv_upper
           rd_critical_value[2, int+1] <- this_rd_cv_upper
         } else {
-          critical_value_all_upper <- append_list(this_boot, "Natural Course NP", critical_value_all_upper, "ref_ipw_cv_all_upper")
-          critical_value_all_lower <- append_list(this_boot, "Natural Course NP", critical_value_all_lower, "ref_ipw_cv_all_lower")
-          se_all <- append_list(this_boot, "Natural Course NP", se_all, "ref_ipw_se")
+          critical_value_all_upper <- append_list(this_boot, "Natural Course (nonparametric)", critical_value_all_upper, "ref_ipw_cv_all_upper")
+          critical_value_all_lower <- append_list(this_boot, "Natural Course (nonparametric)", critical_value_all_lower, "ref_ipw_cv_all_lower")
+          se_all <- append_list(this_boot, "Natural Course (nonparametric)", se_all, "ref_ipw_se")
         }
       } else {
         if (this_descript != "Natural Course") {
@@ -1105,9 +1166,9 @@ ice <- function(data, time_points, id, time_name,
           ice_critical_value[2, 1] <- this_cv_upper
           rr_critical_value[2, 1] <- this_rr_cv_upper
           rd_critical_value[2, 1] <- this_rd_cv_upper
-          critical_value_all_upper <- append_list(this_boot, "Natural Course NP", critical_value_all_upper, "ref_ipw_cv_all_upper")
-          critical_value_all_lower <- append_list(this_boot, "Natural Course NP", critical_value_all_lower, "ref_ipw_cv_all_lower")
-          se_all <- append_list(this_boot, "Natural Course NP", se_all, "ref_ipw_se")
+          critical_value_all_upper <- append_list(this_boot, "Natural Course (nonparametric)", critical_value_all_upper, "ref_ipw_cv_all_upper")
+          critical_value_all_lower <- append_list(this_boot, "Natural Course (nonparametric)", critical_value_all_lower, "ref_ipw_cv_all_lower")
+          se_all <- append_list(this_boot, "Natural Course (nonparametric)", se_all, "ref_ipw_se")
         }
       }
 
@@ -1139,12 +1200,21 @@ ice <- function(data, time_points, id, time_name,
 
 
 
+    comp_by_step <- hazard_by_step <- c()
+    
+    # outcome_by_step <- list(fit = fit_all, 
+    #                            summary = fit_summary, 
+    #                            stderr = fit_stderr, 
+    #                            vcov = fit_vcov, 
+    #                            rmse = fit_rmse)
+    
+    
 
   } else if (any(str_detect(as.character(substitute(estimator)), "strat")) | any(str_detect(as.character(substitute(estimator)), "weight"))) {
 
     risk_descript <- c()
     risk_interv <- c()
-    fit_all <- fit_summary <- fit_stderr <- fit_vcov <- fit_rmse <- c()
+    comp_by_step <- outcome_by_step <- hazard_by_step <- np_model <- outcome_init <- comp_init <- c()
 
     if (any(str_detect(as.character(substitute(estimator)), "strat"))) {
       weight <- F
@@ -1255,29 +1325,47 @@ ice <- function(data, time_points, id, time_name,
         summary[ref_idx + 1, c(2:4)] <- c(ref$gformula_risk_last_time, 1, 0)
       }
     }
+    
+    this_outcome_init <- list(ref$outcome_init)
+    # this_comp_init <- list(ref$comp_init)
+    this_np_model <- list(ref$np_model)
+    
+    names(this_outcome_init) <- names(this_np_model) <- ref_description
+    
+    this_outcome_by_step <- get_models(ref, "outcome_by_step", ref_description)
+    this_hazard_by_step <- get_models(ref, "hazard_by_step", ref_description)
+    this_comp_by_step <- get_models(ref, "comp_by_step", ref_description)
+    
+    outcome_by_step <- c(outcome_by_step, this_outcome_by_step)
+    hazard_by_step <- c(hazard_by_step, this_hazard_by_step)
+    comp_by_step <- c(comp_by_step, this_comp_by_step)
+    
+    outcome_init <- c(outcome_init, this_outcome_init)
+    # comp_init <- c(comp_init, this_comp_init)
+    np_model <- c(np_model, this_np_model)
 
-    this_model <- list(ref$fit_models)
-    names(this_model) <- ref_description
+    # this_model <- list(ref$fit_models)
+    # names(this_model) <- ref_description
+    # 
+    # this_summary <- list(ref$model_summary)
+    # names(this_summary) <- ref_description
+    # 
+    # this_stderr <- list(ref$model_stderr)
+    # names(this_stderr) <- ref_description
+    # 
+    # this_vcov <- list(ref$model_vcov)
+    # names(this_vcov) <- ref_description
+    # 
+    # this_rmse <- list(ref$model_rmse)
+    # names(this_rmse) <- ref_description
+    # 
+    # fit_all <- c(fit_all, this_model)
+    # fit_summary <- c(fit_summary, this_summary)
+    # fit_stderr <- c(fit_stderr, this_stderr)
+    # fit_vcov <- c(fit_vcov, this_vcov)
+    # fit_rmse <- c(fit_rmse, this_rmse)
 
-    this_summary <- list(ref$model_summary)
-    names(this_summary) <- ref_description
-
-    this_stderr <- list(ref$model_stderr)
-    names(this_stderr) <- ref_description
-
-    this_vcov <- list(ref$model_vcov)
-    names(this_vcov) <- ref_description
-
-    this_rmse <- list(ref$model_rmse)
-    names(this_rmse) <- ref_description
-
-    fit_all <- c(fit_all, this_model)
-    fit_summary <- c(fit_summary, this_summary)
-    fit_stderr <- c(fit_stderr, this_stderr)
-    fit_vcov <- c(fit_vcov, this_vcov)
-    fit_rmse <- c(fit_rmse, this_rmse)
-
-    risk_descript <- c(risk_descript, c(rep(str_to_title(ref_description), K+1), rep("Natural Course NP", K+1)))
+    risk_descript <- c(risk_descript, c(rep(str_to_title(ref_description), K+1), rep("Natural Course (nonparametric)", K+1)))
     risk_interv <- c(risk_interv, c(ref$gformula_risk[1, ], c(0, ref$weight_h$risk)))
 
     if (bootstrap) {
@@ -1289,9 +1377,11 @@ ice <- function(data, time_points, id, time_name,
     ice_critical_value <- rr_critical_value <- rd_critical_value  <- matrix(NA, nrow = 2, ncol = ninterv + 1)
 
     if (bootstrap) {
-      fit_all_boot <- fit_summary_boot <- fit_stderr_boot <- fit_vcov_boot <- fit_rmse_boot <- data_boot_all <- c()
+      outcome_init_boot <- comp_init_boot <- np_model_boot <- outcome_by_step_boot <- 
+        comp_by_step_boot <- hazard_by_step_boot <- data_boot_all <- c()
     } else {
-      fit_all_boot <- fit_summary_boot <- fit_stderr_boot <- fit_vcov_boot <- fit_rmse_boot <- data_boot_all <- NULL
+      outcome_init_boot <- comp_init_boot <- np_model_boot <- outcome_by_step_boot <- 
+        comp_by_step_boot <- hazard_by_step_boot <- data_boot_all <- NULL
     }
 
     if (ninterv_new > 0) {
@@ -1356,27 +1446,53 @@ ice <- function(data, time_points, id, time_name,
                             hazard_based = hazard, weighted = weight, treat_model = this_treat_model,
                             obs_treatment_names = this_obs_treatment_varnames, intervention_description = this_descript,
                             intervention_times = this_time)
-
-      this_model <- list(this_fit$fit_models)
-      names(this_model) <- this_descript
-
-      this_summary <- list(this_fit$model_summary)
-      names(this_summary) <- this_descript
-
-      this_stderr <- list(this_fit$model_stderr)
-      names(this_stderr) <- this_descript
-
-      this_vcov <- list(this_fit$model_vcov)
-      names(this_vcov) <- this_descript
-
-      this_rmse <- list(this_fit$model_rmse)
-      names(this_rmse) <- this_descript
-
-      fit_all <- c(fit_all, this_model)
-      fit_summary <- c(fit_summary, this_summary)
-      fit_stderr <- c(fit_stderr, this_stderr)
-      fit_vcov <- c(fit_vcov, this_vcov)
-      fit_rmse <- c(fit_rmse, this_rmse)
+      
+      this_outcome_init <- list(this_fit$outcome_init)
+      # this_comp_init <- list(this_fit$comp_init)
+      this_np_model <- list(this_fit$np_model)
+      
+      names(this_outcome_init) <- names(this_np_model) <- this_descript
+      
+      this_outcome_by_step <- get_models(this_fit, "outcome_by_step", this_descript)
+      this_hazard_by_step <- get_models(this_fit, "hazard_by_step", this_descript)
+      this_comp_by_step <- get_models(this_fit, "comp_by_step", this_descript)
+      
+      outcome_by_step <- c(outcome_by_step, this_outcome_by_step)
+      hazard_by_step <- c(hazard_by_step, this_hazard_by_step)
+      comp_by_step <- c(comp_by_step, this_comp_by_step)
+      
+      outcome_init <- c(outcome_init, this_outcome_init)
+      # comp_init <- c(comp_init, this_comp_init)
+      np_model <- c(np_model, this_np_model)
+      
+      # fit_all <- c(fit_all, this_model)
+      # fit_summary <- c(fit_summary, this_summary)
+      # fit_stderr <- c(fit_stderr, this_stderr)
+      # fit_vcov <- c(fit_vcov, this_vcov)
+      # fit_rmse <- c(fit_rmse, this_rmse)
+      # outcome_init <- c(outcome_init, this_outcome_init)
+      # comp_init <- c(comp_init, this_comp_init)
+      # 
+      # this_model <- list(this_fit$fit_models)
+      # names(this_model) <- this_descript
+      # 
+      # this_summary <- list(this_fit$model_summary)
+      # names(this_summary) <- this_descript
+      # 
+      # this_stderr <- list(this_fit$model_stderr)
+      # names(this_stderr) <- this_descript
+      # 
+      # this_vcov <- list(this_fit$model_vcov)
+      # names(this_vcov) <- this_descript
+      # 
+      # this_rmse <- list(this_fit$model_rmse)
+      # names(this_rmse) <- this_descript
+      # 
+      # fit_all <- c(fit_all, this_model)
+      # fit_summary <- c(fit_summary, this_summary)
+      # fit_stderr <- c(fit_stderr, this_stderr)
+      # fit_vcov <- c(fit_vcov, this_vcov)
+      # fit_rmse <- c(fit_rmse, this_rmse)
 
       if (this_descript != "Natural Course") {
 
@@ -1409,30 +1525,47 @@ ice <- function(data, time_points, id, time_name,
         this_rr_cv_lower <- this_boot$rr_cv_lower
         this_rd_cv_upper <- this_boot$rd_cv_upper
         this_rd_cv_lower <- this_boot$rd_cv_lower
+        
+        this_outcome_init_boot <- list(this_boot$outcome_init)
+        this_comp_init_boot <- list(this_boot$comp_init)
+        this_np_model_boot <- list(this_boot$np_model)
+        this_outcome_by_step_boot <- list(this_boot$outcome_by_step)
+        this_comp_by_step_boot <- list(this_boot$comp_by_step)
+        this_hazard_by_step_boot <- list(this_boot$hazard_by_step)
+        
+        names(this_outcome_init_boot) <- names(this_np_model_boot) <- names(this_comp_init_boot) <- 
+          names(this_outcome_by_step_boot) <- names(this_comp_by_step_boot) <- names(this_hazard_by_step_boot) <- this_descript
+        
+        outcome_init_boot <- c(outcome_init_boot, this_outcome_init_boot)
+        comp_init_boot <- c(comp_init_boot, this_comp_init_boot)
+        np_model_boot <- c(np_model_boot, this_np_model_boot)
+        outcome_by_step_boot <- c(outcome_by_step_boot, this_outcome_by_step_boot)
+        comp_by_step_boot <- c(comp_by_step_boot, this_comp_by_step_boot)
+        hazard_by_step_boot <- c(hazard_by_step_boot, this_hazard_by_step_boot)
 
-        this_model_boot <- list(this_boot$boot_models)
-        names(this_model_boot) <- this_descript
-
-        this_summary_boot <- list(this_boot$boot_summary)
-        names(this_summary_boot) <- this_descript
-
-        this_stderr_boot <- list(this_boot$boot_stderr)
-        names(this_stderr_boot) <- this_descript
-
-        this_vcov_boot <- list(this_boot$boot_vcov)
-        names(this_vcov_boot) <- this_descript
-
-        this_rmse_boot <- list(this_boot$boot_rmse)
-        names(this_rmse_boot) <- this_descript
+        # this_model_boot <- list(this_boot$boot_models)
+        # names(this_model_boot) <- this_descript
+        # 
+        # this_summary_boot <- list(this_boot$boot_summary)
+        # names(this_summary_boot) <- this_descript
+        # 
+        # this_stderr_boot <- list(this_boot$boot_stderr)
+        # names(this_stderr_boot) <- this_descript
+        # 
+        # this_vcov_boot <- list(this_boot$boot_vcov)
+        # names(this_vcov_boot) <- this_descript
+        # 
+        # this_rmse_boot <- list(this_boot$boot_rmse)
+        # names(this_rmse_boot) <- this_descript
 
         this_data_boot <- list(this_boot$boot_data)
         names(this_data_boot) <- this_descript
 
-        fit_all_boot <- c(fit_all_boot, this_model_boot)
-        fit_summary_boot <- c(fit_summary_boot, this_summary_boot)
-        fit_stderr_boot <- c(fit_stderr_boot, this_stderr_boot)
-        fit_vcov_boot <- c(fit_vcov_boot, this_vcov_boot)
-        fit_rmse_boot <- c(fit_rmse_boot, this_rmse_boot)
+        # fit_all_boot <- c(fit_all_boot, this_model_boot)
+        # fit_summary_boot <- c(fit_summary_boot, this_summary_boot)
+        # fit_stderr_boot <- c(fit_stderr_boot, this_stderr_boot)
+        # fit_vcov_boot <- c(fit_vcov_boot, this_vcov_boot)
+        # fit_rmse_boot <- c(fit_rmse_boot, this_rmse_boot)
         data_boot_all <- c(data_boot_all, this_data_boot)
         
         critical_value_all_upper <- append_list(this_boot, str_to_title(this_descript), critical_value_all_upper, "ice_cv_all_upper")
@@ -1456,9 +1589,9 @@ ice <- function(data, time_points, id, time_name,
           rr_critical_value[2, int+1] <- this_rr_cv_upper
           rd_critical_value[2, int+1] <- this_rd_cv_upper
           } else {
-            critical_value_all_upper <- append_list(this_boot, "Natural Course NP", critical_value_all_upper, "ref_ipw_cv_all_upper")
-            critical_value_all_lower <- append_list(this_boot, "Natural Course NP", critical_value_all_lower, "ref_ipw_cv_all_lower")
-            se_all <- append_list(this_boot, "Natural Course NP", se_all, "ref_ipw_se")
+            critical_value_all_upper <- append_list(this_boot, "Natural Course (nonparametric)", critical_value_all_upper, "ref_ipw_cv_all_upper")
+            critical_value_all_lower <- append_list(this_boot, "Natural Course (nonparametric)", critical_value_all_lower, "ref_ipw_cv_all_lower")
+            se_all <- append_list(this_boot, "Natural Course (nonparametric)", se_all, "ref_ipw_se")
           }
         } else {
           if (this_descript != "Natural Course") {
@@ -1475,9 +1608,9 @@ ice <- function(data, time_points, id, time_name,
             ice_critical_value[2, 1] <- this_cv_upper
             rr_critical_value[2, 1] <- this_rr_cv_upper
             rd_critical_value[2, 1] <- this_rd_cv_upper
-            critical_value_all_upper <- append_list(this_boot, "Natural Course NP", critical_value_all_upper, "ref_ipw_cv_all_upper")
-            critical_value_all_lower <- append_list(this_boot, "Natural Course NP", critical_value_all_lower, "ref_ipw_cv_all_lower")
-            se_all <- append_list(this_boot, "Natural Course NP", se_all, "ref_ipw_se")
+            critical_value_all_upper <- append_list(this_boot, "Natural Course (nonparametric)", critical_value_all_upper, "ref_ipw_cv_all_upper")
+            critical_value_all_lower <- append_list(this_boot, "Natural Course (nonparametric)", critical_value_all_lower, "ref_ipw_cv_all_lower")
+            se_all <- append_list(this_boot, "Natural Course (nonparametric)", se_all, "ref_ipw_se")
           }
         }
       }
@@ -1551,12 +1684,14 @@ ice <- function(data, time_points, id, time_name,
 
   }
 
+  if (!is.null(compevent_name)) {
   if (any(unlist(total_effect))) {
     rownames(summary) <- paste0(rownames(summary), " (", "Total Effect" , ")")
     risk_time$Intervention <- paste0(risk_time$Intervention, " (", "Total Effect" , ")")
   } else {
     rownames(summary) <- paste0(rownames(summary), " (", "Direct Effect" , ")")
     risk_time$Intervention <- paste0(risk_time$Intervention, " (", "Direct Effect" , ")")
+  }
   }
   summary_all <- rbind(summary_all, summary)
   risk_time_all <- rbind(risk_time_all, risk_time)
@@ -1571,12 +1706,21 @@ ice <- function(data, time_points, id, time_name,
 
 
   return(list(summary = summary_all, risk.over.time = risk_time_all,
-              models = fit_all, model.summary = fit_summary,
-              model.stderr = fit_stderr, model.vcov = fit_vcov,
-              model.rmse = fit_rmse, boot.data = data_boot_all,
-              boot.models = fit_all_boot, boot.summary = fit_summary_boot,
-              boot.stderr = fit_stderr_boot, boot.vcov = fit_vcov_boot,
-              boot.rmse = fit_rmse, estimator.type = ice_colname))
+              initial.outcome = outcome_init, initial.comp = comp_init, 
+              np.risk.model = np_model, outcome.models.by.step = outcome_by_step, 
+              comp.models.by.step = comp_by_step, 
+              hazard.models.by.step = hazard_by_step, 
+              boot.data = data_boot_all,
+              boot.initial.outcome = outcome_init_boot,
+              boot.initial.comp = comp_init_boot,
+              boot.np.risk.model = np_model_boot,
+              boot.outcome.models.by.step = outcome_by_step_boot,
+              boot.comp.models.by.step = comp_by_step_boot,
+              boot.hazard.models.by.step = hazard_by_step_boot)
+              # boot.models = fit_all_boot, boot.summary = fit_summary_boot,
+              # boot.stderr = fit_stderr_boot, boot.vcov = fit_vcov_boot,
+              # boot.rmse = fit_rmse, estimator.type = ice_colname)
+  )
 
 }
 

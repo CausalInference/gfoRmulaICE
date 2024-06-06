@@ -212,13 +212,35 @@ natural_course_ipweighted <- function(data, id, censor_varname,
 #' grace_period
 
 ## maybe I'll also make grace period as an option in dynamic
-grace_period <- function(type, nperiod, var, value, data = interv_data, id = idvar, time_name = time0var, outcome_name = outcomevar) {
+grace_period <- function(type, nperiod, condition = dynamic_cond, data = interv_data, id = idvar, time_name = time0var, outcome_name = outcomevar) {
+  
+  
+  ## separate var and logical from condition
+  
+  ## remove spaces from condition
+  
+  condition <- str_remove_all(condition, " ")
+  
+  ## get every character in condition
+  
+  condition_elements <- unlist(str_split(condition, ""))
+  
+  ## get the variable
+  
+  var_idx <- which(str_detect(condition_elements, "[^a-zA-Z]"))[1]
+  if (var_idx - 1 <= 0) {
+    stop("Please enter a valid condition.")
+  } else {
+    var <- paste0(condition_elements[1:var_idx], collapse = "")
+    condition_sep <- paste0(condition_elements[(var_idx+1) : length(condition_elements)], collapse = "")
+  }
+  
   
   my.arrayofA <- 0
   gp_indicator <<- T
   gp_interv_type <<- type
   gp_treatment_var <<- var
-  gp_threshold_value <<- value
+  # gp_threshold_value <<- value
   ngrace_period <<- nperiod
 
   grace_period_var <<- gp_treatment_var
@@ -228,6 +250,10 @@ grace_period <- function(type, nperiod, var, value, data = interv_data, id = idv
   data$id_var <- data[, id]
   data$outcome_var <- data[, outcome_name]
   data$time_var <- data[, time_name]
+  
+  data[, "cond_indicator"] <- NA
+  data[, "R"] <- NA
+  data[, treatment_varname_gp] <- NA
 
   dffullwide <- reshape(data, idvar = id, timevar = time_name, direction = "wide", sep = "_")
   tmpdata = as.data.frame(dffullwide)
@@ -235,91 +261,100 @@ grace_period <- function(type, nperiod, var, value, data = interv_data, id = idv
 
   if (gp_interv_type == "uniform") {
 
-    unique_ids <- unique(tmpdata[, id])
-
-    for (t in 1:K) {
-
-      tmpdata[, paste0("cond_indicator", "_", t - 1)] <- 0
-      tmpdata[, paste0("R", "_", t - 1)] <- 0
-      tmpdata[, paste0(treatment_varname_gp, "_", t - 1)] <- 0
-
-      for (idx in 1:length(unique_ids)) {
-        id_i <- unique_ids[idx]
-
-        if (t == 1) {
-          tmpdata[tmpdata$id == id_i, paste0("cond_indicator", "_", t - 1)] <- as.numeric(ifelse(tmpdata[tmpdata$id == id_i, paste0(grace_period_var, "_", t - 1)] != gp_threshold_value, 0, 1))
-          tmpdata[tmpdata$id == id_i, paste0("R", "_", t - 1)] <- 0
-
-          tmpdata[tmpdata$id == id_i, paste0(treatment_varname_gp, "_", t - 1)] <- as.numeric(ifelse(tmpdata[tmpdata$id == id_i, paste0(grace_period_var, "_", t - 1)] != gp_threshold_value, 0,
-                                                                                                     uniform_sample(tmpdata[tmpdata$id == id_i, paste0("R", "_", t - 1)], ngrace_period)))
-
-        } else if (t > 1){
-          if (is.na(tmpdata[tmpdata$id == id_i, paste0(grace_period_var, "_", t - 1)])) {
-            tmpdata[tmpdata$id == id_i, paste0(treatment_varname_gp, "_", t - 1)] <- NA
-          } else {
-            if (tmpdata[tmpdata$id == id_i, paste0(grace_period_var, "_", t - 1)] != gp_threshold_value & tmpdata[tmpdata$id == id_i, paste0("cond_indicator", "_", t - 2)] == 0) {
-              tmpdata[tmpdata$id == id_i, paste0("cond_indicator", "_", t - 1)] = 0
-            } else {
-              tmpdata[tmpdata$id == id_i, paste0("cond_indicator", "_", t - 1)] = 1
-            }
-
-            if (tmpdata[tmpdata$id == id_i, paste0(treatment_varname_gp, "_", t - 2)] == 0 & tmpdata[tmpdata$id == id_i, paste0("cond_indicator", "_", t - 2)] == 1) {
-              tmpdata[tmpdata$id == id_i, paste0("R", "_", t - 1)] = tmpdata[tmpdata$id == id_i, paste0("R", "_", t - 2)] + 1
-            } else {
-              tmpdata[tmpdata$id == id_i, paste0("R", "_", t - 1)] = tmpdata[tmpdata$id == id_i, paste0("R", "_", t - 2)]
-            }
-
-            tmpdata[tmpdata$id == id_i, paste0(treatment_varname_gp, "_", t - 1)] <- as.numeric(ifelse(tmpdata[tmpdata$id == id_i, paste0("cond_indicator", "_", t - 1)] == 1, 0,
-                                                                                                       uniform_sample(tmpdata[tmpdata$id == id_i, paste0("R", "_", t - 1)], ngrace_period)))
-
-            tmpdata[tmpdata$id == id_i, paste0(treatment_varname_gp, "_", t - 1)] <- as.numeric(ifelse(tmpdata[tmpdata$id == id_i, paste0(treatment_varname_gp, "_", t - 2)] == 1, 1,
-                                                                                                       tmpdata[tmpdata$id == id_i, paste0(treatment_varname_gp, "_", t - 1)]))
-          }
-
+    for (i in 1:K) {
+      
+      t <- i - 1
+      
+      int_var_value <- tmpdata[, paste0(grace_period_var, "_", t)]
+      opposite_formula <- paste0("!int_var_value", condition_sep)
+      
+      if (t == 0) {
+        tmpdata[,paste0("cond_indicator", "_", t)] <- as.numeric(ifelse(eval(parse(text=opposite_formula)), 0, 1))
+        tmpdata[,paste0("R", "_", t)] <- 0
+        
+        tmpdata[,paste0(treatment_varname_gp, "_", t)] <- as.numeric(ifelse(eval(parse(text=opposite_formula)), 0,
+                                                                            uniform_sample(tmpdata[,paste0("R", "_", t)], ngrace_period)))
+        
+      } else if (t >= 1){
+        
+            
+            tmpdata[, paste0("cond_indicator", "_", t)] <- ifelse(eval(parse(text=opposite_formula)) & tmpdata[, paste0("cond_indicator", "_", t - 1)] == 0, 0, 1)
+         
+          
+          tmpdata[, paste0("R", "_", t)] <- ifelse(tmpdata[, paste0(treatment_varname_gp, "_", t - 1)] == 0 & 
+                                                                             tmpdata[, paste0("cond_indicator", "_", t - 1)] == 1, 
+                                                                           tmpdata[, paste0("R", "_", t - 1)] + 1, 
+                                                                           tmpdata[, paste0("R", "_", t - 1)])
+          
+          
+          
+          tmpdata[, paste0(treatment_varname_gp, "_", t)] <- as.numeric(ifelse(tmpdata[, paste0("cond_indicator", "_", t)] == 1,
+                                                                               tmpdata[, paste0(treatment_varname_gp, "_", t)],
+                                                                               uniform_sample(tmpdata[, paste0("R", "_", t)], ngrace_period)))
+          
+          tmpdata[, paste0(treatment_varname_gp, "_", t)] <- as.numeric(ifelse(tmpdata[, paste0("cond_indicator", "_", t - 1)] == 1, 
+                                                                               1,
+                                                                               tmpdata[, paste0(treatment_varname_gp, "_", t)]))
+         
+          
           if (t > ngrace_period + 1) {
-            tmpdata[tmpdata$id == id_i, paste0(treatment_varname_gp, "_", t - 1)] <- as.numeric(ifelse(tmpdata[tmpdata$id == id_i, paste0(grace_period_var, "_", t - 1 - ngrace_period)] == gp_threshold_value, 1,
-                                                                                                       tmpdata[tmpdata$id == id_i, paste0(treatment_varname_gp, "_", t - 1)]))
+            gp_value <- tmpdata[, paste0(grace_period_var, "_", t - ngrace_period)]
+            eval_formula <- paste0("gp_value", condition_sep)
+            tmpdata[, paste0(treatment_varname_gp, "_", t)] <- as.numeric(ifelse(eval(parse(text = eval_formula)), 
+                                                                                 1,
+                                                                                 tmpdata[, paste0(treatment_varname_gp, "_", t)]))
           }
-
+          
         }
       }
+    
     }
-  }
+  
 
   if (gp_interv_type == "natural") {
 
     for (i in 1:K) {
 
-      t <- K - i + 1
+      # t <- K - i + 1
+      t <- i - 1
+      
+      int_var_value <- tmpdata[, paste0(grace_period_var, "_", t)]
+      opposite_formula <- paste0("!int_var_value", condition_sep)
 
-    if (t == 1) {
-      tmpdata[, paste0(treatment_varname_gp, "_", t - 1)] <- ifelse(tmpdata[, paste0(grace_period_var, "_", t - 1)] != gp_threshold_value, 0, tmpdata[, paste0(treatment_varname_gp, "_", t - 1)])
-    } else if (t > 1 & t <= ngrace_period){
+      tmpdata[, paste0(treatment_varname_gp, "_", t)] <- ifelse(eval(parse(text = opposite_formula)), 0, tmpdata[, paste0(grace_period_var, "_", t)])
+        
+        if (t >= 1) {
+          
+          tmpdata[, paste0(treatment_varname_gp, "_", t)] <- 
+            ifelse(tmpdata[,paste0(treatment_varname_gp, "_", t-1)] == 1, 
+                   1, tmpdata[,paste0(treatment_varname_gp, "_", t)])
+        }
+        
+        if (t >= ngrace_period) {
+          
+          gp_value <- tmpdata[, paste0(grace_period_var, "_", t - ngrace_period)]
+          eval_formula <- paste0("gp_value", condition_sep)
+          
+          tmpdata[, paste0(treatment_varname_gp, "_", t)] <- ifelse(eval(parse(text = eval_formula)), 
+                                                                       1,
+                                                                       tmpdata[, paste0(treatment_varname_gp, "_", t)])
+          
+        }
+      }
 
-      tmpdata[, paste0(treatment_varname_gp, "_", t - 1)] <- ifelse(tmpdata[, paste0(grace_period_var, "_", t - 1)] != gp_threshold_value, 0, tmpdata[, paste0(treatment_varname_gp, "_", t - 1)])
-
-      tmpdata[, paste0(treatment_varname_gp, "_", t - 1)] <- ifelse(tmpdata[, paste0(treatment_varname_gp, "_", t - 2)] == 1, 1, tmpdata[, paste0(treatment_varname_gp, "_", t - 1)])
-
-    } else if (t > 1 & t > ngrace_period) {
-
-      tmpdata[, paste0(treatment_varname_gp, "_", t - 1)] <- ifelse(tmpdata[, paste0(grace_period_var, "_", t - 1)] != gp_threshold_value, 0, tmpdata[, paste0(treatment_varname_gp, "_", t - 1)])
-
-      tmpdata[, paste0(treatment_varname_gp, "_", t - 1)] <- ifelse(tmpdata[, paste0(grace_period_var, "_", t - 1 - ngrace_period)] == gp_threshold_value, 1, tmpdata[, paste0(treatment_varname_gp, "_", t - 1)])
+    
     }
-    }
 
-  }
-
-  tmpdata <- tmpdata[, c(id, paste0(var, "_", 0:(K-1)), paste0(outcome_name, "_", 0:(K-1)))]
-
+  tmpdata <- tmpdata[, c(id, paste0(treatment_varname_gp, "_", 0:(K-1)), paste0(outcome_name, "_", 0:(K-1)))]
+  
   data_long <- reshape(tmpdata, direction = "long",
-                       varying = list(paste0(var, "_", 0:(K-1)), paste0(outcome_name, "_", 0:(K-1))),
+                       varying = list(paste0(treatment_varname_gp, "_", 0:(K-1)), paste0(outcome_name, "_", 0:(K-1))),
                        v.names = c("interv_it", "outcome"), sep = "_")
-
+  
   data_long$time <- data_long$time-1
-
+  
   append_data <- left_join(data, data_long, by = c("id_var" = "id", "outcome_var" = "outcome", "time_var" = "time"))
-
+  
   return(append_data$interv_it)
 }
 
@@ -336,7 +371,7 @@ grace_period <- function(type, nperiod, var, value, data = interv_data, id = idv
 
 uniform_sample <- function(r, duration) {
   p <- 1 / (duration + 1 - r)
-  treat <- rbinom(1, 1, p)
+  treat <- rbinom(length(p), 1, p)
   return(treat)
 
 }
@@ -710,12 +745,23 @@ get_column_name_covar <- function(icovar) {
 #' dynamic <- grace_period(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), first = TRUE, 
 #'                              id = "id", time_name = "t0", data = data)
 #' dynamic
-dynamic <- function(condition, strategy_before, strategy_after, first = TRUE, id = id_var, time = time0var, data = interv_data) {
-  strategy_before_values <- strategy_before
-  strategy_after_values <- strategy_after
+dynamic <- function(condition, strategy_before = natural_course(), strategy_after, first = TRUE, 
+                    id = id_var, time = time0var, data = interv_data) {
   
-  interv_values <- get_dynamic_interv_values(condition, strategy_before_values, 
-                                             strategy_after_values, first, id, time, data)
+  if (any(str_detect(as.character(substitute(strategy_after)), "grace_period"))) {
+    
+    dynamic_cond <<- condition
+    interv_values <- strategy_after
+    
+  } else {
+    
+    strategy_before_values <- strategy_before
+    strategy_after_values <- strategy_after
+    
+    interv_values <- get_dynamic_interv_values(condition, strategy_before_values, 
+                                               strategy_after_values, first, id, time, data)
+    
+  }
   
   
   return(interv_values)

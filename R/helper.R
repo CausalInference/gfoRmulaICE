@@ -186,17 +186,16 @@ natural_course_ipweighted <- function(data, id, censor_varname,
 #' This function implements a particular intervention with grace period. There are two choices of grace type: "natural" or "uniform," specified by the argument \code{type}.
 #' \itemize{
 #' \item{Natural grace period describes the following mechanism:
-#' When the condition \code{var} = \code{value} is met, initiate treatment in \code{n} time units, where \code{n} is specified by \code{nperiod}.
+#' When the condition in \code{condition} is met, initiate treatment in \code{n} time units, where \code{n} is specified by \code{nperiod}.
 #' If there is no intervention, follow the observed treatment initiation distribution.}
 #' \item{Uniform grace period describes the following mechanism:
-#' When the condition \code{var} = \code{value} is met, initiate treatment in \code{n} time units, where \code{n} is specified by \code{nperiod}.
+#' When the condition in \code{condition} is met, initiate treatment in \code{n} time units, where \code{n} is specified by \code{nperiod}.
 #' If there is no intervention, follow the uniform distribution of treatment initiation.}
 #' }
 #'
 #' @param type a character string specifying the type of grace period strategy. "Uniform" for uniform grace period, and "natural" for natural grace period.
 #' @param nperiod a numeric specifying the length of grace period.
-#' @param var a character string specifying the variable that the grace period strategy is based on.
-#' @param value a numeric specifying the value that \code{var} is compared to.
+#' @param condition a character string specifying the logical expression, upon which is met, the treatment is initiated in \code{n} time units, where \code{n} is specified by \code{nperiod}.
 #' @param data a data frame containing the observed data.
 #' @param id a character string indicating the ID variable name in \code{data}.
 #' @param time_name a character string indicating the time variable name in \code{data}.
@@ -207,12 +206,14 @@ natural_course_ipweighted <- function(data, id, censor_varname,
 #'
 #' @examples
 #' data <- readRDS("test_data_competing.rds")
-#' grace_period <- grace_period(type = "uniform", nperiod = 2, var = "L1", value = 1, data = data,
+#' grace_period <- grace_period(type = "uniform", nperiod = 2, condition = "L1 == 0", data = data,
 #'                              id = "id", time_name = "t0", outcome_name = "Y")
 #' grace_period
 
-## maybe I'll also make grace period as an option in dynamic
-grace_period <- function(type, nperiod, condition = dynamic_cond, data = interv_data, id = idvar, time_name = time0var, outcome_name = outcomevar) {
+grace_period <- function(type, nperiod, condition,
+                         # condition = dynamic_cond, 
+                         data = interv_data, id = idvar, time_name = time0var, 
+                         outcome_name = outcomevar) {
   
   
   ## separate var and logical from condition
@@ -523,10 +524,9 @@ strat <- function(hazard) {
 #' \code{treat_model} and the treatment variables could be specified by \code{obs_treatment_varnames}.
 #'
 #' @param treat_model a list of formulas specifying the model statement for the corresponding treatment variable used in the doubly robust ICE estimator. The length of list must match with
-#' the length of \code{obs_treatment_varnames}. Multiple treatments passed in \code{obs_treatment_varnames} are allowed and must follow the corresponding order as in \code{treat_model_covar}.
-#' @param obs_treatment_varnames a list of character strings specifying the treatment variables to be used in the model for observed treatments of the weighted ICE estimator.
+#' the number of treatment variables. 
 #'
-#' @return the model specification for each treatment model and the treatment variables and
+#' @return the model specification for each treatment model and
 #' the observed treatment variable names extracted from the specified model.
 #' @export
 #'
@@ -558,7 +558,7 @@ weight <- function(treat_model = list()) {
 #'
 #' @examples
 #' data <- readRDS("test_data_competing.rds")
-#' threshold_treat <- threshold(threshold = -3, var = "A", data = data)
+#' threshold_treat <- threshold(lower_bound = 0, upper_bound = 2, var = "A", data = data)
 #' threshold_treat
 threshold <- function(lower_bound, upper_bound, var = threshold_treatment, data = interv_data){
   interv_it <- case_when(data[, var] >= lower_bound & data[, var] <= upper_bound ~ data[, var],
@@ -732,7 +732,7 @@ get_column_name_covar <- function(icovar) {
 #' @param condition a character string that specifies a logical expression, upon which is met, the strategy specified in \code{strategy_after} is followed.
 #' @param strategy_before a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed after the condition in \code{condition} is met.
 #' @param strategy_after a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed before the condition in \code{condition} is met.
-#' @param first a logical indicating whether the strategy specified in \code{strategy_after} starts upon the first time when the condition specified in \code{condition} is met.
+#' @param absorb a logical indicating whether the strategy specified in \code{strategy_after} is absorbing upon the first time when the condition specified in \code{condition} is met.
 #' @param id a character string indicating the ID variable name in \code{data}.
 #' @param time a character string indicating the time variable name in \code{data}.
 #' @param data a data frame containing the observed data.
@@ -742,18 +742,22 @@ get_column_name_covar <- function(icovar) {
 #'
 #' @examples
 #' data <- readRDS("test_data_competing.rds")
-#' dynamic <- grace_period(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), first = TRUE, 
-#'                              id = "id", time_name = "t0", data = data)
+#' # Dynamic intervention example 1: 
+#' # Treat when L1 = 0, and not treat otherwise.
+#' dynamic <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
+#' absorb = FALSE, id = "id", time_name = "t0", data = data)
 #' dynamic
-dynamic <- function(condition, strategy_before = natural_course(), strategy_after, first = TRUE, 
+dynamic <- function(condition, strategy_before, strategy_after, absorb = TRUE, 
                     id = id_var, time = time0var, data = interv_data) {
   
-  if (any(str_detect(as.character(substitute(strategy_after)), "grace_period"))) {
-    
-    dynamic_cond <<- condition
-    interv_values <- strategy_after
-    
-  } else {
+  first <- absorb
+  
+  # if (any(str_detect(as.character(substitute(strategy_after)), "grace_period"))) {
+  #   
+  #   dynamic_cond <<- condition
+  #   interv_values <- strategy_after
+  #   
+  # } else {
     
     strategy_before_values <- strategy_before
     strategy_after_values <- strategy_after
@@ -761,7 +765,7 @@ dynamic <- function(condition, strategy_before = natural_course(), strategy_afte
     interv_values <- get_dynamic_interv_values(condition, strategy_before_values, 
                                                strategy_after_values, first, id, time, data)
     
-  }
+  # }
   
   
   return(interv_values)

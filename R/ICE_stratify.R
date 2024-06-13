@@ -21,15 +21,16 @@
 #' Could be \code{NULL} if censoring variable \code{censor_name} is \code{NULL}. Default is \code{NULL}.
 #' @param competing_model a formula specifying the model statement for the competing model in hazard based ICE estimator.
 #' Could be \code{NULL} for classical ICE estimator. Default is \code{NULL}.
+#' @param hazard_model a formula specifying the model statement for the hazard model for hazard-based ICE estimator. Default is \code{NULL}.
 #' @param interventions a list of functions indicating intervention strategy for the intervention variables in \code{intervention_names}.
 #' Interventions could be specified using the following functions:
 #' \itemize{
-#' \item{Always treat:} {\code{static(value = 1)} }
-#' \item{Never treat:} {\code{static(value = 0)} }
+#' \item{Always treat:} {\code{static(1)} }
+#' \item{Never treat:} {\code{static(0)} }
 #' \item{Natural course:} {\code{natural_course()} }
-#' \item{Dynamic treat:} {\code{dynamic(type, var, value, direction)} }
-#' \item{Threshold Intervention:} {\code{threshold(value, var)}}
-#' \item{Grace period:} {\code{grace_period(type, nperiod, var, value)} }
+#' \item{Dynamic treat:} {\code{dynamic(condition, strategy_before, strategy_after, absorb)} }
+#' \item{Threshold Intervention:} {\code{threshold(upper_bound, lower_bound)}}
+#' \item{Grace period:} {\code{grace_period(type, nperiod, condition)} }
 #' }
 #' For more details, please read the corresponding documentation of each intervention function.
 #' If the length of the \code{interventions} list is larger than 1, then the function will process them as multiple treatments simultaneously.
@@ -50,13 +51,14 @@
 #' @return A list containing the following components:
 #' \item{gformula_risk_last_time} {The estimated risk for the specified intervention(s) at the last time step.}
 #' \item{gformula_risk} {A table containing the estimated risk for the specified intervention(s) at each time step.}
-#' \item{weight_h} {A list containing the inverse probability weighted estimates of the natural course risk. Could be \code{NULL} if \code{compute_nc_risk} is FALSE.}
-#' \item{ipw_model} {A model object for the probability of censoring used in the inverse probability weighted estimate of the natural course risk. Could be \code{NULL} if \code{compute_nc_risk} is FALSE.}
-#' \item{fit_models}{A list containing the fitted models for the outcome, the treatment (if applicable), and the competing event (if applicable).}
-#' \item{model_summary}{A list containing the summary of the fitted models.}
-#' \item{model_stderr}{A list containing the standard errors of the coefficients of the fitted models.}
-#' \item{model_vcov}{A list containing the variance-covariance matrices of the parameters of the fitted models.}
-#' \item{model_rmse}{A list containing the root mean square error (RMSE) values of the fitted models.}
+#' \item{weight_h} {A list containing the inverse probability weighted estimates of the observed risk. Could be \code{NULL} if \code{compute_nc_risk} is FALSE.}
+#' \item{ipw_model} {A model object for the probability of censoring used in the inverse probability weighted estimate of the observed risk. Could be \code{NULL} if \code{compute_nc_risk} is FALSE.}
+#' \item{np_model} {A model object for the probability of having competing event used in the inverse probability weighted estimate of the observed risk. Could be \code{NULL} if \code{compute_nc_risk} is FALSE.}
+#' \item{outcome_init}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the outcome model of the first iteration in the ICE algorithm.}
+#' \item{comp_init}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the competing model of the first iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{competing_name} is \code{NULL}.}
+#' \item{outcome_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the outcome model of each subsequent iteration in the ICE algorithm.}
+#' \item{comp_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the competing model of each subsequent iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{competing_name} is \code{NULL}.}
+#' \item{hazard_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the hazard model of each iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{hazard_based} is FALSE.}
 #' @import tidyverse data.table reshape2 nnet
 #' @export
 #'
@@ -74,20 +76,18 @@
 #'
 #' @examples
 #'
-#' # Import data set
-#' test_data <- readRDS("test_data_competing.rds")
-#'
 #' # Estimate risks for the always treat intervention
 #' # (i.e. constantly treat over all time points)
-#' # Hazard extended stratified ICE, competing event as direct effect
+#' # Hazard based stratified ICE, direct effect for competing event
 #'
-#' ice_static <- ice_strat(data = test_data, K = 5, id = "id",
+#' ice_static <- ice_strat(data = compData, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
 #' total_effect = F,
-#' outcome_model = Y ~ L1,
-#' censor_model = C ~ L1,
-#' competing_model = D ~ L1,
+#' outcome_model = Y ~ L1 + L2,
+#' censor_model = C ~ L1 + L2,
+#' competing_model = D ~ L1 + L2,
+#' hazard_model = Y ~ L1 + L2,
 #' interventions = list(static(1)),
 #' intervention_names = list("A"),
 #' hazard_based = T,
@@ -98,14 +98,14 @@
 #'
 #' # Estimate risks for both the observed inverse probability weighted
 #' # natural course risk and natural course strategy
-#' # Classical stratified ICE, competing event as total effect
+#' # Classical stratified ICE, total effect for competing event
 #'
-#' ice_natural_course <- ice_strat(data = test_data, K = 5, id = "id",
+#' ice_natural_course <- ice_strat(data = compData, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
 #' total_effect = T,
-#' outcome_model = Y ~ L1,
-#' censor_model = C ~ L1,
+#' outcome_model = Y ~ L1 + L2,
+#' censor_model = C ~ L1 + L2,
 #' interventions = list(natural_course()),
 #' intervention_names = list("A"),
 #' compute_nc_risk = T,
@@ -118,15 +118,15 @@
 #' # Estimate risks for the dynamic treat intervention based on the covariate L1 > 0
 #' # (i.e. treat when L1 > 0 and absorbing once one initiates treatment;
 #' # not treat otherwise)
-#' # Classical stratified ICE, competing event as direct effect
+#' # Classical stratified ICE, direct effect for competing event
 #'
-#' ice_dynamic <- ice_strat(data = test_data, K = 5, id = "id",
+#' ice_dynamic <- ice_strat(data = compData, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
 #' total_effect = F,
-#' outcome_model = Y ~ L1,
-#' censor_model = C ~ L1,
-#' interventions = list(dynamic("absorbing", "L1", ">", 0)),
+#' outcome_model = Y ~ L1 + L2,
+#' censor_model = C ~ L1 + L2,
+#' interventions = list(dynamic("L1 > 0", static(0), static(1), absorb = T)),
 #' intervention_names = list("A"),
 #' hazard_based = F,
 #' obs_treatment_names = list("A"),
@@ -140,13 +140,13 @@
 #' # with L1 included in the treatment model for A
 #' # treatment model: A ~ L1
 #'
-#' ice_weighted <- ice_strat(data = test_data, K = 5, id = "id",
+#' ice_weighted <- ice_strat(data = compData, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
 #' total_effect = T,
-#' outcome_model = Y ~ L1,
-#' censor_model = C ~ L1,
-#' competing_model = D ~ L1,
+#' outcome_model = Y ~ L1 + L2,
+#' censor_model = C ~ L1 + L2,
+#' competing_model = D ~ L1 + L2,
 #' interventions = list(static(1)),
 #' intervention_names = list("A"),
 #' weighted = T, treat_model = list(A ~ L1),
@@ -159,6 +159,7 @@
 ice_strat <- function(data, K, id, time_name, outcome_name,
                       censor_name = NULL, competing_name = NULL, total_effect,
                       outcome_model, censor_model = NULL, competing_model = NULL,
+                      hazard_model = NULL,
                       interventions, intervention_names, intervention_times = NULL,
                       compute_nc_risk = T, hazard_based, weighted = F,
                       treat_model, obs_treatment_names,
@@ -195,6 +196,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   outcome_covar <- str_remove_all(unlist(str_split(as.character(outcome_model)[3], "[+]")), " ")
   censor_covar <- str_remove_all(unlist(str_split(as.character(censor_model)[3], "[+]")), " ")
   competing_covar <- str_remove_all(unlist(str_split(as.character(competing_model)[3], "[+]")), " ")
+  hazard_covar <- str_remove_all(unlist(str_split(as.character(hazard_model)[3], "[+]")), " ")
 
 
   natural_course_type <- ifelse(is.null(censor_varname), "mean", "ipw")
@@ -210,11 +212,12 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   outcome_covar_lags <- outcome_covar[str_detect(outcome_covar, "lag[0-9999]_")]
   censor_covar_lags <- censor_covar[str_detect(censor_covar, "lag[0-9999]_")]
   competing_covar_lags <- competing_covar[str_detect(competing_covar, "lag[0-9999]_")]
+  hazard_covar_lags <- hazard_covar[str_detect(hazard_covar, "lag[0-9999]_")]
   
   # all_lags <- as.set(unlist(union(outcome_covar_lags, censor_covar_lags)))
   # all_lags <- unlist(union(all_lags, competing_covar_lags))
   
-  all_lags <- c(outcome_covar_lags, censor_covar_lags, competing_covar_lags)
+  all_lags <- c(outcome_covar_lags, censor_covar_lags, competing_covar_lags, hazard_covar_lags)
   all_lags <- unique(all_lags)
   all_lags <- na.omit(all_lags)
   
@@ -347,6 +350,44 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
     }
   }
   }
+  
+  ## hazard covar
+  hazard_covar_new <- c()
+  
+  if (hazard_based) {
+    data_add <- data
+    for (i in 1:length(hazard_covar)) {
+      
+      icovar <- hazard_covar[i]
+      
+      column_name <- get_column_name_covar(icovar)
+      
+      if (!column_name %in% colnames(data)) {
+        old_ncol <- ncol(data_add)
+        data_add <- data %>% mutate(eval(parse(text = icovar)))
+        new_ncol <- ncol(data_add)
+        
+        new_column <- data_add[, new_ncol]
+        new_column <- as.matrix(new_column)
+        
+        ## create new columns
+        
+        if (ncol(new_column) > 1) {
+          multiple_varname <- paste0(paste0(column_name, "."), 1:(ncol(new_column)))
+          data[, multiple_varname] <- new_column
+          hazard_covar_new <- c(hazard_covar_new, multiple_varname)
+        } else {
+          data[, column_name] <- as.vector(new_column)
+          hazard_covar_new <- c(hazard_covar_new, column_name)
+        }
+      } else {
+        hazard_covar_new <- c(hazard_covar_new, icovar)
+      }
+    }
+    
+    hazard_covar <- hazard_covar_new
+  }
+  
   
   
   ## replace the old covar
@@ -772,7 +813,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
       treat_as_covar <- all_treat_vars[!all_treat_vars %in% interv_treat]
 
-      outcome_covar_t <- c(outcome_covar, treat_as_covar)
+      outcome_covar_t <- c(hazard_covar, treat_as_covar)
 
       covar_outcome_t <- paste0(outcome_covar_t, "_", i-1)
 

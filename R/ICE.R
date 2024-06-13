@@ -56,8 +56,8 @@
 #' \code{competing_model = D ~ L1 + L2,} \cr
 #' \code{intervention1.A1 = list(static(0)),} \cr
 #' \code{intervention1.A2 = list(static(1)),} \cr
-#' \code{intervention2.A1 = list(dynamic("absorbing", "L1", "=", 1)),} \cr
-#' \code{intervention2.A2 = list(dynamic("compare", "L1", "=", 0)),} \cr
+#' \code{intervention2.A1 = list(dynamic("L1 > 0", static(0), static(1), absorb = F)),} \cr
+#' \code{intervention2.A2 = list(dynamic("L2 == 0", static(0), static(1), absorb = T)),} \cr
 #' \code{outcomeModel.1 = Y ~ L1,} \cr
 #' \code{compModel.2 = D ~ L1} \cr
 #'
@@ -79,14 +79,16 @@
 #' \itemize{
 #' \item{Always Treat:} {\code{static(1)}}
 #' \item{Never Treat:} {\code{static(0)}}
-#' \item{Dynamic Treat Based on \code{var}:} {\code{dynamic(type, var, direction, value)}. \code{type} could be "compare" or "absorbing" and \code{direction} could be \code{>, >=, <, <=, =, !=}.
-#' If \code{type} is "compare", then treat if \code{var} > or >= or < or <= or = or != \code{value} and not treat otherwise. If \code{type} is "absorbing", then implements always treat if treatment is initiated
-#' based on the description of the "compare" type.}
-#' \item{Threshold Intervention Based on \code{var}:} {\code{threshold(lower_bound, upper_bound, var)}. If treatment value is within the range between \code{lower_bound} and \code{upper_bound} inclusively,
+#' \item{Dynamic Treat Based on \code{condition}:} {\code{dynamic(condition, strategy_before, strategy_after, absorb)}. 
+#' \code{condition} is a string specifying a logical expression. The strategy specified in \code{strategy_before} is followed until \code{condition} is met. 
+#' Upon \code{condition} is met, the strategy specified in \code{strategy_after} is followed. \code{absorb} is a logical specifying whether to use absorbing strategy.
+#' If \code{absorb} is TRUE, then the strategy specified in \code{strategy_after} is absorbing upon the first time when \code{condition} is met.
+#' If \code{absorb} is FALSE, then the strategy specified in \code{strategy_after} is followed every time \code{condition} is met.}
+#' \item{Threshold Intervention Based on \code{var}:} {\code{threshold(lower_bound, upper_bound)}. If treatment value is within the range between \code{lower_bound} and \code{upper_bound} inclusively,
 #' then follow the natural value of the treatment. Otherwise, if the treatment value is below \code{lower_bound}, then set to \code{lower_bound}.
 #' If the treatment value is above the upper bound, then set to \code{upper_bound}.}
-#' \item{Grace Period:} {\code{grace_period(type, nperiod, var, value)}. \code{type} could be "uniform" or "natural". \code{nperiod} specifies the length of grace period.
-#' When a defined intervention condition based on \code{var} = \code{value} is met, initiate treatment in \code{nperiod} time units. If there is no intervention,
+#' \item{Grace Period:} {\code{grace_period(type, nperiod, condition)}. \code{type} could be "uniform" or "natural". \code{nperiod} specifies the length of grace period.
+#' When a defined intervention condition based on \code{condition} is met, initiate treatment in \code{nperiod} time units. If there is no intervention,
 #' follow the observed treatment initiation distribution (for natural grace period) or the uniform distribution of treatment initiation (for uniform grace period). }
 #' \item{User-Defined Intervention:} {The output of the user-defined intervention should be a vector of intervened value of the intervention variable for each individual at each time point in the size as the number of rows in \code{data}.}
 #' }
@@ -99,6 +101,13 @@
 #' If competing event exists in the data, users need to specify the name of the competing variable through \code{competing_name} and
 #' the model specification through \code{competing_model} for hazard-based ICE estimator. Users need to specify whether to treat
 #' the competing event as censoring or total effect through \code{total_effect}.
+#' 
+#' For model statement in \code{outcome_model}, \code{censor_model}, \code{competing_model}, and \code{hazard_model}, users could
+#' specify polynomial terms using functions \code{I} and \code{poly} and spline terms using \code{ns} from splines package
+#' and \code{rcspline.eval} from Hmisc package. In addition, users could specify lagged terms using the format lag\code{n}_\code{var} 
+#' to indicate lagging the variable \emph{var} \emph{n} periods. If lagged treatment variables are used, 
+#' they will be automatically intervened based on specified interventions. One could also use the polynomial and spline term functions
+#' on the lagged terms.
 #'
 #'
 #'
@@ -112,9 +121,13 @@
 #' @param comp_effect a numeric specifying how the competing event is handled for all the specified interventions. Default is 0.
 #' \code{0} outputs direct effect for all the specified interventions.
 #' \code{1} outputs total effect for all the specified interventions.
-#' @param outcome_model a formula specifying the model statement for the outcome model.
+#' @param outcome_model a formula specifying the model statement for the outcome model. 
 #' @param censor_model a formula specifying the model statement for the censoring model for IP weighted natural course risk. Default is \code{NULL}.
 #' @param competing_model a formula specifying the model statement for the competing model for hazard-based ICE estimator. Default is \code{NULL}.
+#' @param hazard_model a formula specifying the model statement for the hazard model for hazard-based ICE estimator. Default is \code{NULL}.
+#' For hazard-based ICE estimator, if \code{hazard_model} is not specified, then the model statement specified in \code{outcome_model} will be used as the hazard model.
+#' @param global_hazard a logical indicating whether to use global pooled-over-time hazard model or time-specific hazard model. 
+#' This option is for pooled hazard-based ICE only. TRUE for pooled-over-time hazard model. FALSE for time-specific hazard model. Default is FALSE.
 #' @param ref_idx a numerical indicating which intervention to be used as the reference to calculate the risk ratio and risk difference. Default is 0.
 #' 0 refers to using the natural course as the reference intervention.
 #' Any other numbers refer to the corresponding intervention that users specify in the keywords argument.
@@ -150,9 +163,9 @@
 #' If the second element is not specified, then the defined intervention will be applied to all time points.
 #' A sample intervention input with two treatments of names A1 and A2 and two intervention strategies look like: \cr
 #' \code{intervention1.A1 = list(static(1))} \cr
-#' \code{intervention1.A2 = list(dynamic("compare", "L1", ">", 0))} \cr
+#' \code{intervention1.A2 = list(dynamic("L1 > 0", static(0), static(1), absorb = F))} \cr
 #' \code{intervention2.A1 = list(static(0))} \cr
-#' \code{intervention2.A2 = list(dynamic("absorbing", "L1", ">", 1))} \cr
+#' \code{intervention2.A2 = list(dynamic("L1 > 0", static(0), static(1), absorb = T))} \cr
 #' A sample intervention input with one treatment of name A and two intervention strategies look like: \cr
 #' \code{intervention1.A1 = list(static(1))} \cr
 #' \code{intervention2.A1 = list(static(0))} \cr
@@ -185,18 +198,31 @@
 #' @return A list containing the following components:
 #' \item{summary}{A summary table containing the estimated ICE risk, risk ratio, risk difference. If \code{bootstrap} is TRUE, then the table also includes standard error and confidence interval for ICE risk, risk ratio, and risk difference of each intervention.}
 #' \item{risk.over.time}{A data frame containing the estimated ICE risk at each time point for each intervention.}
-#' \item{models}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models for the outcome, the treatment (if applicable), and the competing event (if applicable) of the corresponding intervention.}
-#' \item{model.summary}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the summary of the fitted models for the corresponding intervention.}
-#' \item{model.stderr}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the standard errors of the coefficients of the fitted models for the corresponding intervention.}
-#' \item{model.vcov}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the variance-covariance matrices of the parameters of the fitted models for the corresponding intervention.}
-#' \item{model.rmse}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains root mean square error (RMSE) values of the fitted models for the corresponding intervention.}
+#' \item{initial.outcome}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the outcome model of the first step in the ICE algorithm.}
+#' \item{initial.comp}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the competing model of the first step in the ICE algorithm (if applicable).}
+#' \item{np.risk.model}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the censoring and competing models (if applicable) used in the IPW estimate of the observed risk.}
+#' \item{outcome.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the outcome model of each iteration in the ICE algorithm.}
+#' \item{comp.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the competing model of each iteration in the ICE algorithm (if applicable).}
+#' \item{hazard.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for hazard model, either time-specific models of each time point or one pooled-over-time global model. }
 #' \item{boot.data}{A list containing all the bootstrapped data if \code{boostrap} is set to \code{TRUE}.}
-#' \item{boot.models}{A list containing the fitted models for the outcome, the treatment (if applicable), and the competing event (if applicable) on the bootstrapped samples.}
-#' \item{boot.summary}{A list containing the summary of the fitted models on the bootstrapped samples.}
-#' \item{boot.stderr}{A list containing the standard errors of the coefficients of the fitted models on the bootstrapped samples.}
-#' \item{boot.vcov}{A list containing the variance-covariance matrices of the parameters of the fitted models on the bootstrapped samples.}
-#' \item{boot.rmse}{A list containing the root mean square error (RMSE) values of the fitted models on the bootstrapped samples.}
-#' \item{estimator.type}{A string specifying the type of ICE estimator.}
+#' \item{boot.initial.outcome}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the outcome model of the first step in the ICE algorithm on the bootstrapped samples.}
+#' \item{boot.inital.comp}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the competing model (if applicable) of the first step in the ICE algorithm on the bootstrapped samples.}
+#' \item{boot.np.risk.model}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the censoring and competing models (if applicable) used in the IPW estimate of the observed risk on the bootstrapped samples.}
+#' \item{boot.outcome.models.by.step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples.}
+#' \item{boot.comp.models.by.step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the competing model (if applicable) of each iteration in the ICE algorithm on the bootstrapped samples.}
+#' \item{boot.hazard.models.by.step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values for the hazard model (if applicable) on the bootstrapped samples.}
 #' @export
 #' @import tidyverse stringr data.table reshape2
 #'
@@ -213,6 +239,26 @@
 #'
 #' @examples
 #'
+#' ## revise the examples below
+#' 1. hazard-based: 
+#' pooled ICE: a. time-specific, not specify hazard model
+#' pooled ICE: b. time-specific, specify hazard model, using Y ~ L1 + L2
+#' pooled ICE: c. global, specify hazard model, using Y ~ L1 + L2 + A1 + A2 + t0
+#' stratified ICE: a. time-specific, specify hazard model, using Y ~ L1
+#' 2. complicated model specification:
+#' pooled ICE: outcome_model = Y ~ I(L1^2) + A1 + A2 + lag1_L1 + rcspline.eval(lag2_L2, knots = 1:3),
+#' competing_model = D ~ L1 + poly(L2, degree = 2) + A1 + A2,
+#' censor_model = C ~ L1 + ns(lag1_L2, df = 2) + A1 + A2
+#' 3. dynamic intervention examples:
+#' a. when L1 = 0 treat, not treat otherwise: dynamic("L1 == 0", static(0), static(1), absorb = F)
+#' b. when L1 = 0 treat when L1 > 0 and absorbing once one initiates treatment, and not treat otherwise: dynamic("L1 == 0", static(0), static(1), absorb = T)
+#' 4. all intervention examples:
+#' a. static interventions (static(0), static(1))
+#' b. dynamic interventions in (3)
+#' c. threshold intervention
+#' d. grace period intervention - when L1 = 0 initiate treatment in 2 periods: grace_period("uniform", 2, "L1 = 0") + grace_period("natural", 2, "L1 = 0")
+#' 5. keyword arguments specification: different outcome and competing models for different interventions
+#' 
 #' data <- gfoRmulaICE::data
 #' dynamic_cat <- case_when(data$L2 < 0 ~ 1,
 #' data$L2 >= 0 & data$L2 < 2 ~ 2,
@@ -419,6 +465,8 @@ ice <- function(data, time_points, id, time_name,
                 outcome_name, censor_name = NULL,
                 compevent_name = NULL, comp_effect = 0,
                 outcome_model, censor_model = NULL, competing_model = NULL,
+                hazard_model = NULL, global_hazard = F, 
+                #global_hazard_model = NULL, 
                 ref_idx = 0,
                 estimator,
                 int_descript,
@@ -468,6 +516,20 @@ ice <- function(data, time_points, id, time_name,
   } else {
     normal_quantile <- F
   }
+  
+  # preprocess the hazard model
+  
+  if (any(str_detect(as.character(substitute(estimator)), "pool")) | 
+      any(str_detect(as.character(substitute(estimator)), "strat")) & 
+      any(str_detect(as.character(substitute(estimator)), "T")) & is.null(hazard_model)) {
+    
+    hazard_model <- outcome_model
+  } else if (any(str_detect(as.character(substitute(estimator)), "pool")) | 
+             any(str_detect(as.character(substitute(estimator)), "strat")) & 
+             any(str_detect(as.character(substitute(estimator)), "F")) & !is.null(hazard_model)) {
+    warning("Hazard model is ignored for Classical ICE estimators.")
+  }
+  
 
   # preprocess the time index
 
@@ -488,12 +550,30 @@ ice <- function(data, time_points, id, time_name,
 
   if (class(data[, time_name]) != "integer") {
     data <- map_time_column(time_name, data, unique_time_names)
+    
+    # replace the time variable in the global hazard model with the new time name if any
+    if (global_hazard) {
+
+      global_hazard_model_str <- as.character(hazard_model)
+      global_hazard_model_str[3] <- str_replace_all(global_hazard_model_str[3], time_name, paste0("new_", time_name))
+      hazard_model <- as.formula(paste0(global_hazard_model_str[c(2, 1, 3)], collapse = ""))
+    }
+    
     time_name <- paste0("new_", time_name)
   } else {
 
     # if the time does not start with 0, then re-index
     if (min(unique_time_names) != 0) {
       data <- map_time_column(time_name, data, unique_time_names)
+      
+      # replace the time variable in the global hazard model with the new time name if any
+      if (global_hazard) {
+        
+        global_hazard_model_str <- as.character(hazard_model)
+        global_hazard_model_str[3] <- str_replace_all(global_hazard_model_str[3], time_name, paste0("new_", time_name))
+        hazard_model <- as.formula(paste0(global_hazard_model_str[c(2, 1, 3)], collapse = ""))
+      }
+      
       time_name <- paste0("new_", time_name)
     }
   }
@@ -800,6 +880,14 @@ ice <- function(data, time_points, id, time_name,
   if (any(str_detect(as.character(substitute(estimator)), "pool"))) {
 
     hazard <- estimator
+    
+    # if hazard based but no hazard model, then set it to outcome model
+    if (hazard & is.null(hazard_model)) {
+      
+      hazard_model <- outcome_model
+      
+    }
+    
 
     # check model input for pooled ICE
 
@@ -847,9 +935,13 @@ ice <- function(data, time_points, id, time_name,
     ref <- ice_pool(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,
                     censor_name = censor_name, competing_name = competing_name, total_effect = ref_total_effect,
                     outcome_model = outcome_model, censor_model = censor_model, competing_model = competing_model,
+                    hazard_model = hazard_model, 
                     interventions = nc_interventions, intervention_names = nc_intervention_varlist,
-                    compute_nc_risk = T,
-                    hazard_based = hazard, intervention_description = nc_descript)
+                    compute_nc_risk = T, 
+                    hazard_based = hazard, 
+                    global_hazard = global_hazard,
+                    intervention_description = nc_descript) 
+                    #global_haz_model = global_hazard_model)
 
     summary[1, 1:2] <- c(ref$weight_h$risk[K], ref$gformula_risk_last_time)
 
@@ -886,9 +978,13 @@ ice <- function(data, time_points, id, time_name,
       ref <- ice_pool(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,
                     censor_name = censor_name, competing_name = competing_name, total_effect = ref_total_effect,
                     outcome_model = outcome_model, censor_model = censor_model, competing_model = competing_model,
+                    hazard_model = hazard_model, 
                     interventions = boot_interv, intervention_names = ref_intervention_varlist,
                     intervention_times = ref_int_times,
-                    compute_nc_risk = T, hazard_based = hazard, intervention_description = ref_description)
+                    compute_nc_risk = T, hazard_based = hazard, 
+                    global_hazard = global_hazard, 
+                    intervention_description = ref_description)
+                    #global_haz_model = global_hazard_model)
 
       if (bootstrap) {
         summary[ref_idx + 1, c(2:4, 6:7, 10:13)] <- c(ref$gformula_risk_last_time, 1, 0, 1, 0, 1, 1, 0, 0)
@@ -996,8 +1092,11 @@ ice <- function(data, time_points, id, time_name,
       this_fit <- ice_pool(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,
                             censor_name = censor_name, competing_name = competing_name, total_effect = this_total_effect,
                            outcome_model = outcome_model, censor_model = censor_model, competing_model = competing_model,
+                           hazard_model = hazard_model, 
                             interventions = this_interv, intervention_names = this_int_var, intervention_times = this_time,
-                            hazard_based = hazard, intervention_description = this_descript )
+                            hazard_based = hazard, intervention_description = this_descript, 
+                           global_hazard = global_hazard) 
+                           # global_haz_model = global_hazard_model)
       
       this_outcome_init <- list(this_fit$outcome_init)
       this_comp_init <- list(this_fit$comp_init)
@@ -1067,7 +1166,8 @@ ice <- function(data, time_points, id, time_name,
                                  censor_name = censor_name, competing_name = competing_name,
                                  hazard_based = hazard, outcome_model = outcome_model,
                                  censor_model = censor_model, competing_model = competing_model,
-                                 intervention_times = this_time)
+                                 intervention_times = this_time, hazard_model = hazard_model, 
+                                 global_hazard = global_hazard)
 
       this_se <- this_boot$ice_se[K+1]
       this_rr_se <- this_boot$rr_se
@@ -1221,6 +1321,10 @@ ice <- function(data, time_points, id, time_name,
       this_treat_model <- list()
       this_obs_treatment_varnames <- as.list(unique(unlist(intervention_varnames)))
       hazard <- estimator
+      
+      if (global_hazard & hazard) {
+        warning("Only time specific hazard model is valid for Stratified ICE.")
+      }
     } else {
       weight <- T
       this_treat_model <- estimator$treat_model
@@ -1267,6 +1371,7 @@ ice <- function(data, time_points, id, time_name,
     ref <- ice_strat(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,
                      censor_name = censor_name, competing_name = competing_name, total_effect = ref_total_effect,
                      outcome_model = outcome_model, censor_model = censor_model, competing_model = competing_model,
+                     hazard_model = hazard_model,
                      interventions = nc_interventions, intervention_names = nc_intervention_varlist,
                      compute_nc_risk = T, hazard_based = hazard, weighted = weight,
                      intervention_description = nc_descript,
@@ -1313,6 +1418,7 @@ ice <- function(data, time_points, id, time_name,
       ref <- ice_strat(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,
                       censor_name = censor_name, competing_name = competing_name, total_effect = ref_total_effect,
                       outcome_model = outcome_model, censor_model = censor_model, competing_model = competing_model,
+                      hazard_model = hazard_model,
                       interventions = boot_interv, intervention_names = ref_intervention_varlist,
                       compute_nc_risk = T, hazard_based = hazard, weighted = weight,
                       intervention_description = ref_description, intervention_times = ref_int_times,
@@ -1442,6 +1548,7 @@ ice <- function(data, time_points, id, time_name,
       this_fit <- ice_strat(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,
                             censor_name = censor_name, competing_name = competing_name, total_effect = this_total_effect,
                             outcome_model = this_outcome_formula, censor_model = censor_model, competing_model = this_comp_formula,
+                            hazard_model = hazard_model,
                             interventions = this_interv, intervention_names = this_int_var,
                             hazard_based = hazard, weighted = weight, treat_model = this_treat_model,
                             obs_treatment_names = this_obs_treatment_varnames, intervention_description = this_descript,
@@ -1512,7 +1619,7 @@ ice <- function(data, time_points, id, time_name,
                                    hazard_based = hazard, weighted = weight, treat_model = this_treat_model,
                                    obs_treatment_names = this_obs_treatment_varnames,
                                    outcome_model = outcome_model, censor_model = censor_model,
-                                   competing_model = competing_model,
+                                   competing_model = competing_model, hazard_model = hazard_model,
                                    intervention_times = this_time)
 
         this_se <- this_boot$ice_se[K+1]

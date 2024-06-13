@@ -22,15 +22,16 @@
 #' Could be \code{NULL} if censoring variable \code{censor_name} is \code{NULL}. Default is \code{NULL}.
 #' @param competing_model a formula specifying the model statement for the competing model in hazard based ICE estimator.
 #' Could be \code{NULL} for classical ICE estimator. Default is \code{NULL}.
+#' @param hazard_model a formula specifying the model statement for the hazard model for hazard-based ICE estimator. Default is \code{NULL}.
 #' @param interventions a list of functions indicating intervention strategy for the intervention variables in \code{intervention_names}.
 #' Interventions could be specified using the following functions:
 #' \itemize{
-#' \item{Always treat:} {\code{static(value = 1)} }
-#' \item{Never treat:} {\code{static(value = 0)} }
+#' \item{Always treat:} {\code{static(1)} }
+#' \item{Never treat:} {\code{static(0)} }
 #' \item{Natural course:} {\code{natural_course()} }
-#' \item{Dynamic treat:} {\code{dynamic(type, var, direction, value)} }
-#' \item{Threshold Intervention:} {\code{threshold(value, var)}}
-#' \item{Grace period:} {\code{grace_period(type, nperiod, var, value)} }
+#' \item{Dynamic treat:} {\code{dynamic(condition, strategy_before, strategy_after, absorb)} }
+#' \item{Threshold Intervention:} {\code{threshold(upper_bound, lower_bound)}}
+#' \item{Grace period:} {\code{grace_period(type, nperiod, condition)} }
 #' }
 #' For more details, please read the corresponding documentation of each intervention function.
 #' If the length of the \code{interventions} list is larger than 1, then the function will process them as multiple treatments simultaneously.
@@ -41,18 +42,21 @@
 #' Length of the vector must be in the same size of \code{interventions}.
 #' @param compute_nc_risk a logical to indicate whether to compute observed natural course risk. TRUE for observed natural course risk computation. FALSE for no natural course risk computation. Default to be TRUE.
 #' @param hazard_based a logical indicating whether to use hazard-based ICE estimator or classical ICE estimator. TRUE for hazard-based estimator. FALSE for classical estimator.
+#' @param global_hazard a logical indicating whether to use global pooled-over-time hazard model or time-specific hazard model. 
+#' TRUE for pooled-over-time hazard model. FALSE for time-specific hazard model.
 #' @param intervention_description a character string specifying a description of the implemented intervention strategy.
 #'
 #' @return A list containing the following components:
 #' \item{gformula_risk_last_time} {The estimated risk for the specified intervention(s) at the last time step.}
 #' \item{gformula_risk} {A table containing the estimated risk for the specified intervention(s) at each time step.}
-#' \item{weight_h} {A list containing the inverse probability weighted estimates of the natural course risk. Could be \code{NULL} if \code{compute_nc_risk} is FALSE.}
-#' \item{ipw_model} {A model object for the probability of censoring used in the inverse probability weighted estimate of the natural course risk. Could be \code{NULL} if \code{compute_nc_risk} is FALSE.}
-#' \item{fit_models}{A list containing the fitted models for the outcome, the treatment (if applicable), and the competing event (if applicable).}
-#' \item{model_summary}{A list containing the summary of the fitted models.}
-#' \item{model_stderr}{A list containing the standard errors of the coefficients of the fitted models.}
-#' \item{model_vcov}{A list containing the variance-covariance matrices of the parameters of the fitted models.}
-#' \item{model_rmse}{A list containing the root mean square error (RMSE) values of the fitted models.}
+#' \item{weight_h} {A list containing the inverse probability weighted estimates of the observed risk. Could be \code{NULL} if \code{compute_nc_risk} is FALSE.}
+#' \item{ipw_model} {A model object for the probability of censoring used in the inverse probability weighted estimate of the observed risk. Could be \code{NULL} if \code{compute_nc_risk} is FALSE.}
+#' \item{np_model} {A model object for the probability of having competing event used in the inverse probability weighted estimate of the observed risk. Could be \code{NULL} if \code{compute_nc_risk} is FALSE.}
+#' \item{outcome_init}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the outcome model of the first iteration in the ICE algorithm.}
+#' \item{comp_init}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the competing model of the first iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{competing_name} is \code{NULL}.}
+#' \item{outcome_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the outcome model of each subsequent iteration in the ICE algorithm.}
+#' \item{comp_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the competing model of each subsequent iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{competing_name} is \code{NULL}.}
+#' \item{hazard_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the hazard model of each iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{hazard_based} is FALSE.}
 #' @import reshape2 tidyverse
 #' @export
 #'
@@ -70,42 +74,41 @@
 #'
 #' @examples
 #'
-#' # Import data set
-#' test_data <- readRDS("test_data_competing.rds")
-#'
 #' # Estimate risks for the always treat intervention
 #' (i.e. constantly treat over all time points)
-#' # using hazard extended pooled ICE
-#' # competing event as direct effect
-#'
-#' ice_static <- ice_pool(data = test_data, K = 5, id = "id",
-#' time_name = "t0", outcome_name = "Y",
-#' competing_name = "D", censor_name = "C",
-#' total_effect = F,
-#' outcome_model = Y ~ L1 + A,
-#' censor_model = C ~ L1 + A,
-#' competing_model = D ~ L1 + A,
+#' # using hazard based pooled ICE
+#' # direct effect for competing event
+#' # using time-specific hazard models
+#' 
+#' ice_static <- ice_pool(data = compData, K = 5, 
+#' id = "id", time_name = "t0", outcome_name = "Y",
+#' censor_name = "C", competing_name = "D",
+#' total_effect = F, 
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
+#' competing_model = D ~ L1 + L2 + A1 + A2, 
+#' hazard_model = Y ~ L1 + L2 + A1 + A2,
 #' interventions = list(static(1)),
 #' intervention_names = list("A"),
-#' hazard_based = T,
+#' hazard_based = T, 
+#' global_hazard = F,
 #' intervention_description = "Always Treat")
-#'
+#' 
 #' ice_static
 #'
 #' # Estimate risks for both the observed inverse probability weighted
 #' # natural course risk and natural course strategy
-#' # Classical pooled ICE, competing event as total effect
+#' # Classical pooled ICE, total effect for competing event
 #'
-#' ice_natural_course <- ice_pool(data = test_data, K = 5, id = "id",
-#' time_name = "t0", outcome_name = "Y",
-#' competing_name = "D", censor_name = "C",
-#' total_effect = T,
-#' outcome_model = Y ~ L1 + A,
-#' censor_model = C ~ L1 + A,
+#' ice_natural_course <- ice_pool(data = compData, K = 5, 
+#' id = "id", time_name = "t0", outcome_name = "Y",
+#' censor_name = "C", competing_name = "D",
+#' total_effect = T, 
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
 #' interventions = list(natural_course()),
 #' intervention_names = list("A"),
-#' compute_nc_risk = T,
-#' hazard_based = F,
+#' hazard_based = F, 
 #' intervention_description = "Natural Course")
 #'
 #' ice_natural_course
@@ -114,33 +117,34 @@
 #' # based on the covariate L1 > 0
 #' # (i.e. treat when L1 > 0 and absorbing once one initiates treatment;
 #' # not treat otherwise)
-#' # Classical pooled ICE, competing event as direct effect
+#' # Classical pooled ICE, direct effect for competing event
 #'
-#' ice_dynamic <- ice_pool(data = test_data, K = 5, id = "id",
-#' time_name = "t0", outcome_name = "Y",
-#' competing_name = "D", censor_name = "C",
-#' total_effect = F,
-#' outcome_model = Y ~ L1 + A,
-#' censor_model = C ~ L1 + A,
-#' interventions = list(dynamic("absorbing", "L1", ">", 0)),
+#' ice_dynamic <- ice_pool(data = compData, K = 5, 
+#' id = "id", time_name = "t0", outcome_name = "Y",
+#' censor_name = "C", competing_name = "D",
+#' total_effect = F, 
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
+#' interventions = list(dynamic("L1 > 0", static(0), static(1), absorb = T)),
 #' intervention_names = list("A"),
-#' hazard_based = F,
+#' hazard_based = F, 
 #' intervention_description = "Dynamic Treat")
 #'
 #' ice_dynamic
 #'
 #' # Estimate risks for the dynamic intervention where treat when L1 = 0
 #' # with uniform grace period of 2 periods
-#' # Hazard extended pooled ICE, competing event as total effect
+#' # Hazard based pooled ICE, total effect for competing event
 #'
-#' ice_grace_period <- ice_pool(data = test_data, K = 5, id = "id",
-#' time_name = "t0", outcome_name = "Y",
-#' competing_name = "D", censor_name = "C",
-#' total_effect = T,
-#' outcome_model = Y ~ L1 + A,
-#' censor_model = C ~ L1 + A,
-#' competing_model = D ~ L1 + A,
-#' interventions = list(grace_period("uniform", 2, "L1", 0)),
+#' ice_grace_period <- ice_pool(data = compData, K = 5, 
+#' id = "id", time_name = "t0", outcome_name = "Y",
+#' censor_name = "C", competing_name = "D",
+#' total_effect = T, 
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
+#' competing_model = D ~ L1 + L2 + A1 + A2,
+#' hazard_model = Y ~ L1 + L2 + A1 + A2,
+#' interventions = list(grace_period("uniform", 2, "L1 = 0")),
 #' intervention_names = list("A"),
 #' hazard_based = T,
 #' intervention_description = "Dynamic Treat Grace Period")
@@ -150,34 +154,32 @@
 #' # Estimate risks for the threshold intervention where
 #' # when the natural value of treatment A at time t is lower
 #' # than -3, set its value to -3. Otherwise, do not intervene.
-#' # Hazard extended pooled ICE, competing event as total effect
+#' # Hazard based pooled ICE, total effect for competing event
 #'
-#' ice_threshold <- ice_pool(data = test_data, K = 5, id = "id",
-#' time_name = "t0", outcome_name = "Y",
-#' competing_name = "D", censor_name = "C",
-#' total_effect = T,
-#' outcome_model = Y ~ L1 + A,
-#' censor_model = C ~ L1 + A,
-#' competing_model = D ~ L1 + A,
-#' interventions = list(threshold(-3)),
+#' ice_threshold <- ice_pool(data = compData, K = 5, 
+#' id = "id", time_name = "t0", outcome_name = "Y",
+#' censor_name = "C", competing_name = "D",
+#' total_effect = T, 
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
+#' competing_model = D ~ L1 + L2 + A1 + A2,
+#' hazard_model = Y ~ L1 + L2 + A1 + A2, 
+#' interventions = list(threshold(Inf, -3)),
 #' intervention_names = list("A"),
 #' hazard_based = T,
 #' intervention_description = "Threshold Intervention")
 #'
 #' ice_threshold
 
-# source("helper.R")
-# library(reshape2)
-# library(ggplot2)
-# library(tidyverse)
-
 ice_pool <- function(data, K, id, time_name, outcome_name,
                      censor_name = NULL, competing_name = NULL,
                      total_effect, outcome_model, censor_model = NULL,
-                     competing_model = NULL, interventions,
+                     competing_model = NULL, hazard_model = NULL, 
+                     interventions,
                      intervention_names, intervention_times = NULL,
-                     compute_nc_risk = T, hazard_based,
+                     compute_nc_risk = T, hazard_based, global_hazard = NULL,
                      intervention_description)
+                     # global_haz_model, )
 {
 
   ## 0. some pre-processing
@@ -187,6 +189,10 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   censor_varname <- censor_name
   intervention_varnames <- intervention_names
   time0 <- time_name
+  
+  if (hazard_based == F) {
+    global_hazard <- F
+  }
 
   if (is.null(intervention_times) | (length(intervention_times[[1]]) == 0)) {
     intervention_times <- list()
@@ -199,17 +205,20 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   outcome_covar <- str_remove_all(unlist(str_split(as.character(outcome_model)[3], "[+]")), " ")
   censor_covar <- str_remove_all(unlist(str_split(as.character(censor_model)[3], "[+]")), " ")
   competing_covar <- str_remove_all(unlist(str_split(as.character(competing_model)[3], "[+]")), " ")
+  # haz_global_covar <- str_remove_all(unlist(str_split(as.character(global_haz_model)[3], "[+]")), " ")
+  haz_global_covar <- str_remove_all(unlist(str_split(as.character(hazard_model)[3], "[+]")), " ")
   
   ## first create lag terms
   
   outcome_covar_lags <- outcome_covar[str_detect(outcome_covar, "lag[0-9999]_")]
   censor_covar_lags <- censor_covar[str_detect(censor_covar, "lag[0-9999]_")]
   competing_covar_lags <- competing_covar[str_detect(competing_covar, "lag[0-9999]_")]
+  haz_global_covar_lags <- haz_global_covar[str_detect(haz_global_covar, "lag[0-9999]_")]
   
   # all_lags <- as.set(unlist(union(outcome_covar_lags, censor_covar_lags)))
   # all_lags <- unlist(union(all_lags, competing_covar_lags))
   
-  all_lags <- c(outcome_covar_lags, censor_covar_lags, competing_covar_lags)
+  all_lags <- c(outcome_covar_lags, censor_covar_lags, competing_covar_lags, haz_global_covar_lags)
   all_lags <- unique(all_lags)
   all_lags <- na.omit(all_lags)
   
@@ -345,10 +354,47 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   }
   
   
+  ## competing covar
+  haz_covar_new <- c()
+  
+  if (hazard_based) {
+    data_add <- data
+    for (i in 1:length(haz_global_covar)) {
+      
+      icovar <- haz_global_covar[i]
+      
+      column_name <- get_column_name_covar(icovar)
+      
+      if (!column_name %in% colnames(data)) {
+        old_ncol <- ncol(data_add)
+        data_add <- data %>% mutate(eval(parse(text = icovar)))
+        new_ncol <- ncol(data_add)
+        
+        new_column <- data_add[, new_ncol]
+        new_column <- as.matrix(new_column)
+        
+        ## create new columns
+        
+        if (ncol(new_column) > 1) {
+          multiple_varname <- paste0(paste0(column_name, "."), 1:(ncol(new_column)))
+          data[, multiple_varname] <- new_column
+          haz_covar_new <- c(haz_covar_new, multiple_varname)
+        } else {
+          data[, column_name] <- as.vector(new_column)
+          haz_covar_new <- c(haz_covar_new, column_name)
+        }
+      } else {
+        haz_covar_new <- c(haz_covar_new, icovar)
+      }
+    }
+  }
+  
+  
   ## replace the old covar
   outcome_covar <- outcome_covar_new
   censor_covar <- censor_covar_new
   competing_covar <- competing_covar_new
+  haz_global_covar <- haz_covar_new
   
 
 
@@ -504,6 +550,11 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   ## might need to change the newly created column names
   tmpdata = as.data.frame(dffullwide)
   formula_full <- as.formula(paste0(outcome_varname,"~", paste0(c(outcome_covar), collapse = "+")))
+  # formula_global <- as.formula(paste0(outcome_varname,"~", paste0(c(haz_global_covar), collapse = "+")))
+  
+  ## if outcome model and hazard model share the same input argument, how do you separate model fit here?
+  ## this fit will be used for prediction of outcome in the first iteration and only for hazard estimation.
+  ## but for global option, if the user specifies time in the model, then it must be different than the outcome model.
   yfitog = glm(formula_full, family = binomial(), data = data) #This is from the data generation mechanism
 
   paramtmp = (yfitog)$coef
@@ -568,6 +619,96 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
     # fit_stderr <- c(fit_summary, list(fit_comp_stderr))
     # fit_vcov <- c(fit_vcov, list(fit_comp_vcov))
     # fit_rmse <- c(fit_rmse, list(fit_comp_rmse))
+  }
+  
+  ## hazard model
+  
+  if (hazard_based) {
+    
+    # 1. global pooled model option
+    
+    hazard_by_step <- c()
+    
+    if (global_hazard) {
+      
+      formula_haz_global <- as.formula(paste0(outcome_varname,"~", paste0(c(haz_global_covar), collapse = "+")))
+      haz_fit_global <- glm(formula_haz_global, family = binomial(), data = data) 
+      paramhaz <- haz_fit_global$coef
+      
+      this_haz_fit <- list(haz_fit_global)
+      this_haz_summary <- list(get_summary(haz_fit_global))
+      this_haz_stderr <- list(get_stderr(haz_fit_global))
+      this_haz_vcov <- list(get_vcov(haz_fit_global))
+      this_haz_rmse <- list(get_rmse(haz_fit_global))
+      
+      names(this_haz_fit) <- names(this_haz_summary) <- names(this_haz_stderr) <- names(this_haz_vcov) <- names(this_haz_rmse) <- paste0("hazard.", "Global")
+      hazard_by_step <- list(fit = this_haz_fit, 
+                             summary = this_haz_summary, 
+                             stderr = this_haz_stderr, 
+                             vcov = this_haz_vcov, 
+                             rmse = this_haz_rmse)
+      
+    } else {
+    
+    # 2. time specific model option
+      
+      haz_pred_times <- list()
+      fit_haz <- fit_haz_summary <- fit_haz_stderr <- fit_haz_vcov <- fit_haz_rmse <- c()
+      
+      for (i in 1:(K-1)) {
+        
+        stratify_dta_all <- c()
+        no_interv_treat <- c()
+        interv_treat <- c()
+        for (treat in 1:length(intervention_varnames[[1]])) {
+          intervention_variable <- intervention_varnames[[1]][[treat]]
+          abar <- abar_all[[treat]][[1]]
+          int_time <- intervention_times[[1]][[treat]]
+
+          if ((i-1) %in% int_time) {
+            interv_treat <- c(interv_treat, intervention_variable)
+          } else {
+            no_interv_treat <- c(no_interv_treat, intervention_variable)
+          }
+        }
+        
+        # treat_as_covar <- all_treat_vars[!all_treat_vars %in% interv_treat]
+        
+        # outcome_covar_t <- c(outcome_covar)
+        
+        # haz_covar_t <- paste0(outcome_covar, "_", i-1)
+        
+        haz_covar_t <- paste0(haz_global_covar, "_", i-1)
+        
+        haz_formula_t <- as.formula(paste0(outcome_varname, "_", i, "~",
+                                             paste0(haz_covar_t, collapse = "+")))
+        
+        tmp_fit <- glm(haz_formula_t, family = binomial(), data = tmpdata)
+        
+        haz_pred_times[[i]] <- tmp_fit
+        
+        this_haz_fit <- list(tmp_fit)
+        this_haz_summary <- list(get_summary(tmp_fit))
+        this_haz_stderr <- list(get_stderr(tmp_fit))
+        this_haz_vcov <- list(get_vcov(tmp_fit))
+        this_haz_rmse <- list(get_rmse(tmp_fit))
+        
+        names(this_haz_fit) <- names(this_haz_summary) <- names(this_haz_stderr) <- names(this_haz_vcov) <- names(this_haz_rmse) <- paste0("hazard.", "Time", i)
+        
+        fit_haz <- c(fit_haz, this_haz_fit)
+        fit_haz_summary <- c(fit_haz_summary, this_haz_summary)
+        fit_haz_stderr <- c(fit_haz_stderr, this_haz_stderr)
+        fit_haz_vcov <- c(fit_haz_vcov, this_haz_vcov)
+        fit_haz_rmse <- c(fit_haz_rmse, this_haz_rmse)
+    
+      }
+      
+      hazard_by_step <- list(fit = fit_haz, 
+                             summary = fit_haz_summary, 
+                             stderr = fit_haz_stderr, 
+                             vcov = fit_haz_vcov, 
+                             rmse = fit_haz_rmse)
+    }
   }
   
   fit_outcome <- fit_outcome_summary <- fit_outcome_stderr <- fit_outcome_vcov <- fit_outcome_rmse <- c()
@@ -743,9 +884,43 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
                 }
               }
             } else {
-                covar_mat <- cbind(rep(1, nrow(data_fit)),
-                                   data_fit[, covar_iter])
-              predict_tmp <- plogis(as.matrix(covar_mat)  %*% matrix(paramtmp, nrow = length(paramtmp)))
+              
+              covar_mat <- cbind(rep(1, nrow(data_fit)),
+                                 data_fit[, covar_iter])
+                
+                if (global_hazard) {
+                  ## convert this to haz global model covars
+                  
+                  has_time <- str_detect(haz_global_covar, time_name)
+                  
+                  if (any(has_time)) {
+                    time_idx <- which(has_time == T)
+                    haz_global_covar_tmp <- haz_global_covar[-time_idx]
+                    pred_data <- data.frame(matrix(NA, 
+                                                   ncol = length(haz_global_covar_tmp) + 1, 
+                                                   nrow = nrow(data_fit)))
+                    colnames(pred_data) <- c(time_name, haz_global_covar_tmp)
+                    pred_data[, time_name] <- rep(iter - 1, nrow(data_fit))
+                  } else {
+                    haz_global_covar_tmp <- haz_global_covar
+                    pred_data <- data.frame(matrix(NA, 
+                                                   ncol = length(haz_global_covar_tmp), 
+                                                   nrow = nrow(data_fit)))
+                    colnames(pred_data) <- haz_global_covar_tmp
+                  }
+                    
+                    for (i in 1:length(haz_global_covar_tmp)) {
+                      this_covar_iter <- paste0(haz_global_covar_tmp[i], sep = paste0("_", iter -1))
+                      pred_data[, haz_global_covar_tmp[i]] <- data_fit[, this_covar_iter]
+                    }
+                  
+                  # covar_mat <- cbind(rep(1, nrow(data_fit)),
+                  #                    data_fit[, haz_covar_iter])
+                  # predict_tmp <- plogis(as.matrix(covar_mat)  %*% matrix(paramhaz, nrow = length(paramtmp)))
+                  predict_tmp <- predict(haz_fit_global, newdata = pred_data, type="response")
+                } else {
+                  predict_tmp <- predict(haz_pred_times[[iter]], newdata = data_fit, type="response")
+                }
 
               ## need to calculate d_hat and multiply it with the hazard
               if (!is.null(competing_varname) & total_effect == T) {
@@ -797,7 +972,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
               outcome_init = outcome_init, comp_init = comp_init,
               outcome_by_step = outcome_by_step, 
               comp_by_step = c(), 
-              hazard_by_step = c()))
+              hazard_by_step))
 }
 
 

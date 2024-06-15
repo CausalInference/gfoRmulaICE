@@ -238,228 +238,347 @@
 #' @references Chiu YH, Wen L, McGrath S, Logan R, Dahabreh IJ, Hernán MA. Evaluating model specification when using the parametric g-formula in the presence of censoring. American Journal of Epidemiology. 2023;192:1887–1895.
 #'
 #' @examples
-#'
-#' ## revise the examples below
-#' 1. hazard-based: 
-#' pooled ICE: a. time-specific, not specify hazard model
-#' pooled ICE: b. time-specific, specify hazard model, using Y ~ L1 + L2
-#' pooled ICE: c. global, specify hazard model, using Y ~ L1 + L2 + A1 + A2 + t0
-#' stratified ICE: a. time-specific, specify hazard model, using Y ~ L1
-#' 2. complicated model specification:
-#' pooled ICE: outcome_model = Y ~ I(L1^2) + A1 + A2 + lag1_L1 + rcspline.eval(lag2_L2, knots = 1:3),
-#' competing_model = D ~ L1 + poly(L2, degree = 2) + A1 + A2,
-#' censor_model = C ~ L1 + ns(lag1_L2, df = 2) + A1 + A2
-#' 3. dynamic intervention examples:
-#' a. when L1 = 0 treat, not treat otherwise: dynamic("L1 == 0", static(0), static(1), absorb = F)
-#' b. when L1 = 0 treat when L1 > 0 and absorbing once one initiates treatment, and not treat otherwise: dynamic("L1 == 0", static(0), static(1), absorb = T)
-#' 4. all intervention examples:
-#' a. static interventions (static(0), static(1))
-#' b. dynamic interventions in (3)
-#' c. threshold intervention
-#' d. grace period intervention - when L1 = 0 initiate treatment in 2 periods: grace_period("uniform", 2, "L1 = 0") + grace_period("natural", 2, "L1 = 0")
-#' 5. keyword arguments specification: different outcome and competing models for different interventions
 #' 
-#' data <- gfoRmulaICE::data
-#' dynamic_cat <- case_when(data$L2 < 0 ~ 1,
-#' data$L2 >= 0 & data$L2 < 2 ~ 2,
-#' T ~ 3)
-#'
-#' # For the following examples, we consider two interventions.
-#' # Intervention 1 is a static intervention, and
-#' # intervention 2 is a dynamic intervention, where the intervention
-#' # for A1 is user-defined.
-#'
-#' # Hazard based stratified ICE,
-#' # competing event as total effect for all interventions,
-#' # with Y ~ L1 + L2 as outcome model for both intervention 1 and intervention 2,
-#' # and D ~ L1 + L2 as competing model for both intervention 1 and intervention 2,
-#' # bootstrap with 1000 samples with normal quantile,
-#' # natural course as the reference intervention
-#'
-#' ice_strat_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
-#' compevent_name = "D",
-#' outcome_model = Y ~ L1 + L2, censor_model = C ~ L1 + L2,
-#' competing_model = D ~ L1 + L2,
-#' comp_effect = 1,
-#' ref_idx = 0,
-#' estimator = strat(hazard = T),
-#' nsamples = 1000, ci_method = "normal",
-#' int_descript = c("Static Intervention",
-#' "Dynamic Intervention"),
-#' intervention1.A1 = list(static(3)),
-#' intervention1.A2 = list(static(1)),
-#' intervention2.A1 = list(dynamic_cat),
-#' intervention2.A2 = list(dynamic("compare", "L1", "=", 0))
-#' )
-#'
-#' plot_risk(ice_strat_haz)
-#'
-#' # Hazard based stratified ICE,
-#' # competing event as total effect for all interventions,
-#' # with Y ~ L1 + L2 as outcome model for intervention 1,
-#' # Y ~ L1 as outcome model for intervention 2,
-#' # D ~ L1 as competing model for intervention 1,
-#' # and D ~ L1 + L2 as competing model for intervention 2,
-#' # bootstrap with 1000 samples with normal quantile,
-#' # natural course as the reference intervention
-#'
-#' ice_strat_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
-#' compevent_name = "D",
-#' outcome_model = Y ~ L1, censor_model = C ~ L1,
-#' competing_model = D ~ L1,
-#' comp_effect = 1,
-#' ref_idx = 0,
-#' estimator = strat(hazard = T),
-#' nsamples = 1000, ci_method = "normal",
-#' int_descript = c("Static Intervention",
-#' "Dynamic Intervention"),
-#' intervention1.A1 = list(static(3)),
-#' intervention1.A2 = list(static(1)),
-#' intervention2.A1 = list(dynamic_cat),
-#' intervention2.A2 = list(dynamic("compare", "L1", "=", 0)),
-#' outcomeModel.1 = Y ~ L1 + L2,
-#' compModel.2 = D ~ L1 + L2
-#' )
-#'
-#' plot_risk(ice_strat_haz)
-#'
-#' # Classical pooled ICE,
-#' # competing event as direct effect for all interventions,
-#' # bootstrap with 1000 samples using empirical quantile,
-#' # natural course as the reference intervention.
-#'
-#' ice_pool_classic <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
+#' data <- gfoRmulaICE::compData
+#' 
+#' # Example 1: Dynamic Intervention
+#' 
+#' # We consider the following interventions and intervened at all time points.
+#' # Intervention 1 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
+#' # Intervention 2 on A2: never treat upon until L1 = 0, after which follows always treat.
+#' # Intervention 3 on A2: never treat upon until L1 = 0, after which follows natural course.
+#' 
+#' # We use classical pooled ICE estimator, natural course as the reference intervention, and the following models:
+#' # a. outcome model: Y ~ L1 + L2 + A1 + A2
+#' # b. censor model: C ~ L1 + L2 + A1 + A2
+#' # c. competing model: D ~ L1 + L2 + A1 + A2.
+#' # We estimate variance using bootstrap with 1000 replicates and normal quantile.
+#' 
+#' ice_fit1 <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
-#' outcome_model = Y ~ L1 + A1 + A2, censor_model = C ~ L1 + A1 + A2,
-#' competing_model = D ~ L1 + A1 + A2,
-#' ref_idx = 0,
-#' estimator = pool(hazard = F),
-#' nsamples = 1000, ci_method = "percentile",
-#' int_descript = c("Static Intervention",
-#' "Dynamic Intervention"),
-#' intervention1.A1 = list(static(3)),
-#' intervention1.A2 = list(static(1)),
-#' intervention2.A1 = list(dynamic_cat),
-#' intervention2.A2 = list(dynamic("compare", "L1", "=", 0))
-#' )
-#'
-#' plot_risk(ice_pool_classic)
-#'
-#' # Hazard based pooled ICE,
-#' # competing event as direct effect for all interventions,
-#' # bootstrap with 1000 samples using empirical quantile,
-#' # always treat as the reference intervention.
-#'
-#' ice_pool_haz <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
-#' compevent_name = "D",
-#' comp_effect = 0,
-#' outcome_model = Y ~ L1 + A1 + A2, censor_model = C ~ L1 + A1 + A2,
-#' competing_model = D ~ L1 + A1 + A2,
-#' ref_idx = 1,
-#' estimator = pool(hazard = T),
-#' nsamples = 1000, ci_method = "percentile",
-#' int_descript = c("Static Intervention",
-#' "Dynamic Intervention"),
-#' intervention1.A1 = list(static(3)),
-#' intervention1.A2 = list(static(1)),
-#' intervention2.A1 = list(dynamic_cat),
-#' intervention2.A2 = list(dynamic("compare", "L1", "=", 0))
-#' )
-#'
-#' plot_risk(ice_pool_haz)
-#'
-#' # Doubly robust ICE,
-#' # competing event as direct effect for all interventions,
-#' # with Y ~ L1 as outcome model for both intervention 1 and intervention 2,
-#' # and D ~ L1 as competing model for both intervention 1 and intervention 2,
-#' # bootstrap with 1000 samples using normal quantile,
-#' # natural course as the reference intervention.
-#'
-#' ice_weight <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
-#' compevent_name = "D",
-#' comp_effect = 0,
-#' outcome_model = Y ~ L1, censor_model = C ~ L1,
-#' competing_model = D ~ L1,
-#' ref_idx = 0,
-#' estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
-#' nsamples = 1000, ci_method = "normal",
-#' int_descript = c("Static Intervention",
-#' "Dynamic Intervention"),
-#' intervention1.A1 = list(static(3)),
-#' intervention1.A2 = list(static(1)),
-#' intervention2.A1 = list(dynamic_cat),
-#' intervention2.A2 = list(dynamic("compare", "L1", "=", 0))
-#' )
-#'
-#' plot_risk(ice_weight)
-#'
-#' # Doubly robust ICE,
-#' # competing event as direct effect for all interventions,
-#' # with Y ~ L1 as outcome model for intervention 1,
-#' # Y ~ L1 + L2 as outcome model for intervention 2,
-#' # D ~ L1 + L2 as competing model for intervention 1,
-#' # D ~ L1 as competing model for intervention 2,
-#' # bootstrap with 1000 samples using normal quantile,
-#' # natural course as the reference intervention.
-#'
-#' ice_weight <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
-#' compevent_name = "D",
-#' comp_effect = 0,
-#' outcome_model = Y ~ L1, censor_model = C ~ L1,
-#' competing_model = D ~ L1,
-#' ref_idx = 0,
-#' estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
-#' nsamples = 1000, ci_method = "normal",
-#' int_descript = c("Static Intervention",
-#' "Dynamic Intervention"),
-#' intervention1.A1 = list(static(3)),
-#' intervention1.A2 = list(static(1)),
-#' intervention2.A1 = list(dynamic_cat),
-#' intervention2.A2 = list(dynamic("compare", "L1", "=", 0)),
-#' outcomeModel.2 = Y ~ L1 + L2,
-#' compModel.1 = D ~ L1 + L2
-#' )
-#'
-#' plot_risk(ice_weight)
-#'
-#'
-#' # The following example implements the natural value intervention on L1
-#' # (i.e. if L1 > 0, then replace the observed value of L1 by 0,
-#' # and keep the observed value of L1 otherwise),
-#' # dynamic intervention on L1 (treat when L1 = 0)
-#' # with uniform grace period of 2 periods, and
-#' # threshold intervention when the natural value of L2 at time t is lower
-#' # than -3, set its value to -3. Otherwise, do not intervene.
-#'
-#' # Classical pooled ICE,
-#' # competing event as direct effect for all interventions,
-#' # bootstrap with 1000 samples using empirical quantile,
-#' # natural course as the reference intervention.
-#'
-#' ice_pool_grace_period <- ice(data = data, time_points = 4, id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
-#' compevent_name = "D",
-#' comp_effect = 0,
-#' outcome_model = Y ~ L1 + L2 + A1 + A2, censor_model = C ~ L1 + L2 + A1 + A2,
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
 #' competing_model = D ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
-#' int_descript = c("Grace Period", "Threshold Intervention")
-#' intervention1.A2 = list(grace_period("uniform", 2, "L1", 0)),
-#' intervention2.L2 = list(threshold(-3))
+#' int_descript = c("Dynamic Intervention 1", "Dynamic Intervention 2", 
+#' "Dynamic Intervention 3"),
+#' intervention1.A2 = list(dynamic("L1 == 0", static(0), static(1))),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1), absorb = T)),
+#' intervention3.A2 = list(dynamic("L1 == 0", static(0), natural_course()))
+#' )
+#' 
+#' plot_risk(ice_fit1)
+#' 
+#' # Example 2: Built-in Interventions
+#' 
+#' # We consider the following interventions and intervene at all time points.
+#' # Intervention 1 on A1: always treat with value 3.
+#' # Intervention 1 on A2: always treat with value 1.
+#' # Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, set its value to -3. Otherwise, do not intervene.
+#' # Intervention 3 on A2: dynamic intervention (treat when L1 = 0) with uniform grace period of 2 periods
+#' 
+#' # We use classical pooled ICE estimator, natural course as the reference intervention, and the following models:
+#' # a. outcome model: Y ~ L1 + L2 + A1 + A2
+#' # b. censor model: C ~ L1 + L2 + A1 + A2
+#' # c. competing model: D ~ L1 + L2 + A1 + A2.
+#' # We estimate variance using bootstrap with 1000 replicates and normal quantile.
+#' 
+#' ice_fit2 <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
+#' competing_model = D ~ L1 + L2 + A1 + A2,
+#' ref_idx = 0,
+#' estimator = pool(hazard = F),
+#' nsamples = 1000, ci_method = "percentile",
+#' int_descript = c("Static Intervention", "Threshold Intervention", 
+#' "Dynamic Intervention with Grace Period"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.L2 = list(threshold(-3, Inf)),
+#' intervention3.A2 = list(grace_period("uniform", 2, "L1 == 0"))
+#' )
+#' 
+#' plot_risk(ice_fit2)
+#' 
+#' # Example 3: User-defined Intervention
+#' 
+#' # We consider the following interventions and intervene at all time points.
+#' # Intervention 1 on A1: always treat with value 3.
+#' # Intervention 1 on A2: always treat with value 1.
+#' # Intervention 2 on A1: at time t, if L2 < 0, then assign 1; if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
+#' # Intervention 2 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
+#' 
+#' # We use classical pooled ICE estimator, natural course as the reference intervention, and the following models:
+#' # a. outcome model: Y ~ L1 + L2 + A1 + A2
+#' # b. censor model: C ~ L1 + L2 + A1 + A2
+#' # c. competing model: D ~ L1 + L2 + A1 + A2.
+#' # We estimate variance using bootstrap with 1000 replicates and normal quantile.
+#' 
+#' dynamic_cat <- case_when(data$L2 < 0 ~ 1,
+#' data$L2 >= 0 & data$L2 < 2 ~ 2, T ~ 3)
+#' 
+#' ice_fit3 <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
+#' competing_model = D ~ L1 + L2 + A1 + A2,
+#' ref_idx = 0,
+#' estimator = pool(hazard = F),
+#' nsamples = 1000, ci_method = "percentile",
+#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
+#' )
+#' 
+#' plot_risk(ice_fit3)
+#' 
+#' # Example 4: Different ICE Estimators
+#' 
+#' # We use the interventions in Example 3 and implement each ICE estimator.
+#' 
+#' # a. hazard-based pooled ICE:
+#' # hazard model is time-specific and shares the same model statement as the outcome model
+#' 
+#' ice_fit4a <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
+#' competing_model = D ~ L1 + L2 + A1 + A2,
+#' ref_idx = 0,
+#' estimator = pool(hazard = T),
+#' nsamples = 1000, ci_method = "percentile",
+#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
+#' )
+#' 
+#' plot_risk(ice_fit4a)
+#' 
+#' # b. hazard-based pooled ICE: 
+#' # hazard model is time-specific and uses Y ~ L1 + L2
+#' 
+#' ice_fit4b <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
+#' competing_model = D ~ L1 + L2 + A1 + A2,
+#' hazard_model = Y ~ L1 + L2,
+#' ref_idx = 0,
+#' estimator = pool(hazard = T),
+#' nsamples = 1000, ci_method = "percentile",
+#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
+#' )
+#' 
+#' plot_risk(ice_fit4b)
+#' 
+#' # c. hazard-based pooled ICE: 
+#' # hazard model is pooled-over-time and includes flexible terms of time variable
+#' 
+#' library(splines)
+#' 
+#' ice_fit4c <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
+#' censor_model = C ~ L1 + L2 + A1 + A2,
+#' competing_model = D ~ L1 + L2 + A1 + A2,
+#' hazard_model = Y ~ L1 + L2 + A1 + A2 + ns(t0, df = 2),
+#' global_hazard = T,
+#' ref_idx = 0,
+#' estimator = pool(hazard = T),
+#' nsamples = 1000, ci_method = "percentile",
+#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
+#' )
+#' 
+#' plot_risk(ice_fit4c)
+#' 
+#' # d. classical stratified ICE:
+#' 
+#' ice_fit4d <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ L1 + L2, 
+#' censor_model = C ~ L1 + L2,
+#' competing_model = D ~ L1 + L2,
+#' ref_idx = 0,
+#' estimator = strat(hazard = F),
+#' nsamples = 1000, ci_method = "percentile",
+#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
+#' )
+#' 
+#' plot_risk(ice_fit4d)
+#' 
+#' # e. hazard-based stratified ICE:
+#' # hazard model is time-specific and uses Y ~ L1 
+#' # (Note: a pooled-over-time hazard model is not valid for stratified ICE.)
+#' 
+#' ice_fit4e <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ L1 + L2, 
+#' censor_model = C ~ L1 + L2,
+#' competing_model = D ~ L1 + L2,
+#' hazard_model = Y ~ L1,
+#' ref_idx = 0,
+#' estimator = strat(hazard = T),
+#' nsamples = 1000, ci_method = "percentile",
+#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
+#' )
+#' 
+#' plot_risk(ice_fit4e)
+#' 
+#' 
+#' # f. doubly robust ICE:
+#' 
+#' ice_fit4f <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ L1 + L2, 
+#' censor_model = C ~ L1 + L2,
+#' competing_model = D ~ L1 + L2,
+#' ref_idx = 0,
+#' estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
+#' nsamples = 1000, ci_method = "percentile",
+#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
+#' )
+#' 
+#' plot_risk(ice_fit4f)
+#' 
+#' # g. doubly robust ICE:
+#' # use the following outcome models and competing models:
+#' # outcome model for intervention 1: Y ~ L1,
+#' # outcome model for intervention 2: Y ~ L1 + L2,
+#' # competing model for intervention 1: D ~ L1 + L2,
+#' # competing model for intervention 2: D ~ L1
+#'
+#' ice_fit4g <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ L1, censor_model = C ~ L1,
+#' competing_model = D ~ L1,
+#' ref_idx = 0,
+#' estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
+#' nsamples = 1000, ci_method = "normal",
+#' int_descript = c("Static Intervention",
+#' "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1))),
+#' outcomeModel.2 = Y ~ L1 + L2,
+#' compModel.1 = D ~ L1 + L2
 #' )
 #'
-#' plot_risk(ice_pool_grace_period)
+#' plot_risk(ice_fit4g)
+#' 
+#' # h. hazard-based stratified ICE:
+#' # hazard model is time-specific and same as the outcome model
+#' # consider the total effect for competing event,
+#' # and the following outcome models and competing models:
+#' # outcome model for intervention 1: Y ~ L1,
+#' # outcome model for intervention 2: Y ~ L1 + L2,
+#' # competing model for intervention 1: D ~ L1 + L2,
+#' # competing model for intervention 2: D ~ L1
+#' 
+#' ice_fit4h <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' outcome_model = Y ~ L1, censor_model = C ~ L1,
+#' competing_model = D ~ L1,
+#' comp_effect = 1,
+#' ref_idx = 0,
+#' estimator = strat(hazard = T),
+#' nsamples = 1000, ci_method = "normal",
+#' int_descript = c("Static Intervention",
+#' "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1))),
+#' outcomeModel.1 = Y ~ L1 + L2,
+#' compModel.2 = D ~ L1 + L2
+#' )
 #'
-#'
+#' plot_risk(ice_fit4h)
+#' 
+#' # Example 5: Flexible Model Specification
+#' 
+#' # We use the same interventions and ICE estimator in Example 3, 
+#' # and include polynomial, spline, and lagged terms in models.
+#' 
+#' ice_fit5 <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ I(L1^2) + rcspline.eval(L2, knots = 1:3) + A1 + A2,
+#' censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
+#' competing_model = D ~ L1 + ns(lag1_L2, df = 2) + A1 + A2,
+#' ref_idx = 0,
+#' estimator = pool(hazard = F),
+#' nsamples = 1000, ci_method = "percentile",
+#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
+#' )
+#' 
+#' plot_risk(ice_fit5)
+#' 
 
 ice <- function(data, time_points, id, time_name,
                 outcome_name, censor_name = NULL,

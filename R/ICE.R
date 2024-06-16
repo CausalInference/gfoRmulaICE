@@ -196,6 +196,7 @@
 #'
 #'
 #' @return A list containing the following components:
+#' \item{estimator.type}{A character string recording the type of ICE estimator used in the function.}
 #' \item{summary}{A summary table containing the estimated ICE risk, risk ratio, risk difference. If \code{bootstrap} is TRUE, then the table also includes standard error and confidence interval for ICE risk, risk ratio, and risk difference of each intervention.}
 #' \item{risk.over.time}{A data frame containing the estimated ICE risk at each time point for each intervention.}
 #' \item{initial.outcome}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
@@ -203,7 +204,7 @@
 #' \item{initial.comp}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
 #' and the root mean square error (RMSE) values for the competing model of the first step in the ICE algorithm (if applicable).}
 #' \item{np.risk.model}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the censoring and competing models (if applicable) used in the IPW estimate of the observed risk.}
+#' and the root mean square error (RMSE) values for the censoring and competing models (if applicable) used in the IP weighted estimate of the natural course risk.}
 #' \item{outcome.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
 #' and the root mean square error (RMSE) values for the outcome model of each iteration in the ICE algorithm.}
 #' \item{comp.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
@@ -216,7 +217,7 @@
 #' \item{boot.inital.comp}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
 #' and the root mean square error (RMSE) values for the competing model (if applicable) of the first step in the ICE algorithm on the bootstrapped samples.}
 #' \item{boot.np.risk.model}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the censoring and competing models (if applicable) used in the IPW estimate of the observed risk on the bootstrapped samples.}
+#' and the root mean square error (RMSE) values for the censoring and competing models (if applicable) used in the IP weighted estimate of the natural course risk on the bootstrapped samples.}
 #' \item{boot.outcome.models.by.step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
 #' and the root mean square error (RMSE) values for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples.}
 #' \item{boot.comp.models.by.step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
@@ -252,7 +253,7 @@
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
-#' # We estimate variance using bootstrap with 1000 replicates and normal quantile.
+#' # We estimate variance using bootstrap with 1000 replicates, normal quantile, and parallel computing.
 #' 
 #' ice_fit1 <- ice(data = data, time_points = 4, 
 #' id = "id", time_name = "t0",
@@ -265,6 +266,7 @@
 #' ref_idx = 0,
 #' estimator = pool(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
+#' parallel = T, ncores = 5,
 #' int_descript = c("Dynamic Intervention 1", "Dynamic Intervention 2", 
 #' "Dynamic Intervention 3"),
 #' intervention1.A2 = list(dynamic("L1 == 0", static(0), static(1))),
@@ -286,7 +288,7 @@
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
-#' # We estimate variance using bootstrap with 1000 replicates and normal quantile.
+#' # We estimate variance using bootstrap with 1000 replicates, normal quantile, and parallel computing.
 #' 
 #' ice_fit2 <- ice(data = data, time_points = 4, 
 #' id = "id", time_name = "t0",
@@ -299,6 +301,7 @@
 #' ref_idx = 0,
 #' estimator = pool(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
+#' parallel = T, ncores = 5,
 #' int_descript = c("Static Intervention", "Threshold Intervention", 
 #' "Dynamic Intervention with Grace Period"),
 #' intervention1.A1 = list(static(3)),
@@ -321,7 +324,7 @@
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
-#' # We estimate variance using bootstrap with 1000 replicates and normal quantile.
+#' # We estimate variance using bootstrap with 1000 replicates and percentile quantile.
 #' 
 #' dynamic_cat <- case_when(data$L2 < 0 ~ 1,
 #' data$L2 >= 0 & data$L2 < 2 ~ 2, T ~ 3)
@@ -337,6 +340,7 @@
 #' ref_idx = 0,
 #' estimator = pool(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
+#' parallel = T, ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -364,6 +368,7 @@
 #' ref_idx = 0,
 #' estimator = pool(hazard = T),
 #' nsamples = 1000, ci_method = "percentile",
+#' parallel = T, ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -388,6 +393,7 @@
 #' ref_idx = 0,
 #' estimator = pool(hazard = T),
 #' nsamples = 1000, ci_method = "percentile",
+#' parallel = T, ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -415,6 +421,7 @@
 #' ref_idx = 0,
 #' estimator = pool(hazard = T),
 #' nsamples = 1000, ci_method = "percentile",
+#' parallel = T, ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -437,6 +444,7 @@
 #' ref_idx = 0,
 #' estimator = strat(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
+#' parallel = T, ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -462,7 +470,9 @@
 #' ref_idx = 0,
 #' estimator = strat(hazard = T),
 #' nsamples = 1000, ci_method = "percentile",
-#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' parallel = T, ncores = 5,
+#' int_descript = c("Static Intervention: Model 1", 
+#' "Dynamic Intervention: Model 1"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
 #' intervention2.A1 = list(dynamic_cat),
@@ -485,7 +495,9 @@
 #' ref_idx = 0,
 #' estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
 #' nsamples = 1000, ci_method = "percentile",
-#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' parallel = T, ncores = 5,
+#' int_descript = c("Static Intervention", 
+#' "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
 #' intervention2.A1 = list(dynamic_cat),
@@ -494,45 +506,18 @@
 #' 
 #' plot_risk(ice_fit4f)
 #' 
-#' # g. doubly robust ICE:
-#' # use the following outcome models and competing models:
-#' # outcome model for intervention 1: Y ~ L1,
-#' # outcome model for intervention 2: Y ~ L1 + L2,
-#' # competing model for intervention 1: D ~ L1 + L2,
-#' # competing model for intervention 2: D ~ L1
-#'
-#' ice_fit4g <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
-#' compevent_name = "D",
-#' comp_effect = 0,
-#' outcome_model = Y ~ L1, censor_model = C ~ L1,
-#' competing_model = D ~ L1,
-#' ref_idx = 0,
-#' estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
-#' nsamples = 1000, ci_method = "normal",
-#' int_descript = c("Static Intervention",
-#' "Dynamic Intervention"),
-#' intervention1.A1 = list(static(3)),
-#' intervention1.A2 = list(static(1)),
-#' intervention2.A1 = list(dynamic_cat),
-#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1))),
-#' outcomeModel.2 = Y ~ L1 + L2,
-#' compModel.1 = D ~ L1 + L2
-#' )
-#'
-#' plot_risk(ice_fit4g)
 #' 
-#' # h. hazard-based stratified ICE:
+#' # g. hazard-based stratified ICE with intervention-specific models:
 #' # hazard model is time-specific and same as the outcome model
 #' # consider the total effect for competing event,
+#' # using normal quantile for variance estimates,
 #' # and the following outcome models and competing models:
 #' # outcome model for intervention 1: Y ~ L1,
 #' # outcome model for intervention 2: Y ~ L1 + L2,
 #' # competing model for intervention 1: D ~ L1 + L2,
 #' # competing model for intervention 2: D ~ L1
 #' 
-#' ice_fit4h <- ice(data = data, time_points = 4, 
+#' ice_fit4g <- ice(data = data, time_points = 4, 
 #' id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
@@ -542,8 +527,9 @@
 #' ref_idx = 0,
 #' estimator = strat(hazard = T),
 #' nsamples = 1000, ci_method = "normal",
-#' int_descript = c("Static Intervention",
-#' "Dynamic Intervention"),
+#' parallel = T, ncores = 5,
+#' int_descript = c("Static Intervention: Model 2",
+#' "Dynamic Intervention: Model 2"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
 #' intervention2.A1 = list(dynamic_cat),
@@ -552,14 +538,17 @@
 #' compModel.2 = D ~ L1 + L2
 #' )
 #'
-#' plot_risk(ice_fit4h)
+#' # Compare with the ICE estimates in Example 4e:
+#' plot_risk(ice_fit4e, ice_fit4g)
+#' summary_table(ice_fit4e, ice_fit4g)
 #' 
 #' # Example 5: Flexible Model Specification
 #' 
+#' # a. Complicated terms in model statement:
 #' # We use the same interventions and ICE estimator in Example 3, 
 #' # and include polynomial, spline, and lagged terms in models.
 #' 
-#' ice_fit5 <- ice(data = data, time_points = 4, 
+#' ice_fit5a <- ice(data = data, time_points = 4, 
 #' id = "id", time_name = "t0",
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
@@ -570,6 +559,7 @@
 #' ref_idx = 0,
 #' estimator = pool(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
+#' parallel = T, ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -577,7 +567,35 @@
 #' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 #' )
 #' 
-#' plot_risk(ice_fit5)
+#' plot_risk(ice_fit5a)
+#' 
+#' # b. Using static intervention as reference:
+#' # We use the same interventions and ICE estimator in Example 3, 
+#' # but use static intervention as the reference intervention.
+#' 
+#' ice_fit5b <- ice(data = data, time_points = 4, 
+#' id = "id", time_name = "t0",
+#' censor_name = "C", outcome_name = "Y",
+#' compevent_name = "D",
+#' comp_effect = 0,
+#' outcome_model = Y ~ I(L1^2) + rcspline.eval(L2, knots = 1:3) + A1 + A2,
+#' censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
+#' competing_model = D ~ L1 + ns(lag1_L2, df = 2) + A1 + A2,
+#' ref_idx = 1,
+#' estimator = pool(hazard = F),
+#' nsamples = 1000, ci_method = "percentile",
+#' parallel = T, ncores = 5,
+#' int_descript = c("Static Intervention", "Dynamic Intervention"),
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1)),
+#' intervention2.A1 = list(dynamic_cat),
+#' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
+#' )
+#' 
+#' plot_risk(ice_fit5b)
+#' 
+#' 
+#' 
 #' 
 
 ice <- function(data, time_points, id, time_name,
@@ -600,10 +618,8 @@ ice <- function(data, time_points, id, time_name,
   outcomevar <<- outcome_name
   
   ## check if argument names are specified correctly
-  input_args <- c(list(...), as.list(environment()))
+  input_args <- as.list(environment())
   input_arg_names <- names(input_args)
-  contain_interv <- which(str_detect(input_arg_names, "intervention"))
-  input_arg_names <- input_arg_names[-contain_interv]
   named_args <- formalArgs(ice)
   
   for (i in 1:length(input_arg_names)) {
@@ -743,6 +759,7 @@ ice <- function(data, time_points, id, time_name,
   if (kwargs_len == 0) {
     warning("No interventions are specified.")
   }
+
 
   ## get data info
 
@@ -1275,17 +1292,24 @@ ice <- function(data, time_points, id, time_name,
 
 
     if (bootstrap) {
+      
+      if (ref_idx == 0) {
+        ref_time <- NULL
+      } else {
+        ref_time <- ref_int_times
+      }
 
 
       this_boot <- bootstrap_ice(ice_pool, K, nboot, significance_level, parallel, ncores, ref_description,
                                  ref_intervention_varlist[[1]], ref_total_effect, this_total_effect,
                                  "ipw", boot_interv,
-                                 this_interv, this_int_var, this_descript, data, id, set_seed,
+                                 this_interv, this_int_var, this_descript, this_time, ref_time,
+                                 data, id, set_seed,
                                  time_name = time_name, outcome_name = outcome_name,
                                  censor_name = censor_name, competing_name = competing_name,
                                  hazard_based = hazard, outcome_model = outcome_model,
                                  censor_model = censor_model, competing_model = competing_model,
-                                 intervention_times = this_time, hazard_model = hazard_model, 
+                                 hazard_model = hazard_model, 
                                  global_hazard = global_hazard)
 
       this_se <- this_boot$ice_se[K+1]
@@ -1728,18 +1752,24 @@ ice <- function(data, time_points, id, time_name,
       }
 
       if (bootstrap) {
+        
+        if (ref_idx == 0) {
+          ref_time <- NULL
+        } else {
+          ref_time <- ref_int_times
+        }
 
         this_boot <- bootstrap_ice(ice_strat, K, nboot, significance_level, parallel, ncores, ref_description,
                                    ref_intervention_varlist[[1]], ref_total_effect, this_total_effect,
                                    "ipw", boot_interv,
-                                   this_interv, this_int_var, this_descript, data, id, set_seed,
+                                   this_interv, this_int_var, this_descript, this_time, ref_time,
+                                   data, id, set_seed,
                                    time_name = time_name, outcome_name = outcome_name,
                                    censor_name = censor_name, competing_name = competing_name,
                                    hazard_based = hazard, weighted = weight, treat_model = this_treat_model,
                                    obs_treatment_names = this_obs_treatment_varnames,
                                    outcome_model = outcome_model, censor_model = censor_model,
-                                   competing_model = competing_model, hazard_model = hazard_model,
-                                   intervention_times = this_time)
+                                   competing_model = competing_model, hazard_model = hazard_model)
 
         this_se <- this_boot$ice_se[K+1]
         this_rr_se <- this_boot$rr_se
@@ -1931,7 +1961,8 @@ ice <- function(data, time_points, id, time_name,
   risk_time_all$originTime[which(is.na(risk_time_all$originTime))] <- 0
 
 
-  return(list(summary = summary_all, risk.over.time = risk_time_all,
+  return(list(estimator.type = ice_colname, 
+              summary = summary_all, risk.over.time = risk_time_all,
               initial.outcome = outcome_init, initial.comp = comp_init, 
               np.risk.model = np_model, outcome.models.by.step = outcome_by_step, 
               comp.models.by.step = comp_by_step, 

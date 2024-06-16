@@ -52,6 +52,7 @@ bootstrap_ice <- function(f, K, nboot, sig_level, parallel, ncores, ref_descript
                           natural_course_type,
                           ref_intervention,
                           interventions, intervention_varnames, intervention_description,
+                          intervention_times, ref_intervention_times,
                           data, id, set_seed, ...) {
 
   set.seed(set_seed)
@@ -119,14 +120,14 @@ bootstrap_ice <- function(f, K, nboot, sig_level, parallel, ncores, ref_descript
       ice <- try(
         f(data = boot_data, total_effect = total_effect, id = id, K = K,
                interventions = interv_boot(interventions, row_idx), intervention_names = intervention_varnames,
-               intervention_description = intervention_description, ...),
+               intervention_description = intervention_description, intervention_times = intervention_times, ...),
         silent = T
       )
       
 
       ref <- f(data = boot_data, total_effect = ref_total_effect, id = id, K = K,
                interventions = interv_boot(ref_intervention, row_idx), intervention_names = list(ref_intervention_varname),
-               intervention_description = ref_description, ...)
+               intervention_description = ref_description, intervention_times = ref_intervention_times, ...)
       
       if (class(ice) == "try-error") {
         
@@ -321,13 +322,13 @@ bootstrap_ice <- function(f, K, nboot, sig_level, parallel, ncores, ref_descript
       ice <- try(
         f(data = boot_data, total_effect = total_effect, id = id, K = K,
                interventions = interv_boot(interventions, row_idx), intervention_names = intervention_varnames,
-               intervention_description = intervention_description, ...),
+               intervention_description = intervention_description, intervention_times = intervention_times, ...),
         silent = T
       )
 
       ref <- f(data = boot_data, total_effect = ref_total_effect, id = id, K = K,
                interventions = interv_boot(ref_intervention, row_idx), intervention_names = list(ref_intervention_varname),
-               intervention_description = ref_description, ...)
+               intervention_description = ref_description, intervention_times = ref_intervention_times, ...)
       
       if (class(ice) == "try-error") {
         

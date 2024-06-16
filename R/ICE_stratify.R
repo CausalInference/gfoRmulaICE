@@ -397,6 +397,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
 
   ## 1. compute the IPW hazard for natural course
+  np_model <- c()
   if (compute_nc_risk) {
 
     obs_treatment_varname <- intervention_varnames[[1]]

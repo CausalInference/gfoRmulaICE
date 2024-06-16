@@ -6,7 +6,7 @@
 #' After conversion, users could use the base function plot().)
 #'
 #' @param ... ICE estimator objects.
-#' @param plot_np a logical indicating whether to add the nonparametric natural course risk over time to the plot.
+#' @param plot_obs a logical indicating whether to add the IP weighted natural course risk over time to the plot.
 #' Default is TRUE
 #' @param label a numeric specifying which time label is used in x axis. 0 represents using generic numerical time index, and
 #' 1 represents using the original time index in the data set. Default is 0.
@@ -55,7 +55,9 @@
 #'
 #' plot_risk(fit_classical_pool, fit_hazard_pool)
 #'
-plot_risk <- function(..., plot_np = T, label = 0) {
+plot_risk <- function(..., plot_obs = T, label = 0) {
+  
+  plot_np <- plot_obs
 
   fit_ice <- list(...)
 

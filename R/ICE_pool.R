@@ -410,6 +410,8 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
 
 
   ## 1. compute the IPW hazard for natural course
+  
+  np_model <- c()
 
   if (compute_nc_risk) {
 
@@ -623,11 +625,11 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   
   ## hazard model
   
+  hazard_by_step <- c()
+  
   if (hazard_based) {
     
     # 1. global pooled model option
-    
-    hazard_by_step <- c()
     
     if (global_hazard) {
       

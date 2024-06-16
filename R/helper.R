@@ -372,7 +372,17 @@ grace_period <- function(type, nperiod, condition,
 
 uniform_sample <- function(r, duration) {
   p <- 1 / (duration + 1 - r)
-  treat <- rbinom(length(p), 1, p)
+  na_p <- p[-which(is.na(r))]
+  if (anyNA(na_p)){
+    
+    warning("NA produced in uniform sampling probabilities in uniform grace period.")
+    
+  } else if ((any(na_p > 1 | na_p < 0))) {
+    
+    warning("Uniform sampling probabilities not between 0 and 1 in uniform grace period.")
+  } 
+  
+  treat <- suppressWarnings(rbinom(length(p), 1, p))
   return(treat)
 
 }
@@ -747,7 +757,7 @@ get_column_name_covar <- function(icovar) {
 #' dynamic <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
 #' absorb = FALSE, id = "id", time_name = "t0", data = data)
 #' dynamic
-dynamic <- function(condition, strategy_before, strategy_after, absorb = TRUE, 
+dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE, 
                     id = id_var, time = time0var, data = interv_data) {
   
   first <- absorb

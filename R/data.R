@@ -16,4 +16,5 @@
 #'   \item{D}{Competing event indicator, time-varying indicator of failure.}
 #'   \item{Y}{Survival outcome, time-varying indicator of failure.}
 #' }
+#' @export
 "compData"

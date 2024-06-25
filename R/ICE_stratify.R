@@ -46,6 +46,7 @@
 #' @param treat_model a list of formulae specifying the model statement for the corresponding treatment variable used in the doubly robust ICE estimator. The length of list must match with
 #' the length of \code{obs_treatment_names}. Multiple treatments passed in \code{obs_treatment_names} are allowed and must follow the corresponding order as in \code{treat_model_covar}.
 #' @param obs_treatment_names a list of character strings specifying the treatment variables to be used in the model for observed treatments of the weighted ICE estimator.
+#' @param intervention_times a list of numerics indicating the time points to which the specified intervention is applied. Default to be \code{NULL}.
 #' @param intervention_description a character string specifying the description of the specified intervention strategy.
 #'
 #' @return A list containing the following components:
@@ -72,7 +73,7 @@
 #' @references Haneuse S, Rotnitzky A. Estimation of the effect of interventions that modify the received treatment. Statistics in medicine. 2013;32(30):5260-5277.
 #' @references McGrath S, Young JG, Hernán MA. Revisiting the g-null Paradox. Epidemiology. 2022;33(1):114-120.
 #' 
-#' @keywords internal
+#' @internal
 #'
 #' @examples
 #'
@@ -80,7 +81,7 @@
 #' # (i.e. constantly treat over all time points)
 #' # Hazard based stratified ICE, direct effect for competing event
 #'
-#' ice_static <- ice_strat(data = compData, K = 5, id = "id",
+#' ice_static <- ice_strat(data = data, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
 #' total_effect = F,
@@ -100,7 +101,7 @@
 #' # natural course risk and natural course strategy
 #' # Classical stratified ICE, total effect for competing event
 #'
-#' ice_natural_course <- ice_strat(data = compData, K = 5, id = "id",
+#' ice_natural_course <- ice_strat(data = data, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
 #' total_effect = T,
@@ -120,7 +121,7 @@
 #' # not treat otherwise)
 #' # Classical stratified ICE, direct effect for competing event
 #'
-#' ice_dynamic <- ice_strat(data = compData, K = 5, id = "id",
+#' ice_dynamic <- ice_strat(data = data, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
 #' total_effect = F,
@@ -140,7 +141,7 @@
 #' # with L1 included in the treatment model for A
 #' # treatment model: A ~ L1
 #'
-#' ice_weighted <- ice_strat(data = compData, K = 5, id = "id",
+#' ice_weighted <- ice_strat(data = data, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
 #' total_effect = T,
@@ -285,7 +286,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   
   ## censor covar
   censor_covar_new <- c()
-  if (!is.null(censor_varname)) {
+  if (!is.null(censor_varname) & !is.null(censor_model)) {
   data_add <- data
   for (i in 1:length(censor_covar)) {
     
@@ -319,7 +320,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   
   ## competing covar
   competing_covar_new <- c()
-  if (!is.null(competing_varname)) {
+  if (!is.null(competing_varname) & !is.null(competing_model)) {
   data_add <- data
   for (i in 1:length(competing_covar)) {
     

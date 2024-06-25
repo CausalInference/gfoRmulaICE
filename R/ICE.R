@@ -66,8 +66,7 @@
 #' Similarly, because the keyword argument for competing model is not specified for intervention 1, the competing model for intervention 1 is
 #' \code{D ~ L1 + L2} as specified in \code{competing_model}.
 #' Please see more examples in the examples section.
-#' Note that for stratified ICE in the case of direct effect, the keyword argument competing model statement inputs are ignored since 
-#' the competing model is used for nonparametric risk estimation.
+#' Note that for stratified ICE in the case of direct effect, the keyword argument competing model statement inputs are ignored.
 #'
 #' Users could specify user-defined interventions or implement built-in interventions provided by the package
 #' using the intervention input convention described in the parameter description section.
@@ -195,35 +194,27 @@
 #'
 #'
 #'
-#' @return A list containing the following components:
+#' @return A list containing the following components. Each component containing model information includes the fitted models, 
+#' the summary of the fitted models, standard errors of the coefficients, variance-covariance matrices of the parameters, 
+#' and the root mean square error (RMSE) values.
 #' \item{estimator.type}{A character string recording the type of ICE estimator used in the function.}
-#' \item{summary}{A summary table containing the estimated ICE risk, risk ratio, risk difference. If \code{bootstrap} is TRUE, then the table also includes standard error and confidence interval for ICE risk, risk ratio, and risk difference of each intervention.}
+#' \item{summary}{A summary table containing the estimated risk, risk ratio, and risk difference for interventions including natural course risk.
+#' Both the observed risk (\code{NP risk}) and the ICE estimated natural course risk are included.
+#' If \code{bootstrap} is TRUE, then the table also includes standard error and confidence interval for ICE risk, risk ratio, and risk difference of each intervention.}
 #' \item{risk.over.time}{A data frame containing the estimated ICE risk at each time point for each intervention.}
-#' \item{initial.outcome}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the outcome model of the first step in the ICE algorithm.}
-#' \item{initial.comp}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the competing model of the first step in the ICE algorithm (if applicable).}
-#' \item{np.risk.model}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the censoring and competing models (if applicable) used in the IP weighted estimate of the natural course risk.}
-#' \item{outcome.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the outcome model of each iteration in the ICE algorithm.}
-#' \item{comp.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the competing model of each iteration in the ICE algorithm (if applicable).}
-#' \item{hazard.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for hazard model, either time-specific models of each time point or one pooled-over-time global model. }
-#' \item{boot.data}{A list containing all the bootstrapped data if \code{boostrap} is set to \code{TRUE}.}
-#' \item{boot.initial.outcome}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the outcome model of the first step in the ICE algorithm on the bootstrapped samples.}
-#' \item{boot.inital.comp}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the competing model (if applicable) of the first step in the ICE algorithm on the bootstrapped samples.}
-#' \item{boot.np.risk.model}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the censoring and competing models (if applicable) used in the IP weighted estimate of the natural course risk on the bootstrapped samples.}
-#' \item{boot.outcome.models.by.step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples.}
-#' \item{boot.comp.models.by.step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the competing model (if applicable) of each iteration in the ICE algorithm on the bootstrapped samples.}
-#' \item{boot.hazard.models.by.step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values for the hazard model (if applicable) on the bootstrapped samples.}
+#' \item{initial.outcome}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the outcome model of the first step in the ICE algorithm.}
+#' \item{initial.comp}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the competing model of the first step in the ICE algorithm (if applicable).}
+#' \item{np.risk.model}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the censoring and/or competing model in estimating observed risk (if applicable).}
+#' \item{outcome.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the outcome model of each iteration in the ICE algorithm.}
+#' \item{comp.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the competing model of each iteration in the ICE algorithm (if applicable).}
+#' \item{hazard.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for hazard model, either time-specific models of each time point or one pooled-over-time global model. }
+#' \item{boot.data}{A list containing all the bootstrapped data if \code{bootstrap} is set to \code{TRUE}.}
+#' \item{boot.initial.outcome}{A list containing the fitted models and their information for the outcome model of the first step in the ICE algorithm on the bootstrapped samples.}
+#' \item{boot.inital.comp}{A list containing the fitted models and their information for the competing model (if applicable) of the first step in the ICE algorithm on the bootstrapped samples.}
+#' \item{boot.np.risk.model}{A list containing the fitted models and their information for the censoring and/or competing model used in estimating observed risk on the bootstrapped samples.}
+#' \item{boot.outcome.models.by.step}{A list containing the fitted models and their information for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples.}
+#' \item{boot.comp.models.by.step}{A list containing the fitted models and their information for the competing model (if applicable) of each iteration in the ICE algorithm on the bootstrapped samples.}
+#' \item{boot.hazard.models.by.step}{A list containing the fitted models and their information for the hazard model (if applicable) on the bootstrapped samples.}
 #' @export
 #' @import tidyverse stringr data.table reshape2
 #'
@@ -249,7 +240,8 @@
 #' # Intervention 2 on A2: never treat upon until L1 = 0, after which follows always treat.
 #' # Intervention 3 on A2: never treat upon until L1 = 0, after which follows natural course.
 #' 
-#' # We use classical pooled ICE estimator, natural course as the reference intervention, and the following models:
+#' # We use classical pooled ICE estimator, 
+#' # natural course as the reference intervention, and the following models:
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
@@ -262,7 +254,6 @@
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
-#' competing_model = D ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
@@ -281,10 +272,12 @@
 #' # We consider the following interventions and intervene at all time points.
 #' # Intervention 1 on A1: always treat with value 3.
 #' # Intervention 1 on A2: always treat with value 1.
-#' # Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, set its value to -3. Otherwise, do not intervene.
+#' # Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, set its value to -3. 
+#' # Otherwise, do not intervene.
 #' # Intervention 3 on A2: dynamic intervention (treat when L1 = 0) with uniform grace period of 2 periods
 #' 
-#' # We use classical pooled ICE estimator, natural course as the reference intervention, and the following models:
+#' # We use classical pooled ICE estimator, 
+#' # natural course as the reference intervention, and the following models:
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
@@ -297,7 +290,6 @@
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
-#' competing_model = D ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
@@ -320,7 +312,8 @@
 #' # Intervention 2 on A1: at time t, if L2 < 0, then assign 1; if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
 #' # Intervention 2 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
 #' 
-#' # We use classical pooled ICE estimator, natural course as the reference intervention, and the following models:
+#' # We use classical pooled ICE estimator, 
+#' # natural course as the reference intervention, and the following models:
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
@@ -336,7 +329,6 @@
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
-#' competing_model = D ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
@@ -440,7 +432,6 @@
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2, 
 #' censor_model = C ~ L1 + L2,
-#' competing_model = D ~ L1 + L2,
 #' ref_idx = 0,
 #' estimator = strat(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
@@ -491,7 +482,6 @@
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2, 
 #' censor_model = C ~ L1 + L2,
-#' competing_model = D ~ L1 + L2,
 #' ref_idx = 0,
 #' estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
 #' nsamples = 1000, ci_method = "percentile",
@@ -553,9 +543,8 @@
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
-#' outcome_model = Y ~ I(L1^2) + rcspline.eval(L2, knots = 1:3) + A1 + A2,
+#' outcome_model = Y ~ I(L1^2) + rcspline.eval(lag1_L2, knots = 1:3) + A1 + A2,
 #' censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
-#' competing_model = D ~ L1 + ns(lag1_L2, df = 2) + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
@@ -578,9 +567,8 @@
 #' censor_name = "C", outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
-#' outcome_model = Y ~ I(L1^2) + rcspline.eval(L2, knots = 1:3) + A1 + A2,
+#' outcome_model = Y ~ I(L1^2) + rcspline.eval(lag1_L2, knots = 1:3) + A1 + A2,
 #' censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
-#' competing_model = D ~ L1 + ns(lag1_L2, df = 2) + A1 + A2,
 #' ref_idx = 1,
 #' estimator = pool(hazard = F),
 #' nsamples = 1000, ci_method = "percentile",
@@ -603,7 +591,6 @@ ice <- function(data, time_points, id, time_name,
                 compevent_name = NULL, comp_effect = 0,
                 outcome_model, censor_model = NULL, competing_model = NULL,
                 hazard_model = NULL, global_hazard = F, 
-                #global_hazard_model = NULL, 
                 ref_idx = 0,
                 estimator,
                 int_descript,
@@ -1186,8 +1173,15 @@ ice <- function(data, time_points, id, time_name,
     if (ninterv_new > 0) {
       
       critical_value_all_lower <- critical_value_all_upper <- se_all <- c()
+      
+      if (ref_idx != 0) {
+        idx_list <- rev(1:ninterv_new)
+      } else {
+        idx_list <- 1:ninterv_new
+      }
+      
 
-    for (int in 1:ninterv_new) {
+    for (int in idx_list) {
       
       this_descript <- intervention_descriptions[[int]]
       
@@ -1298,11 +1292,44 @@ ice <- function(data, time_points, id, time_name,
       } else {
         ref_time <- ref_int_times
       }
-
+      
+      # if this intervention is the reference intervention
+      if (ref_idx == int & int != idx_list[1] | ref_idx == 0 & this_descript == "Natural Course") {
+        
+        
+        this_boot <- list(ice_se = ref_first_boot$ref_se, 
+                          ref_se = ref_first_boot$ref_se,
+                          rr_se = 1,
+                          rd_se = 0, 
+                          ice_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
+                          ice_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
+                          ice_cv_upper = ref_first_boot$ref_cv_upper, 
+                          ice_cv_lower = ref_first_boot$ref_cv_lower, 
+                          ref_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
+                          ref_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
+                          ref_cv_upper = ref_first_boot$ref_cv_upper, 
+                          ref_cv_lower = ref_first_boot$ref_cv_lower, 
+                          ref_ipw_se = ref_first_boot$ref_ipw_se, 
+                          ref_ipw_cv_all_upper = ref_first_boot$ref_ipw_cv_all_upper,
+                          ref_ipw_cv_all_lower = ref_first_boot$ref_ipw_cv_all_lower,
+                          rr_cv_upper = 1, 
+                          rr_cv_lower = 1, 
+                          rd_cv_upper = 0, 
+                          rd_cv_lower = 0, 
+                          outcome_init = ref_first_boot$ref_outcome_init, 
+                          comp_init = ref_first_boot$ref_comp_init, 
+                          np_model = ref_first_boot$ref_np_model, 
+                          outcome_by_step = ref_first_boot$ref_outcome_by_step, 
+                          comp_by_step = ref_first_boot$ref_comp_by_step, 
+                          hazard_by_step = ref_first_boot$ref_hazard_by_step)
+        
+        give_warning(ref_first_boot$ref_data_err, ref_first_boot$ref_data_err_mssg_combine)
+        give_warning(ref_first_boot$ref_model_err, ref_first_boot$ref_model_err_mssg_combine)
+        
+      } else {
 
       this_boot <- bootstrap_ice(ice_pool, K, nboot, significance_level, parallel, ncores, ref_description,
-                                 ref_intervention_varlist[[1]], ref_total_effect, this_total_effect,
-                                 "ipw", boot_interv,
+                                 ref_intervention_varlist[[1]], this_total_effect, boot_interv,
                                  this_interv, this_int_var, this_descript, this_time, ref_time,
                                  data, id, set_seed,
                                  time_name = time_name, outcome_name = outcome_name,
@@ -1311,6 +1338,14 @@ ice <- function(data, time_points, id, time_name,
                                  censor_model = censor_model, competing_model = competing_model,
                                  hazard_model = hazard_model, 
                                  global_hazard = global_hazard)
+      }
+      
+      # record the reference intervention bootstrap
+      if (int == idx_list[1]) {
+        
+        ref_first_boot <- this_boot
+        
+      } 
 
       this_se <- this_boot$ice_se[K+1]
       this_rr_se <- this_boot$rr_se
@@ -1370,7 +1405,6 @@ ice <- function(data, time_points, id, time_name,
       critical_value_all_lower <- append_list(this_boot, str_to_title(this_descript), critical_value_all_lower, "ice_cv_all_lower")
       
       se_all <- append_list(this_boot, str_to_title(this_descript), se_all, "ice_se")
-
 
       if (this_descript != "Natural Course") {
         summary[int+1, 5:7] <- c(this_se, this_rr_se, this_rd_se)
@@ -1436,6 +1470,7 @@ ice <- function(data, time_points, id, time_name,
       risk_time <- match_boot_values(risk_time, data.frame(se_all), "SE")
       
       if (normal_quantile == F) {
+
       risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper), "Critical_Value_Upper")
       risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower), "Critical_Value_Lower")
       }
@@ -1636,8 +1671,14 @@ ice <- function(data, time_points, id, time_name,
     if (ninterv_new > 0) {
       
       critical_value_all_upper <- critical_value_all_lower <- se_all <- c()
+      
+      if (ref_idx != 0) {
+        idx_list <- rev(1:ninterv_new)
+      } else {
+        idx_list <- 1:ninterv_new
+      }
 
-    for (int in 1:ninterv_new) {
+    for (int in idx_list) {
       
       this_descript <- intervention_descriptions[[int]]
       
@@ -1758,10 +1799,44 @@ ice <- function(data, time_points, id, time_name,
         } else {
           ref_time <- ref_int_times
         }
+        
+        # if this intervention is the reference intervention
+        if (ref_idx == int & int != idx_list[1] | ref_idx == 0 & this_descript == "Natural Course") {
+          
+          
+          this_boot <- list(ice_se = ref_first_boot$ref_se, 
+                            ref_se = ref_first_boot$ref_se,
+                            rr_se = 1,
+                            rd_se = 0, 
+                            ice_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
+                            ice_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
+                            ice_cv_upper = ref_first_boot$ref_cv_upper, 
+                            ice_cv_lower = ref_first_boot$ref_cv_lower, 
+                            ref_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
+                            ref_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
+                            ref_cv_upper = ref_first_boot$ref_cv_upper, 
+                            ref_cv_lower = ref_first_boot$ref_cv_lower, 
+                            ref_ipw_se = ref_first_boot$ref_ipw_se, 
+                            ref_ipw_cv_all_upper = ref_first_boot$ref_ipw_cv_all_upper,
+                            ref_ipw_cv_all_lower = ref_first_boot$ref_ipw_cv_all_lower,
+                            rr_cv_upper = 1, 
+                            rr_cv_lower = 1, 
+                            rd_cv_upper = 0, 
+                            rd_cv_lower = 0, 
+                            outcome_init = ref_first_boot$ref_outcome_init, 
+                            comp_init = ref_first_boot$ref_comp_init, 
+                            np_model = ref_first_boot$ref_np_model, 
+                            outcome_by_step = ref_first_boot$ref_outcome_by_step, 
+                            comp_by_step = ref_first_boot$ref_comp_by_step, 
+                            hazard_by_step = ref_first_boot$ref_hazard_by_step)
+          
+          give_warning(ref_first_boot$ref_data_err, ref_first_boot$ref_data_err_mssg_combine)
+          give_warning(ref_first_boot$ref_model_err, ref_first_boot$ref_model_err_mssg_combine)
+          
+        } else {
 
         this_boot <- bootstrap_ice(ice_strat, K, nboot, significance_level, parallel, ncores, ref_description,
-                                   ref_intervention_varlist[[1]], ref_total_effect, this_total_effect,
-                                   "ipw", boot_interv,
+                                   ref_intervention_varlist[[1]], this_total_effect, boot_interv,
                                    this_interv, this_int_var, this_descript, this_time, ref_time,
                                    data, id, set_seed,
                                    time_name = time_name, outcome_name = outcome_name,
@@ -1770,6 +1845,16 @@ ice <- function(data, time_points, id, time_name,
                                    obs_treatment_names = this_obs_treatment_varnames,
                                    outcome_model = outcome_model, censor_model = censor_model,
                                    competing_model = competing_model, hazard_model = hazard_model)
+        }
+        
+        # record the reference intervention bootstrap
+        if (int == idx_list[1]) {
+          
+          ref_first_boot <- this_boot
+          
+        } 
+        
+        
 
         this_se <- this_boot$ice_se[K+1]
         this_rr_se <- this_boot$rr_se
@@ -1928,10 +2013,10 @@ ice <- function(data, time_points, id, time_name,
 
     summary[1:(ninterv + 1), 8] <- summary[1:(ninterv + 1), 2] - ice_critical_value_lower * summary[1:(ninterv + 1), 5]
     summary[1:(ninterv + 1), 9] <- summary[1:(ninterv + 1), 2] + ice_critical_value_upper * summary[1:(ninterv + 1), 5]
-    summary[-(ref_idx + 1), 10] <- summary[-(ref_idx + 1), 2] - rr_critical_value_lower * summary[-(ref_idx + 1), 6]
-    summary[-(ref_idx + 1), 11] <- summary[2:(ninterv + 1), 2] + rr_critical_value_upper * summary[-(ref_idx + 1), 6]
-    summary[-(ref_idx + 1), 12] <- summary[2:(ninterv + 1), 2] - rd_critical_value_lower * summary[-(ref_idx + 1), 7]
-    summary[-(ref_idx + 1), 13] <- summary[2:(ninterv + 1), 2] + rd_critical_value_upper * summary[-(ref_idx + 1), 7]
+    summary[-(ref_idx + 1), 10] <- summary[-(ref_idx + 1), 3] - rr_critical_value_lower * summary[-(ref_idx + 1), 6]
+    summary[-(ref_idx + 1), 11] <- summary[2:(ninterv + 1), 3] + rr_critical_value_upper * summary[-(ref_idx + 1), 6]
+    summary[-(ref_idx + 1), 12] <- summary[2:(ninterv + 1), 4] - rd_critical_value_lower * summary[-(ref_idx + 1), 7]
+    summary[-(ref_idx + 1), 13] <- summary[2:(ninterv + 1), 4] + rd_critical_value_upper * summary[-(ref_idx + 1), 7]
     
     if (normal_quantile) {
     risk_time$Critical_Value_Lower <- ice_critical_value_lower
@@ -1987,9 +2072,8 @@ ice <- function(data, time_points, id, time_name,
 #' @param target_string a string specifying the target keyword argument pattern.
 #'
 #' @return a list containing the information of the targeted keyword argument.
-#' @export
 #'
-#' @keywords internal
+#' @internal
 split_args <- function(argument, target_string) {
   split_list <- str_split(names(argument), target_string)
   # print(split_list)
@@ -2010,9 +2094,8 @@ split_args <- function(argument, target_string) {
 #' @param arg_str the argument keyword.
 #'
 #' @return a list containing the model inputs corresponding to the interventions.
-#' @export
 #'
-#' @keywords internal
+#' @internal
 get_model_formula <- function(interv_list, arg_interv, model_interv, ninterv, arg_str) {
   models <- as.list(rep(NA, ninterv))
 
@@ -2040,9 +2123,8 @@ get_model_formula <- function(interv_list, arg_interv, model_interv, ninterv, ar
 #' @param int_var a list containing the intervention variable names for each intervention.
 #'
 #' @return the intervened values on specified intervention time points.
-#' @export
 #'
-#' @keywords internal
+#' @internal
 construct_interv_value <- function(data, timevar, int_value, int_time, int_var){
 
   nint <- length(int_var)
@@ -2055,8 +2137,11 @@ construct_interv_value <- function(data, timevar, int_value, int_time, int_var){
   for (i in 1:nint) {
     this_int_value <- int_value[[i]]
     not_int_idx <- which(!data[, timevar] %in% int_time[[i]])
+    
+    if (length(not_int_idx) > 0) {
     not_int_value <- data[, int_var[[i]]][not_int_idx]
     this_int_value[not_int_idx] <- not_int_value
+    }
     new_int_value <- c(new_int_value, list(this_int_value))
   }
 
@@ -2067,7 +2152,7 @@ construct_interv_value <- function(data, timevar, int_value, int_time, int_var){
 
 #' Match bootstrap values to aggregate data frame
 #'
-#' @keywords internal
+#' @internal
 match_boot_values <- function(risk_df, cv_df, col) {
   risk_df[, col] <- NA
   names <- colnames(cv_df)
@@ -2083,7 +2168,7 @@ match_boot_values <- function(risk_df, cv_df, col) {
 
 #' Append item to list
 #'
-#' @keywords internal
+#' @internal
 append_list <- function(item, name, append_list, item_name) {
   item_list <- list(item[[item_name]])
   names(item_list) <- name

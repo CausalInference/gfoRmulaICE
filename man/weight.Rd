@@ -8,12 +8,10 @@ weight(treat_model = list())
 }
 \arguments{
 \item{treat_model}{a list of formulas specifying the model statement for the corresponding treatment variable used in the doubly robust ICE estimator. The length of list must match with
-the length of \code{obs_treatment_varnames}. Multiple treatments passed in \code{obs_treatment_varnames} are allowed and must follow the corresponding order as in \code{treat_model_covar}.}
-
-\item{obs_treatment_varnames}{a list of character strings specifying the treatment variables to be used in the model for observed treatments of the weighted ICE estimator.}
+the number of treatment variables.}
 }
 \value{
-the model specification for each treatment model and the treatment variables and
+the model specification for each treatment model and
 the observed treatment variable names extracted from the specified model.
 }
 \description{

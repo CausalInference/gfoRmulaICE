@@ -33,7 +33,7 @@ For more details, please see Young et al 2014.
 }
 \examples{
 data <- readRDS("test_data_competing.rds")
-threshold_treat <- threshold(threshold = -3, var = "A", data = data)
+threshold_treat <- threshold(lower_bound = 0, upper_bound = 2, var = "A", data = data)
 threshold_treat
 }
 \references{

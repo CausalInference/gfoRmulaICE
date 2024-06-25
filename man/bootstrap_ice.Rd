@@ -20,6 +20,8 @@ bootstrap_ice(
   interventions,
   intervention_varnames,
   intervention_description,
+  intervention_times,
+  ref_intervention_times,
   data,
   id,
   set_seed,
@@ -59,7 +61,11 @@ for the inverse probability weighted estimate of the natural course risk in the 
 
 \item{intervention_varnames}{a list of character strings corresponding the interventions to be used in this bootstrap.}
 
-\item{intervention_description}{a character string specifying a description for the define intervention in this bootstrap.}
+\item{intervention_description}{a character string specifying a description for the defined intervention in this bootstrap.}
+
+\item{intervention_times}{a list of numerics indicating the time points to which the defined intervention is applied.}
+
+\item{ref_intervention_times}{a list of numerics indicating the time points to which the reference intervention is applied.}
 
 \item{data}{a data frame containing the observed data in long format.}
 
@@ -75,16 +81,38 @@ A list containing the following components:
 \item{ref_se}{The standard error for the ICE risk of the reference intervention.}
 \item{rr_se}{The standard error for the ICE risk of the risk ratio.}
 \item{rd_se}{The standard error for the ICE risk of the risk difference.}
-\item{ice_cv}{The empirical quantile for the ICE risk of the defined intervention.}
-\item{ref_cv}{The empirical quantile for the ICE risk of the reference intervention.}
-\item{rr_cv}{The empirical quantile for the ICE risk of the risk ratio.}
-\item{rd_cv}{The empirical quantile for the ICE risk of the risk difference.}
+\item{ice_cv_upper}{The empirical upper quantile for the ICE risk of the defined intervention for the last time point.}
+\item{ref_cv_upper}{The empirical upper quantile for the ICE risk of the reference intervention for the last time point.}
+\item{rr_cv_upper}{The empirical upper quantile for the ICE risk of the defined intervention for the last time point.}
+\item{rd_cv_upper}{The empirical upper quantile for the ICE risk of the reference intervention for the last time point.}
+\item{ice_cv_all_upper}{The empirical upper quantile for the ICE risk of the defined intervention for all time points.}
+\item{ref_cv_all_upper}{The empirical upper quantile for the ICE risk of the reference intervention for all time points.}
+\item{ice_cv_lower}{The empirical lower quantile for the ICE risk of the defined intervention for the last time point.}
+\item{ref_cv_lower}{The empirical lower quantile for the ICE risk of the reference intervention for the last time point.}
+\item{rr_cv_lower}{The empirical lower quantile for the ICE risk of the defined intervention for the last time point.}
+\item{rd_cv_lower}{The empirical lower quantile for the ICE risk of the reference intervention for the last time point.}
+\item{ice_cv_all_lower}{The empirical lower quantile for the ICE risk of the defined intervention for all time points.}
+\item{ref_cv_all_lower}{The empirical lower quantile for the ICE risk of the reference intervention for all time points.}
+\item{ref_ipw_se}{The standard error for the observed risk.}
+\item{ref_ipw_cv_all_upper}{The empirical upper quantile for the observed risk for all time points.}
+\item{ref_ipw_cv_all_lower}{The empirical lower quantile for the observed risk for all time points.}
 \item{boot_data}{A list containing all the bootstrapped data samples.}
-\item{boot_models}{A list containing the fitted models for the outcome, the treatment (if applicable), and the competing event (if applicable) on the bootstrapped samples.}
-\item{boot_summary}{A list containing the summary of the fitted models on the bootstrapped samples.}
-\item{boot_stderr}{A list containing the standard errors of the coefficients of the fitted models on the bootstrapped samples.}
-\item{boot_vcov}{A list containing the variance-covariance matrices of the parameters of the fitted models on the bootstrapped samples.}
-\item{boot_rmse}{A list containing the root mean square error (RMSE) values of the fitted models on the bootstrapped samples.}
+\item{outcome_init}{A list containing the fitted models and information for the outcome model of the first step in the ICE algorithm on the bootstrapped samples for the defined intervention.}
+\item{comp_init}{A list containing the fitted models and information for the competing model of the first step in the ICE algorithm (if applicable) on the bootstrapped samples for the defined intervention.}
+\item{np_model}{A list containing the fitted models and information for the censoring and/or competing model in estimating observed risk (if applicable) on the bootstrapped samples for the defined intervention.}
+\item{outcome_by_step}{A list containing the fitted models and information for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples for the defined intervention.}
+\item{comp_by_step}{A list containing the fitted models and information for the competing model of each iteration in the ICE algorithm (if applicable) on the bootstrapped samples for the defined intervention.}
+\item{hazard_by_step}{A list containing the fitted models and their information for hazard model, either time-specific models of each time point or one pooled-over-time global model on the bootstrapped samples for the defined intervention.}
+\item{ref_outcome_init}{A list containing the fitted models and information for the outcome model of the first step in the ICE algorithm on the bootstrapped samples for the reference intervention.}
+\item{ref_comp_init}{A list containing the fitted models and information for the competing model of the first step in the ICE algorithm (if applicable) on the bootstrapped samples for the reference intervention.}
+\item{ref_np_model}{A list containing the fitted models and information for the censoring and/or competing model in estimating observed risk (if applicable) on the bootstrapped samples for the reference intervention.}
+\item{ref_outcome_by_step}{A list containing the fitted models and information for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples for the reference intervention.}
+\item{ref_comp_by_step}{A list containing the fitted models and information for the competing model of each iteration in the ICE algorithm (if applicable) on the bootstrapped samples for the reference intervention.}
+\item{ref_hazard_by_step}{A list containing the fitted models and their information for hazard model, either time-specific models of each time point or one pooled-over-time global model on the bootstrapped samples for the reference intervention.}
+\item{ref_data_err}{A list containing whether there is any data error from any replicate of bootstrap process for the reference intervention.}
+\item{ref_model_err}{A list containing whether there is any model error produced from any replicate of bootstrap process for the reference intervention.}
+\item{ref_model_err_mssg}{A list containing error message of any model error from any replicate of bootstrap process for the reference intervention.}
+\item{ref_data_err_mssg}{A list containing error message of any data error from any replicate of bootstrap process for the reference intervention.}
 }
 \description{
 This function estimates the variance of the point estimates for all user-defined interventions from

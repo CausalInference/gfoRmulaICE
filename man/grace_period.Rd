@@ -2,13 +2,12 @@
 % Please edit documentation in R/helper.R
 \name{grace_period}
 \alias{grace_period}
-\title{Intervention with Grace Period Strategy}
+\title{}
 \usage{
 grace_period(
   type,
   nperiod,
-  var,
-  value,
+  condition,
   data = interv_data,
   id = idvar,
   time_name = time0var,
@@ -20,9 +19,7 @@ grace_period(
 
 \item{nperiod}{a numeric specifying the length of grace period.}
 
-\item{var}{a character string specifying the variable that the grace period strategy is based on.}
-
-\item{value}{a numeric specifying the value that \code{var} is compared to.}
+\item{condition}{a character string specifying the logical expression, upon which is met, the treatment is initiated in \code{n} time units, where \code{n} is specified by \code{nperiod}.}
 
 \item{data}{a data frame containing the observed data.}
 
@@ -36,19 +33,14 @@ grace_period(
 a vector containing the intervened value in the same size as the number of rows in \code{data}.
 }
 \description{
-This function implements a particular intervention with grace period. There are two choices of grace type: "natural" or "uniform," specified by the argument \code{type}.
-\itemize{
-\item{Natural grace period describes the following mechanism:
-When the condition \code{var} = \code{value} is met, initiate treatment in \code{n} time units, where \code{n} is specified by \code{nperiod}.
-If there is no intervention, follow the observed treatment initiation distribution.}
-\item{Uniform grace period describes the following mechanism:
-When the condition \code{var} = \code{value} is met, initiate treatment in \code{n} time units, where \code{n} is specified by \code{nperiod}.
-If there is no intervention, follow the uniform distribution of treatment initiation.}
+
 }
+\details{
+
 }
 \examples{
 data <- readRDS("test_data_competing.rds")
-grace_period <- grace_period(type = "uniform", nperiod = 2, var = "L1", value = 1, data = data,
+grace_period <- grace_period(type = "uniform", nperiod = 2, condition = "L1 == 0", data = data,
                              id = "id", time_name = "t0", outcome_name = "Y")
 grace_period
 }

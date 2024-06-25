@@ -9,11 +9,11 @@ plot_risk(..., plot_np = T, label = 0)
 \arguments{
 \item{...}{ICE estimator objects.}
 
-\item{plot_np}{a logical indicating whether to add the nonparametric natural course risk over time to the plot.
-Default is TRUE}
-
 \item{label}{a numeric specifying which time label is used in x axis. 0 represents using generic numerical time index, and
 1 represents using the original time index in the data set. Default is 0.}
+
+\item{plot_obs}{a logical indicating whether to add the observed risk over time to the plot.
+Default is TRUE}
 }
 \value{
 a plot for risks of all the interventions specified in \code{...}.
@@ -26,42 +26,44 @@ After conversion, users could use the base function plot().)
 }
 \examples{
 
-fit_classical_pool <- ice(
-data = data,
-time_points = 4,
-id = "id",
+ice_fit1 <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
 time_name = "t0",
+censor_name = "C", 
 outcome_name = "Y",
-censor_name = "C",
 compevent_name = "D",
+comp_effect = 0,
+outcome_model = Y ~ L1 + L2 + A1 + A2, 
+censor_model = C ~ L1 + L2 + A1 + A2,
+competing_model = D ~ L1 + L2 + A1 + A2,
+ref_idx = 0,
 estimator = pool(hazard = F),
-comp_effect = 0,
-outcome_model = Y ~ L1 + L2 + A1 + A2,
-censor_model = C ~ L1 + L2 + A1 + A2,
-ref_idx = 0,
-int_descript = c("Static Intervention"),
-intervention1.A1 = list(static_A1),
-intervention1.A2 = list(static_A2)
+int_descript = "Static Intervention",
+intervention1.A1 = list(static(3)),
+intervention1.A2 = list(static(1))
 )
 
-fit_hazard_pool <- ice(
-data = data,
-time_points = 4,
-id = "id",
+ice_fit2 <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
 time_name = "t0",
+censor_name = "C", 
 outcome_name = "Y",
-censor_name = "C",
 compevent_name = "D",
-estimator = pool(hazard = T),
 comp_effect = 0,
-outcome_model = Y ~ L1 + L2 + A1 + A2,
+outcome_model = Y ~ L1 + L2 + A1 + A2, 
 censor_model = C ~ L1 + L2 + A1 + A2,
+competing_model = D ~ L1 + L2 + A1 + A2,
 ref_idx = 0,
-int_descript = c("Static Intervention"),
-intervention1.A1 = list(static_A1),
-intervention1.A2 = list(static_A2)
+estimator = pool(hazard = T),
+int_descript = "Static Intervention",
+intervention1.A1 = list(static(3)),
+intervention1.A2 = list(static(1))
 )
 
-plot_risk(fit_classical_pool, fit_hazard_pool)
+plot_risk(ice_fit1, ice_fit2)
 
 }

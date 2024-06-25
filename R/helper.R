@@ -60,7 +60,7 @@ natural_course <- function(data = interv_data, treat_var = treatment_varname) {
 #'
 #' @return A list containing the inverse probability weighted estimates of the natural course risk and
 #' a model object for the probability of censoring used in the inverse probability weighted estimate of the natural course risk.
-#' @keywords internal
+#' @internal
 
 natural_course_ipweighted <- function(data, id, censor_varname,
                                       K, time0, outcome_varname, covar,
@@ -368,7 +368,7 @@ grace_period <- function(type, nperiod, condition,
 #' @param duration a numeric specifying the duration of grace period.
 #'
 #' @return the randomly generated treatment.
-#' @keywords internal
+#' @internal
 
 uniform_sample <- function(r, duration) {
   p <- 1 / (duration + 1 - r)
@@ -404,6 +404,7 @@ uniform_sample <- function(r, duration) {
 #'
 #' @return A list with the first entry as a vector of the mean observed risk.
 #' Its second entry is a vector of mean observed survival. Its third entry is a vector of inverse probability weight.
+#' 
 #' 
 
 compute_weighted_hazard <- function(prob_censor, data, id, censor_varname,
@@ -474,9 +475,8 @@ compute_weighted_hazard <- function(prob_censor, data, id, censor_varname,
 #' @param columns a vector of character strings specifying the variables in \code{data} to be used to calculate the product.
 #'
 #' @return a vector of the product of the variables specified in \code{columns}.
-#' @export
 #' 
-#' @keywords internal
+#' @internal
 #'
 product <- function(data, columns){
 
@@ -583,9 +583,8 @@ threshold <- function(lower_bound, upper_bound, var = threshold_treatment, data 
 #' @param fit a glm model object.
 #'
 #' @return the standard errors of the coefficients of the fitted model.
-#' @export
 #'
-#' @keywords internal
+#' @internal
 get_stderr <- function(fit) {
   return(sqrt(diag(vcov(fit))))
 }
@@ -595,9 +594,8 @@ get_stderr <- function(fit) {
 #' @param fit a glm model object.
 #'
 #' @return the variance-covariance matrices of the parameters of the fitted model.
-#' @export
 #' 
-#' @keywords internal
+#' @internal
 #'
 get_vcov <- function(fit) {
   return(vcov(fit))
@@ -608,9 +606,8 @@ get_vcov <- function(fit) {
 #' @param fit a glm model object.
 #'
 #' @return the summary table of the fitted model.
-#' @export
 #' 
-#' @keywords internal
+#' @internal
 #'
 get_summary <- function(fit) {
   return(summary(fit))
@@ -621,9 +618,8 @@ get_summary <- function(fit) {
 #' @param fit a glm model object.
 #'
 #' @return the root mean square error (RMSE) values of the fitted model.
-#' @export
 #' 
-#' @keywords internal
+#' @internal
 #'
 get_rmse <- function(fit) {
   return(sqrt(mean(fit$residuals^2)))
@@ -863,5 +859,29 @@ get_models <- function(this_fit, model_name, descript) {
   names(this_fit_all) <- descript
   
   return(this_fit_all)
+}
+
+#' Print out warning messages
+#'
+#' @param err a list containing whether there is any error from each replicate of bootstrap process.
+#' @param err_mssg a list containing the error message of any error from each replicate of bootstrap process.
+#' @param model a logical indicating whether the error processed is related to model error or not. Default to be \code{FALSE}.
+#'
+#' @return None.
+#' @internal
+give_warning <- function(err, err_mssg, model = F) {
+  
+  if (model) {
+    err_explain <- ". The analysis should likely be repeated
+                     with a more parsimonious model."
+  } else {
+    err_explain <- ". This is likely due to 
+                       no data satisfies the defined treatment strategy."
+  }
+  
+  if (length(err) > 0) {
+    warning(paste0("NA value occurs in bootstrap replicate ", paste(err, collapse = ","), err_explain, 
+                   "\n", paste0(err_mssg, collapse = "")))
+  }
 }
 

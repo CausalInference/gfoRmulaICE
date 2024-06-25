@@ -40,6 +40,7 @@
 #' The same logic applies for the built in intervention functions.
 #' @param intervention_names a list of character strings indicating the intervention variable names in correspondence with the intervention strategies in \code{interventions}.
 #' Length of the vector must be in the same size of \code{interventions}.
+#' @param intervention_times a list of numerics indicating the time points to which the specified intervention is applied. Default to be \code{NULL}. 
 #' @param compute_nc_risk a logical to indicate whether to compute observed natural course risk. TRUE for observed natural course risk computation. FALSE for no natural course risk computation. Default to be TRUE.
 #' @param hazard_based a logical indicating whether to use hazard-based ICE estimator or classical ICE estimator. TRUE for hazard-based estimator. FALSE for classical estimator.
 #' @param global_hazard a logical indicating whether to use global pooled-over-time hazard model or time-specific hazard model. 
@@ -70,7 +71,7 @@
 #' @references Haneuse S, Rotnitzky A. Estimation of the effect of interventions that modify the received treatment. Statistics in medicine. 2013;32(30):5260-5277.
 #' @references McGrath S, Young JG, Hernán MA. Revisiting the g-null Paradox. Epidemiology. 2022;33(1):114-120.
 #' 
-#' @keywords internal
+#' @internal
 #'
 #' @examples
 #'
@@ -80,7 +81,7 @@
 #' # direct effect for competing event
 #' # using time-specific hazard models
 #' 
-#' ice_static <- ice_pool(data = compData, K = 5, 
+#' ice_static <- ice_pool(data = data, K = 5, 
 #' id = "id", time_name = "t0", outcome_name = "Y",
 #' censor_name = "C", competing_name = "D",
 #' total_effect = F, 
@@ -100,7 +101,7 @@
 #' # natural course risk and natural course strategy
 #' # Classical pooled ICE, total effect for competing event
 #'
-#' ice_natural_course <- ice_pool(data = compData, K = 5, 
+#' ice_natural_course <- ice_pool(data = data, K = 5, 
 #' id = "id", time_name = "t0", outcome_name = "Y",
 #' censor_name = "C", competing_name = "D",
 #' total_effect = T, 
@@ -119,7 +120,7 @@
 #' # not treat otherwise)
 #' # Classical pooled ICE, direct effect for competing event
 #'
-#' ice_dynamic <- ice_pool(data = compData, K = 5, 
+#' ice_dynamic <- ice_pool(data = data, K = 5, 
 #' id = "id", time_name = "t0", outcome_name = "Y",
 #' censor_name = "C", competing_name = "D",
 #' total_effect = F, 
@@ -136,7 +137,7 @@
 #' # with uniform grace period of 2 periods
 #' # Hazard based pooled ICE, total effect for competing event
 #'
-#' ice_grace_period <- ice_pool(data = compData, K = 5, 
+#' ice_grace_period <- ice_pool(data = data, K = 5, 
 #' id = "id", time_name = "t0", outcome_name = "Y",
 #' censor_name = "C", competing_name = "D",
 #' total_effect = T, 
@@ -156,7 +157,7 @@
 #' # than -3, set its value to -3. Otherwise, do not intervene.
 #' # Hazard based pooled ICE, total effect for competing event
 #'
-#' ice_threshold <- ice_pool(data = compData, K = 5, 
+#' ice_threshold <- ice_pool(data = data, K = 5, 
 #' id = "id", time_name = "t0", outcome_name = "Y",
 #' censor_name = "C", competing_name = "D",
 #' total_effect = T, 
@@ -164,7 +165,7 @@
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' competing_model = D ~ L1 + L2 + A1 + A2,
 #' hazard_model = Y ~ L1 + L2 + A1 + A2, 
-#' interventions = list(threshold(Inf, -3)),
+#' interventions = list(threshold(-3, Inf)),
 #' intervention_names = list("A"),
 #' hazard_based = T,
 #' intervention_description = "Threshold Intervention")
@@ -286,7 +287,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   
   ## censor covar
   censor_covar_new <- c()
-  if (!is.null(censor_varname)) {
+  if (!is.null(censor_varname) & !is.null(censor_model)) {
   data_add <- data
   for (i in 1:length(censor_covar)) {
     
@@ -321,7 +322,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   ## competing covar
   competing_covar_new <- c()
   
-  if (!is.null(competing_varname)) {
+  if (!is.null(competing_varname) & !is.null(competing_model)) {
   data_add <- data
   for (i in 1:length(competing_covar)) {
     

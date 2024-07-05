@@ -8,14 +8,12 @@ bootstrap_ice(
   f,
   K,
   nboot,
-  sig_level,
+  coverage,
   parallel,
   ncores,
   ref_description,
-  ref_intervention_varname,
-  ref_total_effect,
+  ref_intervention_varnames,
   total_effect,
-  natural_course_type,
   ref_intervention,
   interventions,
   intervention_varnames,
@@ -31,91 +29,77 @@ bootstrap_ice(
 \arguments{
 \item{f}{a function specifying which ICE estimator to use for bootstrap.}
 
-\item{K}{a numerical value that indicates the total number of time points.}
+\item{K}{a number indicating the total number of time points.}
 
-\item{nboot}{a numeric indicating number of bootstrap samples.}
+\item{nboot}{a number indicating the number of bootstrap samples.}
 
-\item{sig_level}{a numeric indicating the significance level to be used for confidence interval.}
+\item{coverage}{a number greater than 0 and less than 100 indicating the coverage of the confidence interval. Default is 95.}
 
-\item{parallel}{a logical indicating whether to parallelize the bootstrap process.}
+\item{parallel}{a logical value indicating whether to parallelize the bootstrap process.}
 
-\item{ncores}{a numeric indicating the number of CPU cores to be used in parallel computing.}
+\item{ncores}{a number indicating the number of CPU cores to be used in parallel computing.}
 
-\item{ref_description}{a string specifying a description for the reference intervention.}
+\item{ref_description}{a string describing the reference intervention in this bootstrap.}
 
-\item{ref_intervention_varname}{a string specifying the intervention variable used in the reference intervention.}
+\item{ref_intervention_varnames}{a list of strings specifying the treatment variables to be used for the reference intervention in this bootstrap.}
 
-\item{ref_total_effect}{a logical indicating how the competing event is handled for the reference intervention.
-TRUE for total effect. FALSE for direct effect.}
+\item{total_effect}{a logical value indicating how the competing event is handled for the defined intervention.
+TRUE for total effect. FALSE for controlled direct effect.}
 
-\item{total_effect}{a logical indicating how the competing event is handled for the defined intervention.
-TRUE for total effect. FALSE for direct effect.}
+\item{ref_intervention}{a list of functions specifying the intervention to be used as reference.}
 
-\item{natural_course_type}{a character string indicating how the natural course strategy is computed for the defined intervention.
-"ipw" for IPW natural course risk estimation.}
+\item{interventions}{a list of functions defining the intervention to be used in this bootstrap.}
 
-\item{ref_intervention}{a list of function specifying the intervention to be used as reference.
-for the inverse probability weighted estimate of the natural course risk in the reference intervention.}
+\item{intervention_varnames}{a list of strings specifying the treatment variables to be used for the defined intervention in this bootstrap.}
 
-\item{interventions}{a list of functions defining the interventions to be used in this bootstrap.}
+\item{intervention_description}{a string describing the defined intervention in this bootstrap.}
 
-\item{intervention_varnames}{a list of character strings corresponding the interventions to be used in this bootstrap.}
+\item{intervention_times}{a list of numbers indicating the time points to which the defined intervention is applied.}
 
-\item{intervention_description}{a character string specifying a description for the defined intervention in this bootstrap.}
-
-\item{intervention_times}{a list of numerics indicating the time points to which the defined intervention is applied.}
-
-\item{ref_intervention_times}{a list of numerics indicating the time points to which the reference intervention is applied.}
+\item{ref_intervention_times}{a list of numbers indicating the time points to which the reference intervention is applied.}
 
 \item{data}{a data frame containing the observed data in long format.}
 
-\item{id}{a character string indicating the ID variable name in \code{data}.}
+\item{id}{a string indicating the ID variable name in \code{data}.}
 
-\item{set_seed}{a numeric indicating the starting seed for bootstrap.}
+\item{set_seed}{a number indicating the starting seed for bootstrap.}
 
 \item{...}{any keyword arguments to be passed in \code{f}.}
 }
 \value{
 A list containing the following components:
-\item{ice_se}{The standard error for the ICE risk of the defined intervention.}
-\item{ref_se}{The standard error for the ICE risk of the reference intervention.}
-\item{rr_se}{The standard error for the ICE risk of the risk ratio.}
-\item{rd_se}{The standard error for the ICE risk of the risk difference.}
-\item{ice_cv_upper}{The empirical upper quantile for the ICE risk of the defined intervention for the last time point.}
-\item{ref_cv_upper}{The empirical upper quantile for the ICE risk of the reference intervention for the last time point.}
-\item{rr_cv_upper}{The empirical upper quantile for the ICE risk of the defined intervention for the last time point.}
-\item{rd_cv_upper}{The empirical upper quantile for the ICE risk of the reference intervention for the last time point.}
-\item{ice_cv_all_upper}{The empirical upper quantile for the ICE risk of the defined intervention for all time points.}
-\item{ref_cv_all_upper}{The empirical upper quantile for the ICE risk of the reference intervention for all time points.}
-\item{ice_cv_lower}{The empirical lower quantile for the ICE risk of the defined intervention for the last time point.}
-\item{ref_cv_lower}{The empirical lower quantile for the ICE risk of the reference intervention for the last time point.}
-\item{rr_cv_lower}{The empirical lower quantile for the ICE risk of the defined intervention for the last time point.}
-\item{rd_cv_lower}{The empirical lower quantile for the ICE risk of the reference intervention for the last time point.}
-\item{ice_cv_all_lower}{The empirical lower quantile for the ICE risk of the defined intervention for all time points.}
-\item{ref_cv_all_lower}{The empirical lower quantile for the ICE risk of the reference intervention for all time points.}
-\item{ref_ipw_se}{The standard error for the observed risk.}
-\item{ref_ipw_cv_all_upper}{The empirical upper quantile for the observed risk for all time points.}
-\item{ref_ipw_cv_all_lower}{The empirical lower quantile for the observed risk for all time points.}
-\item{boot_data}{A list containing all the bootstrapped data samples.}
-\item{outcome_init}{A list containing the fitted models and information for the outcome model of the first step in the ICE algorithm on the bootstrapped samples for the defined intervention.}
-\item{comp_init}{A list containing the fitted models and information for the competing model of the first step in the ICE algorithm (if applicable) on the bootstrapped samples for the defined intervention.}
-\item{np_model}{A list containing the fitted models and information for the censoring and/or competing model in estimating observed risk (if applicable) on the bootstrapped samples for the defined intervention.}
-\item{outcome_by_step}{A list containing the fitted models and information for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples for the defined intervention.}
-\item{comp_by_step}{A list containing the fitted models and information for the competing model of each iteration in the ICE algorithm (if applicable) on the bootstrapped samples for the defined intervention.}
-\item{hazard_by_step}{A list containing the fitted models and their information for hazard model, either time-specific models of each time point or one pooled-over-time global model on the bootstrapped samples for the defined intervention.}
-\item{ref_outcome_init}{A list containing the fitted models and information for the outcome model of the first step in the ICE algorithm on the bootstrapped samples for the reference intervention.}
-\item{ref_comp_init}{A list containing the fitted models and information for the competing model of the first step in the ICE algorithm (if applicable) on the bootstrapped samples for the reference intervention.}
-\item{ref_np_model}{A list containing the fitted models and information for the censoring and/or competing model in estimating observed risk (if applicable) on the bootstrapped samples for the reference intervention.}
-\item{ref_outcome_by_step}{A list containing the fitted models and information for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples for the reference intervention.}
-\item{ref_comp_by_step}{A list containing the fitted models and information for the competing model of each iteration in the ICE algorithm (if applicable) on the bootstrapped samples for the reference intervention.}
-\item{ref_hazard_by_step}{A list containing the fitted models and their information for hazard model, either time-specific models of each time point or one pooled-over-time global model on the bootstrapped samples for the reference intervention.}
-\item{ref_data_err}{A list containing whether there is any data error from any replicate of bootstrap process for the reference intervention.}
-\item{ref_model_err}{A list containing whether there is any model error produced from any replicate of bootstrap process for the reference intervention.}
-\item{ref_model_err_mssg}{A list containing error message of any model error from any replicate of bootstrap process for the reference intervention.}
-\item{ref_data_err_mssg}{A list containing error message of any data error from any replicate of bootstrap process for the reference intervention.}
+\item{ice_se}{Standard error for the risk of the defined intervention.}
+\item{ref_se}{Standard error for the risk of the reference intervention.}
+\item{rr_se}{Standard error for the risk ratio.}
+\item{rd_se}{Standard error for the risk difference.}
+\item{rr_cv_upper}{The (100 - (100 - \code{coverage}) / 2)th percentile for the risk ratio at the last time point. Default is the 97.5th percentile when \code{coverage} is set to its default value 95.}
+\item{rd_cv_upper}{The (100 - (100 - \code{coverage}) / 2)th percentile for the risk difference at the last time point. Default is the 97.5th percentile when \code{coverage} is set to its default value 95.}
+\item{ice_cv_all_upper}{The (100 - (100 - \code{coverage}) / 2)th percentile for the risk of the defined intervention at all time points. Default is the 97.5th percentile when \code{coverage} is set to its default value 95.}
+\item{ref_cv_all_upper}{The (100 - (100 - \code{coverage}) / 2)th percentile for the risk of the reference intervention at all time points. Default is the 97.5th percentile when \code{coverage} is set to its default value 95.}
+\item{rr_cv_lower}{The ((100 - \code{coverage}) / 2)th percentile for the risk ratio at the last time point. Default is the 2.5th percentile when \code{coverage} is set to its default value 95.}
+\item{rd_cv_lower}{The ((100 - \code{coverage}) / 2)th percentile for the risk difference at the last time point. Default is the 2.5th percentile when \code{coverage} is set to its default value 95.}
+\item{ice_cv_all_lower}{The ((100 - \code{coverage}) / 2)th percentile for the risk of the defined intervention at all time points. Default is the 2.5th percentile when \code{coverage} is set to its default value 95.}
+\item{ref_cv_all_lower}{The ((100 - \code{coverage}) / 2)th percentile for the risk of the reference intervention at all time points. Default is the 2.5th percentile when \code{coverage} is set to its default value 95.}
+\item{ref_ipw_se}{Standard error for the observed risk.}
+\item{ref_ipw_cv_all_upper}{The (100 - (100 - \code{coverage}) / 2)th percentile for the observed risk at all time points. Default is the 97.5th percentile when \code{coverage} is set to its default value 95.}
+\item{ref_ipw_cv_all_lower}{The ((100 - \code{coverage}) / 2)th percentile for the observed risk at all time points. Default is the 2.5th percentile when \code{coverage} is set to its default value 95.}
+\item{boot_data}{A list of data samples from all bootstrap replicates.}
+\item{outcome_init}{A list, where each sublist contains the fitted outcome models in the first step of algorithm for the defined intervention from each bootstrap replicate.}
+\item{comp_init}{A list, where each sublist contains the fitted competing models in the first step of algorithm for the defined intervention from each bootstrap replicate (if applicable). }
+\item{np_model}{A list, where each sublist contains the fitted censoring and/or competing models in estimating the observed risk from each bootstrap replicate (if applicable).}
+\item{outcome_by_step}{A list, where each sublist contains the fitted outcome models in each iteration of algorithm for the defined intervention from each bootstrap replicate.}
+\item{comp_by_step}{A list, where each sublist contains the fitted competing models in each iteration of algorithm for the defined intervention from each bootstrap replicate (if applicable).}
+\item{hazard_by_step}{A list, where each sublist contains the fitted hazard model, either time-specific models at each time point or one pooled-over-time global model, for the defined intervention from each bootstrap replicate (if applicable).}
+\item{ref_outcome_init}{A list, where each sublist contains the fitted outcome models in the first step of algorithm for the reference intervention from each bootstrap replicate.}
+\item{ref_comp_init}{A list, where each sublist contains the fitted competing models in the first step of algorithm for the reference intervention from each bootstrap replicate (if applicable).}
+\item{ref_outcome_by_step}{A list, where each sublist contains the fitted outcome models in each iteration of algorithm for the reference intervention from each bootstrap replicate.}
+\item{ref_comp_by_step}{A list, where each sublist contains the fitted competing models in each iteration of algorithm for the reference intervention from each bootstrap replicate (if applicable).}
+\item{ref_hazard_by_step}{A list, where each sublist contains the fitted hazard model, either time-specific models at each time point or one pooled-over-time global model, for the reference intervention from each bootstrap replicate (if applicable).}
+\item{ref_data_err}{A list of logical values indicating whether there is any data error for the reference intervention from each bootstrap replicate.}
+\item{ref_model_err}{A list of logical valules indicating whether there is any model error produced from each bootstrap replicate for the reference intervention.}
+\item{ref_model_err_mssg}{A list of strings for error messages of any model error from each bootstrap replicate for the reference intervention.}
+\item{ref_data_err_mssg}{A list of strings for error messages of any data error from each bootstrap replicate for the reference intervention.}
 }
 \description{
-This function estimates the variance of the point estimates for all user-defined interventions from
-the ICE estimator object. The variance is calculated by bootstrapping and is used to calculate the confidence
-interval for each point estimate of each user-defined intervention specified in the ICE estimator object.
+This function estimates the variance (and 95\% confidence intervals) of the point estimates via nonparametric bootstrapping.
 }

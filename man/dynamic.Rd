@@ -2,7 +2,7 @@
 % Please edit documentation in R/helper.R
 \name{dynamic}
 \alias{dynamic}
-\title{Dynamic Intervention Function}
+\title{Dynamic}
 \usage{
 dynamic(
   condition,
@@ -15,30 +15,28 @@ dynamic(
 )
 }
 \arguments{
-\item{condition}{a character string that specifies a logical expression, upon which is met, the strategy specified in \code{strategy_after} is followed.}
+\item{condition}{a string that specifies a logical expression, upon which is met, the strategy specified in \code{strategy_after} is followed.}
 
-\item{strategy_before}{a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed after the condition in \code{condition} is met.}
+\item{strategy_before}{a function or vector of intervened values that specifies the strategy followed after \code{condition} is met. 
+The vector of intervened values should be the same length as the number of rows in the data frame \code{data}.}
 
-\item{strategy_after}{a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed before the condition in \code{condition} is met.}
+\item{strategy_after}{a function or vector of intervened values that specifies the strategy followed before \code{condition} is met.
+The vector of intervened values should be the same length as the number of rows in the data frame \code{data}.}
 
-\item{absorb}{a logical indicating whether the strategy specified in \code{strategy_after} is absorbing upon the first time when the condition specified in \code{condition} is met.}
+\item{absorb}{a logical value indicating whether the strategy specified in \code{strategy_after} becomes absorbing upon the first time when \code{condition} is met.}
 
-\item{id}{a character string indicating the ID variable name in \code{data}.}
+\item{id}{a string specifying the ID variable name in \code{data}.}
 
-\item{time}{a character string indicating the time variable name in \code{data}.}
+\item{time}{a string specifying the time variable name in \code{data}.}
 
 \item{data}{a data frame containing the observed data.}
 }
 \value{
-a vector containing the intervened value in the same size as the number of rows in \code{data}.
+a vector containing the intervened value of the same size as the number of rows in \code{data}.
 }
 \description{
-This function implements the dynamic intervention strategy. Dynamic intervention strategy refers to the class of treatment mechanisms that depend on the covariate values. 
-This function provides an example of dynamic intervention strategy. The specific mechanism is described below:
-\itemize{
-\item Follow the strategy specified in \code{strategy_before} until a user-defined condition dependent on covariate values is met. 
-\item Upon the user-defined condition is met, the strategy specified in \code{strategy_after} is initiated.
-}
+This function specifies a dynamic intervention on the treatment variable specified in \code{data}. 
+This function follows the treatment strategy specified in \code{strategy_before} until a user-defined condition that depends on covariate values is met. Upon the condition is met, the strategy specified in \code{strategy_after} is followed.
 }
 \examples{
 data <- readRDS("test_data_competing.rds")

@@ -1,72 +1,66 @@
 #' Bootstrap for ICE estimator
 #'
-#' This function estimates the variance (and 95% confidence intervals) of the point estimates via nonparametric bootstrapping.
-#'
+#' This function estimates the variance (and 95\% confidence intervals) of the point estimates via nonparametric bootstrapping.
+#' 
 #' @param f a function specifying which ICE estimator to use for bootstrap.
 #' @param K a number indicating the total number of time points.
-#' @param nboot a number indicating number of bootstrap samples.
+#' @param nboot a number indicating the number of bootstrap samples.
 #' @param coverage a number greater than 0 and less than 100 indicating the coverage of the confidence interval. Default is 95.
 #' @param parallel a logical value indicating whether to parallelize the bootstrap process.
 #' @param ncores a number indicating the number of CPU cores to be used in parallel computing.
-#' @param ref_description a string specifying a description for the reference intervention.
-#' @param ref_intervention_varname a string specifying the intervention variable used in the reference intervention.
+#' @param ref_description a string describing the reference intervention in this bootstrap.
+#' @param ref_intervention_varnames a list of strings specifying the treatment variables to be used for the reference intervention in this bootstrap.
 #' @param total_effect a logical value indicating how the competing event is handled for the defined intervention.
-#' TRUE for total effect. FALSE for direct effect.
-#' @param ref_intervention a list of function specifying the intervention to be used as reference.
-#' for the inverse probability weighted estimate of the natural course risk in the reference intervention.
-#' @param interventions a list of functions defining the interventions to be used in this bootstrap.
-#' @param intervention_varnames a list of strings describing the interventions to be used in this bootstrap.
-#' @param intervention_description a string specifying a description for the defined intervention in this bootstrap.
+#' TRUE for total effect. FALSE for controlled direct effect.
+#' @param ref_intervention a list of functions specifying the intervention to be used as reference.
+#' @param interventions a list of functions defining the intervention to be used in this bootstrap.
+#' @param intervention_varnames a list of strings specifying the treatment variables to be used for the defined intervention in this bootstrap.
+#' @param intervention_description a string describing the defined intervention in this bootstrap.
 #' @param intervention_times a list of numbers indicating the time points to which the defined intervention is applied.
 #' @param ref_intervention_times a list of numbers indicating the time points to which the reference intervention is applied.
 #' @param data a data frame containing the observed data in long format.
 #' @param id a string indicating the ID variable name in \code{data}.
 #' @param set_seed a number indicating the starting seed for bootstrap.
 #' @param ... any keyword arguments to be passed in \code{f}.
-#'
+#' 
 #' @return A list containing the following components:
 #' \item{ice_se}{Standard error for the risk of the defined intervention.}
 #' \item{ref_se}{Standard error for the risk of the reference intervention.}
 #' \item{rr_se}{Standard error for the risk ratio.}
 #' \item{rd_se}{Standard error for the risk difference.}
-#' \item{ice_cv_upper}{The 97.5th percentile for the risk of the defined intervention at the last time point.}
-#' \item{ref_cv_upper}{The 97.5th percentile for the risk of the reference intervention at the last time point.}
-#' \item{rr_cv_upper}{The 97.5th percentile for the risk of the defined intervention at the last time point.}
-#' \item{rd_cv_upper}{The 97.5th percentile for the risk of the reference intervention at the last time point.}
-#' \item{ice_cv_all_upper}{The 97.5th percentile for the risk of the defined intervention at all time points.}
-#' \item{ref_cv_all_upper}{The 97.5th percentile for the risk of the reference intervention at all time points.}
-#' \item{ice_cv_lower}{The 2.5th percentile for the risk of the defined intervention at the last time point.}
-#' \item{ref_cv_lower}{The 2.5th percentile for the risk of the reference intervention at the last time point.}
-#' \item{rr_cv_lower}{The 2.5th percentile for the risk of the defined intervention at the last time point.}
-#' \item{rd_cv_lower}{The 2.5th percentile for the risk of the reference intervention at the last time point.}
-#' \item{ice_cv_all_lower}{The 2.5th percentile for the risk of the defined intervention at all time points.}
-#' \item{ref_cv_all_lower}{The 2.5th percentile for the risk of the reference intervention at all time points.}
+#' \item{rr_cv_upper}{The (100 - (100 - \code{coverage}) / 2)th percentile for the risk ratio at the last time point. Default is the 97.5th percentile when \code{coverage} is set to its default value 95.}
+#' \item{rd_cv_upper}{The (100 - (100 - \code{coverage}) / 2)th percentile for the risk difference at the last time point. Default is the 97.5th percentile when \code{coverage} is set to its default value 95.}
+#' \item{ice_cv_all_upper}{The (100 - (100 - \code{coverage}) / 2)th percentile for the risk of the defined intervention at all time points. Default is the 97.5th percentile when \code{coverage} is set to its default value 95.}
+#' \item{ref_cv_all_upper}{The (100 - (100 - \code{coverage}) / 2)th percentile for the risk of the reference intervention at all time points. Default is the 97.5th percentile when \code{coverage} is set to its default value 95.}
+#' \item{rr_cv_lower}{The ((100 - \code{coverage}) / 2)th percentile for the risk ratio at the last time point. Default is the 2.5th percentile when \code{coverage} is set to its default value 95.}
+#' \item{rd_cv_lower}{The ((100 - \code{coverage}) / 2)th percentile for the risk difference at the last time point. Default is the 2.5th percentile when \code{coverage} is set to its default value 95.}
+#' \item{ice_cv_all_lower}{The ((100 - \code{coverage}) / 2)th percentile for the risk of the defined intervention at all time points. Default is the 2.5th percentile when \code{coverage} is set to its default value 95.}
+#' \item{ref_cv_all_lower}{The ((100 - \code{coverage}) / 2)th percentile for the risk of the reference intervention at all time points. Default is the 2.5th percentile when \code{coverage} is set to its default value 95.}
 #' \item{ref_ipw_se}{Standard error for the observed risk.}
-#' \item{ref_ipw_cv_all_upper}{The 97.5th percentile for the observed risk at all time points.}
-#' \item{ref_ipw_cv_all_lower}{The 2.5th percentile for the observed risk at all time points.}
-#' \item{boot_data}{A list containing all the bootstrapped data samples.}
-#' \item{outcome_init}{A list containing the fitted models and information for the outcome model of the first step in the ICE algorithm on the bootstrapped samples for the defined intervention.}
-#' \item{comp_init}{A list containing the fitted models and information for the competing model of the first step in the ICE algorithm (if applicable) on the bootstrapped samples for the defined intervention.}
-#' \item{np_model}{A list containing the fitted models and information for the censoring and/or competing model in estimating observed risk (if applicable) on the bootstrapped samples for the defined intervention.}
-#' \item{outcome_by_step}{A list containing the fitted models and information for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples for the defined intervention.}
-#' \item{comp_by_step}{A list containing the fitted models and information for the competing model of each iteration in the ICE algorithm (if applicable) on the bootstrapped samples for the defined intervention.}
-#' \item{hazard_by_step}{A list containing the fitted models and their information for hazard model, either time-specific models of each time point or one pooled-over-time global model on the bootstrapped samples for the defined intervention.}
-#' \item{ref_outcome_init}{A list containing the fitted models and information for the outcome model of the first step in the ICE algorithm on the bootstrapped samples for the reference intervention.}
-#' \item{ref_comp_init}{A list containing the fitted models and information for the competing model of the first step in the ICE algorithm (if applicable) on the bootstrapped samples for the reference intervention.}
-#' \item{ref_np_model}{A list containing the fitted models and information for the censoring and/or competing model in estimating observed risk (if applicable) on the bootstrapped samples for the reference intervention.}
-#' \item{ref_outcome_by_step}{A list containing the fitted models and information for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples for the reference intervention.}
-#' \item{ref_comp_by_step}{A list containing the fitted models and information for the competing model of each iteration in the ICE algorithm (if applicable) on the bootstrapped samples for the reference intervention.}
-#' \item{ref_hazard_by_step}{A list containing the fitted models and their information for hazard model, either time-specific models of each time point or one pooled-over-time global model on the bootstrapped samples for the reference intervention.}
-#' \item{ref_data_err}{A list containing whether there is any data error from any replicate of bootstrap process for the reference intervention.}
-#' \item{ref_model_err}{A list containing whether there is any model error produced from any replicate of bootstrap process for the reference intervention.}
-#' \item{ref_model_err_mssg}{A list containing error message of any model error from any replicate of bootstrap process for the reference intervention.}
-#' \item{ref_data_err_mssg}{A list containing error message of any data error from any replicate of bootstrap process for the reference intervention.}
+#' \item{ref_ipw_cv_all_upper}{The (100 - (100 - \code{coverage}) / 2)th percentile for the observed risk at all time points. Default is the 97.5th percentile when \code{coverage} is set to its default value 95.}
+#' \item{ref_ipw_cv_all_lower}{The ((100 - \code{coverage}) / 2)th percentile for the observed risk at all time points. Default is the 2.5th percentile when \code{coverage} is set to its default value 95.}
+#' \item{boot_data}{A list of data samples from all bootstrap replicates.}
+#' \item{outcome_init}{A list, where each sublist contains the fitted outcome models in the first step of algorithm for the defined intervention from each bootstrap replicate.}
+#' \item{comp_init}{A list, where each sublist contains the fitted competing models in the first step of algorithm for the defined intervention from each bootstrap replicate (if applicable). }
+#' \item{np_model}{A list, where each sublist contains the fitted censoring and/or competing models in estimating the observed risk from each bootstrap replicate (if applicable).}
+#' \item{outcome_by_step}{A list, where each sublist contains the fitted outcome models in each iteration of algorithm for the defined intervention from each bootstrap replicate.}
+#' \item{comp_by_step}{A list, where each sublist contains the fitted competing models in each iteration of algorithm for the defined intervention from each bootstrap replicate (if applicable).}
+#' \item{hazard_by_step}{A list, where each sublist contains the fitted hazard model, either time-specific models at each time point or one pooled-over-time global model, for the defined intervention from each bootstrap replicate (if applicable).}
+#' \item{ref_outcome_init}{A list, where each sublist contains the fitted outcome models in the first step of algorithm for the reference intervention from each bootstrap replicate.}
+#' \item{ref_comp_init}{A list, where each sublist contains the fitted competing models in the first step of algorithm for the reference intervention from each bootstrap replicate (if applicable).}
+#' \item{ref_outcome_by_step}{A list, where each sublist contains the fitted outcome models in each iteration of algorithm for the reference intervention from each bootstrap replicate.}
+#' \item{ref_comp_by_step}{A list, where each sublist contains the fitted competing models in each iteration of algorithm for the reference intervention from each bootstrap replicate (if applicable).}
+#' \item{ref_hazard_by_step}{A list, where each sublist contains the fitted hazard model, either time-specific models at each time point or one pooled-over-time global model, for the reference intervention from each bootstrap replicate (if applicable).}
+#' \item{ref_data_err}{A list of logical values indicating whether there is any data error for the reference intervention from each bootstrap replicate.}
+#' \item{ref_model_err}{A list of logical valules indicating whether there is any model error produced from each bootstrap replicate for the reference intervention.}
+#' \item{ref_model_err_mssg}{A list of strings for error messages of any model error from each bootstrap replicate for the reference intervention.}
+#' \item{ref_data_err_mssg}{A list of strings for error messages of any data error from each bootstrap replicate for the reference intervention.}
 #'
 #' @export
 #' @import doParallel
 #'
 bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_description,
-                          ref_intervention_varname, total_effect,
+                          ref_intervention_varnames, total_effect,
                           ref_intervention,
                           interventions, intervention_varnames, intervention_description,
                           intervention_times, ref_intervention_times,
@@ -259,7 +253,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
 
       ref <- try(
         f(data = boot_data, total_effect = total_effect, id = id, K = K,
-               interventions = interv_boot(ref_intervention, row_idx), intervention_names = list(ref_intervention_varname),
+               interventions = interv_boot(ref_intervention, row_idx), intervention_names = ref_intervention_varnames,
                intervention_description = ref_description, intervention_times = ref_intervention_times, ...),
         silent = T
       )
@@ -290,8 +284,8 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
       } else {
         data_issue_err <- data_issue_mssg <- model_issue_err <- model_issue_mssg <- NA
         
-        ice_value <- ref$gformula_risk_last_time
-        ice_all <- ref$gformula_risk
+        ice_value <- ice$gformula_risk_last_time
+        ice_all <- ice$gformula_risk
         
         this_outcome_init <- list(ice$outcome_init)
         this_comp_init <- list(ice$comp_init)
@@ -299,10 +293,10 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         
         this_ref_outcome_init <- list(ref$outcome_init)
         this_ref_comp_init <- list(ref$comp_init)
-        this_ref_np_model <- list(ref$np_model)
+        # this_ref_np_model <- list(ref$np_model)
         
         names(this_outcome_init) <- names(this_np_model) <- names(this_comp_init) <- paste0("Bootstrap Replicate ", i)
-        names(this_ref_outcome_init) <- names(this_ref_np_model) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
+        names(this_ref_outcome_init) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
         
         this_outcome_by_step <- get_models(ice, "outcome_by_step", paste0("Bootstrap Replicate ", i))
         this_hazard_by_step <- get_models(ice, "hazard_by_step", paste0("Bootstrap Replicate ", i))
@@ -343,7 +337,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
           ref_model_issue_mssg <- ref[1]
         }
         
-        this_ref_outcome_init <- this_ref_comp_init <- this_ref_np_model <- this_ref_outcome_by_step <- 
+        this_ref_outcome_init <- this_ref_comp_init <- this_ref_outcome_by_step <- 
           this_ref_hazard_by_step <- this_ref_comp_by_step <- NA 
         ref_all <- ref_ipw_all <- ref_value <- NA
         
@@ -353,9 +347,8 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         
         this_ref_outcome_init <- list(ref$outcome_init)
         this_ref_comp_init <- list(ref$comp_init)
-        this_ref_np_model <- list(ref$np_model)
         
-        names(this_ref_outcome_init) <- names(this_ref_np_model) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
+        names(this_ref_outcome_init) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
         
         this_ref_outcome_by_step <- get_models(ref, "outcome_by_step", paste0("Bootstrap Replicate ", i))
         this_ref_hazard_by_step <- get_models(ref, "hazard_by_step", paste0("Bootstrap Replicate ", i))
@@ -379,7 +372,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
                      outcome_by_step_boot = this_outcome_by_step, hazard_by_step_boot = this_hazard_by_step,
                      comp_by_step_boot = this_comp_by_step, 
                      ref_outcome_init_boot = this_ref_outcome_init, ref_comp_init_boot = this_ref_comp_init,
-                     ref_np_model_boot = this_ref_np_model,
                      ref_outcome_by_step_boot = this_ref_outcome_by_step, ref_hazard_by_step_boot = this_ref_hazard_by_step,
                      ref_comp_by_step_boot = this_ref_comp_by_step)
 
@@ -446,7 +438,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     
     ref_outcome_init <- get_boot_models("ref_outcome_init_boot", boot_result)
     ref_comp_init <- get_boot_models("ref_comp_init_boot", boot_result)
-    ref_np_model <- get_boot_models("ref_np_model_boot", boot_result)
+    # ref_np_model <- get_boot_models("ref_np_model_boot", boot_result)
     ref_outcome_by_step <- get_boot_models("ref_outcome_by_step_boot", boot_result)
     ref_comp_by_step <- get_boot_models("ref_comp_by_step_boot", boot_result)
     ref_hazard_by_step <- get_boot_models("ref_hazard_by_step_boot", boot_result)
@@ -493,7 +485,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
   } else {
     boot_data_all <- c()
     outcome_init <- comp_init <- np_model <- outcome_by_step <- comp_by_step <- hazard_by_step <- c()
-    ref_outcome_init <- ref_comp_init <- ref_np_model <- ref_outcome_by_step <- ref_comp_by_step <- ref_hazard_by_step <- c()
+    ref_outcome_init <- ref_comp_init <- ref_outcome_by_step <- ref_comp_by_step <- ref_hazard_by_step <- c()
     # fit_all <- fit_summary <- fit_stderr <- fit_vcov <- fit_rmse <- c()
     data_err <- model_err <- c()
     data_err_mssg <- model_err_mssg <- c()
@@ -541,7 +533,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
 
       ref <- try(
         f(data = boot_data, total_effect = total_effect, id = id, K = K,
-               interventions = interv_boot(ref_intervention, row_idx), intervention_names = list(ref_intervention_varname),
+               interventions = interv_boot(ref_intervention, row_idx), intervention_names = ref_intervention_varnames,
                intervention_description = ref_description, intervention_times = ref_intervention_times, ...), 
         silent = T
       )
@@ -581,10 +573,10 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
           
           this_ref_outcome_init <- list(ref$outcome_init)
           this_ref_comp_init <- list(ref$comp_init)
-          this_ref_np_model <- list(ref$np_model)
+          # this_ref_np_model <- list(ref$np_model)
           
           names(this_outcome_init) <- names(this_np_model) <- names(this_comp_init) <- paste0("Bootstrap Replicate ", i)
-          names(this_ref_outcome_init) <- names(this_ref_np_model) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
+          names(this_ref_outcome_init) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
           
           this_outcome_by_step <- get_models(ice, "outcome_by_step", paste0("Bootstrap Replicate ", i))
           this_hazard_by_step <- get_models(ice, "hazard_by_step", paste0("Bootstrap Replicate ", i))
@@ -624,7 +616,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
             ref_model_issue_mssg <- ref[1]
           }
           
-          this_ref_outcome_init <- this_ref_comp_init <- this_ref_np_model <- this_ref_outcome_by_step <- 
+          this_ref_outcome_init <- this_ref_comp_init <- this_ref_outcome_by_step <- 
             this_ref_hazard_by_step <- this_ref_comp_by_step <- NA 
           ref_all <- ref_ipw_all <- ref_value <- NA
           
@@ -634,9 +626,9 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
           
         this_ref_outcome_init <- list(ref$outcome_init)
         this_ref_comp_init <- list(ref$comp_init)
-        this_ref_np_model <- list(ref$np_model)
+        # this_ref_np_model <- list(ref$np_model)
         
-        names(this_ref_outcome_init) <- names(this_ref_np_model) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
+        names(this_ref_outcome_init) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
         
         this_ref_outcome_by_step <- get_models(ref, "outcome_by_step", paste0("Bootstrap Replicate ", i))
         this_ref_hazard_by_step <- get_models(ref, "hazard_by_step", paste0("Bootstrap Replicate ", i))
@@ -669,7 +661,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
       
       ref_outcome_init <- c(ref_outcome_init, this_ref_outcome_init)
       ref_comp_init <- c(ref_comp_init, this_ref_comp_init)
-      ref_np_model <- c(ref_np_model, this_ref_np_model)
+      # ref_np_model <- c(ref_np_model, this_ref_np_model)
 
       ice_boot <- c(ice_boot, ice_value)
       ref_boot <- c(ref_boot, ref_value)
@@ -767,16 +759,16 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
   }
 
   return(list(ice_se = ice_se_all, ref_se = ref_se_all, rr_se = rr_se, rd_se = rd_se,
-              ice_cv_upper = ice_cv_upper, ref_cv_upper = ref_cv_upper, rr_cv_upper = rr_cv_upper, rd_cv_upper = rd_cv_upper,
+              rr_cv_upper = rr_cv_upper, rd_cv_upper = rd_cv_upper,
               ice_cv_all_upper = ice_cv_all_upper, ref_cv_all_upper = ref_cv_all_upper,
-              ice_cv_lower = ice_cv_lower, ref_cv_lower = ref_cv_lower, rr_cv_lower = rr_cv_lower, rd_cv_lower = rd_cv_lower,
+              rr_cv_lower = rr_cv_lower, rd_cv_lower = rd_cv_lower,
               ice_cv_all_lower = ice_cv_all_lower, ref_cv_all_lower = ref_cv_all_lower,
               ref_ipw_se = ref_ipw_se_all, ref_ipw_cv_all_upper = ref_ipw_cv_all_upper, ref_ipw_cv_all_lower = ref_ipw_cv_all_lower,
               boot_data = boot_data_all, outcome_init = outcome_init, 
               comp_init = comp_init, np_model = np_model, outcome_by_step = outcome_by_step, 
               comp_by_step = comp_by_step, hazard_by_step = hazard_by_step, 
               ref_outcome_init = ref_outcome_init, 
-              ref_comp_init = ref_comp_init, ref_np_model = ref_np_model, 
+              ref_comp_init = ref_comp_init, 
               ref_outcome_by_step = ref_outcome_by_step, 
               ref_comp_by_step = ref_comp_by_step, ref_hazard_by_step = ref_hazard_by_step, 
               ref_data_err = ref_data_err, ref_model_err = ref_model_err, 

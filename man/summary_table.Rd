@@ -2,7 +2,7 @@
 % Please edit documentation in R/helper.R
 \name{summary_table}
 \alias{summary_table}
-\title{Output the Summary Table from ICE Estimator Object}
+\title{Summary Table for ICE Estimator Objects}
 \usage{
 summary_table(...)
 }
@@ -13,7 +13,7 @@ summary_table(...)
 a data frame containing the summary table for all specified ICE estimator objects.
 }
 \description{
-(This function is going to be converted to the S3 method in R so it is named "summary_table" for now.
+This function returns a summary table for ICE estimator objects. (This function is going to be converted to the S3 method in R so it is named "summary_table" for now.
 After conversion, users could use the base function summary().)
 }
 \examples{
@@ -32,8 +32,8 @@ outcome_model = Y ~ L1 + L2 + A1 + A2,
 censor_model = C ~ L1 + L2 + A1 + A2,
 ref_idx = 0,
 int_descript = c("Static Intervention"),
-intervention1.A1 = list(static_A1),
-intervention1.A2 = list(static_A2)
+intervention1.A1 = list(static(3)),
+intervention1.A2 = list(static(1))
 )
 
 fit_hazard_pool <- ice(
@@ -48,10 +48,11 @@ estimator = pool(hazard = T),
 comp_effect = 0,
 outcome_model = Y ~ L1 + L2 + A1 + A2,
 censor_model = C ~ L1 + L2 + A1 + A2,
+competing_model = D ~ L1 + L2 + A1 + A2,
 ref_idx = 0,
 int_descript = c("Static Intervention"),
-intervention1.A1 = list(static_A1),
-intervention1.A2 = list(static_A2)
+intervention1.A1 = list(static(3)),
+intervention1.A2 = list(static(1))
 )
 
 summary_table(fit_classical_pool, fit_hazard_pool)

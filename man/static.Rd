@@ -2,21 +2,21 @@
 % Please edit documentation in R/helper.R
 \name{static}
 \alias{static}
-\title{Static Intervention Function}
+\title{Static}
 \usage{
 static(value, data = interv_data)
 }
 \arguments{
-\item{value}{a numeric specifying the intervention value. 1 for always treat and 0 for never treat.}
+\item{value}{a number specifying the intervention value. 0 for never treat.}
 
 \item{data}{a data frame containing the observed data.}
 }
 \value{
-a vector containing the intervened value in the same size as the number of rows in \code{data}.
+a vector containing the intervened values of the same size as the number of rows in \code{data}.
 }
 \description{
-This function implements the static intervention, specifically always treat and never treat.
-Always treat refers to the constant treatment across all time points. Never treat refers to no treatment across all time points.
+This function specifies the static intervention, either treat with a constant value or never treat, 
+on the treatment variable in \code{data}.
 }
 \examples{
 data <- readRDS("test_data_competing.rds")

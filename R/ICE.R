@@ -1,46 +1,23 @@
-#' Singly Robust and Doubly Robust Iterative Conditional Expectation (ICE) Estimator for the Specified Intervention
+#' Iterative Conditional Expectation Estimator
 #'
-#' This function estimates the risk over time for survival outcome using the given observed data set following
-#' multiple user-defined intervention strategies by the parametric g-formula iterative conditional expectation (ICE)
-#' estimator. This function allows users to access all singly robust and doubly robust ICE estimators:
-#' classical pooling over treatment history ICE estimator, classical stratifying on treatment history ICE estimator,
-#' hazard-based pooling over treatment history ICE estimator, hazard-based stratifying on treatment history ICE estimator,
-#' and a doubly robust inverse probability weighted ICE estimator. Logistic regression is used for outcome model and hazard of death (if applicable).
-#' Please see Wen et al. (2021) more details regarding the parametric g-formula
-#' iterative conditional expectation estimator.
+#' This function implements iterative conditional expectation (ICE) estimators under user-defined treatment strategies.
+#' Available ICE estimators are classical and hazard-based pooling over treatment history ICE, 
+#' classical and hazard-based stratifying on treatment history ICE, and doubly robust ICE estimators. 
+#' See Wen et al. (2021) for more details regarding the parametric g-formula iterative conditional expectation estimator.
 #'
 #' Users could specify which version ICE estimator to use through \code{estimator}.
 #' \itemize{
 #' \item{\code{pool(hazard = F)} specifies the classical pooling over treatment history ICE estimator. }
 #' \item{\code{pool(hazard = T)} specifies the hazard-based pooling over treatment history ICE estimator. }
 #' \item{\code{strat(hazard = F)} specifies the classical stratifying on treatment history ICE estimator. }
-#' \item{\code{strat(hazard = T)} specifies the hazard-based stratify on treatment history ICE estimator. }
-#' \item{\code{weight(treat_model)} specifies the IP weighted ICE estimator
+#' \item{\code{strat(hazard = T)} specifies the hazard-based stratifying on treatment history ICE estimator. }
+#' \item{\code{weight(treat_model)} specifies the doubly robust weighted ICE estimator
 #' where \code{treat_model} specifies the treatment model.}
 #' }
-#' For stratified ICE, the estimator will automatically add in the treatment variables that are not intervened as covariates
-#' into the model specification for each time point. To provide flexible choices on the model specification inputs, we also
-#' provide keyword argument options for users to specify a different model statement, which is different from the model statement specified
-#' in \code{outcome_model} or \code{competing_model}, for user-chosen interventions.
-#' The input to each outcome or competing model keyword argument is a model statement formula.
-#' To specify different outcome model for different intervention, please follow the keyword argument input convention below:
-#'
-#' \itemize{
-#' \item{Each outcome model is specified using keyword argument name starting with \emph{outcomeModel} prefix.}
-#' \item{Use \emph{.n} \emph{outcomeModel} prefix in keyword argument name to specify which intervention being applied to,
-#' where \emph{n} represents the \emph{n}th intervention.}
-#' }
-#'
-#' To specify different competing model for different intervention, please follow the keyword argument input convention below:
-#'
-#' \itemize{
-#' \item{Each competing model is specified using keyword argument name starting with \emph{compModel} prefix.}
-#' \item{Use \emph{.n} \emph{compModel} prefix in keyword argument name to represent applying to \emph{n}th intervention.}
-#' }
-#'
-#' If an outcome or competing model is specified for an intervention using keyword argument, then the outcome or competing model will be used for the intervention.
-#' If there is no outcome or competing model keyword argument specified, the outcome or competing model specified in \code{outcome_model} or \code{competing_model} will be
-#' used for the intervention.
+#' To provide flexible choices on model inputs for stratified ICE and doubly robust ICE, we allow users to specify intervention-specific model statements through keyword arguments. 
+#' In the case where intervention-specific model statements are specified, 
+#' treatment variables that are not intervened under some strategies will be considered as a covariate and automatically added into the model specification at each time point.
+#' Please see more details on how to specify intervention-specific model specifications in the "Arguments" section.
 #'
 #' For example, the following input specifies \code{Y ~ L1} as outcome model for intervention 1,
 #' \code{D ~ L1} as competing model for intervention 2,
@@ -65,33 +42,28 @@
 #' \code{Y ~ L1 + L2} as specified in \code{outcome_model}.
 #' Similarly, because the keyword argument for competing model is not specified for intervention 1, the competing model for intervention 1 is
 #' \code{D ~ L1 + L2} as specified in \code{competing_model}.
-#' Please see more examples in the examples section.
-#' Note that for stratified ICE in the case of direct effect, the keyword argument competing model statement inputs are ignored.
+#' In the case of controlled direct effect, the keyword arguments for competing models are ignored. Please see more examples in the "Examples" section.
 #'
-#' Users could specify user-defined interventions or implement built-in interventions provided by the package
-#' using the intervention input convention described in the parameter description section.
-#'
-#' For the package built-in intervention strategy functions, if one wants to implement the strategy within the ICE method,
-#' please follow the instructions described below. Furthermore, users could assess the intervened values by
-#' specifying additional arguments following the detailed documentation for each function.
-#' Built-in interventions include following:
+#' Both built-in interventions and user-defined interventions are available. 
+#' 
+#' The following are the built-in intervention functions in the package:
 #' \itemize{
-#' \item{Always Treat:} {\code{static(1)}}
-#' \item{Never Treat:} {\code{static(0)}}
-#' \item{Dynamic Treat Based on \code{condition}:} {\code{dynamic(condition, strategy_before, strategy_after, absorb)}. 
-#' \code{condition} is a string specifying a logical expression. The strategy specified in \code{strategy_before} is followed until \code{condition} is met. 
-#' Upon \code{condition} is met, the strategy specified in \code{strategy_after} is followed. \code{absorb} is a logical specifying whether to use absorbing strategy.
-#' If \code{absorb} is TRUE, then the strategy specified in \code{strategy_after} is absorbing upon the first time when \code{condition} is met.
-#' If \code{absorb} is FALSE, then the strategy specified in \code{strategy_after} is followed every time \code{condition} is met.}
-#' \item{Threshold Intervention Based on \code{var}:} {\code{threshold(lower_bound, upper_bound)}. If treatment value is within the range between \code{lower_bound} and \code{upper_bound} inclusively,
-#' then follow the natural value of the treatment. Otherwise, if the treatment value is below \code{lower_bound}, then set to \code{lower_bound}.
-#' If the treatment value is above the upper bound, then set to \code{upper_bound}.}
-#' \item{Grace Period:} {\code{grace_period(type, nperiod, condition)}. \code{type} could be "uniform" or "natural". \code{nperiod} specifies the length of grace period.
-#' When a defined intervention condition based on \code{condition} is met, initiate treatment in \code{nperiod} time units. If there is no intervention,
-#' follow the observed treatment initiation distribution (for natural grace period) or the uniform distribution of treatment initiation (for uniform grace period). }
-#' \item{User-Defined Intervention:} {The output of the user-defined intervention should be a vector of intervened value of the intervention variable for each individual at each time point in the size as the number of rows in \code{data}.}
-#' }
-#' Some examples are provided in the example section.
+#' \item{Static Intervention:} {\code{static(value)} specifies a constant intervention with \code{value}.}
+#' \item{Dynamic Intervention:} {\cr \code{dynamic(condition, strategy_before, strategy_after, absorb)} 
+#' specifies a dynamic intervention where the strategy in \code{strategy_before} is followed until \code{condition} is met. 
+#' Upon \code{condition} is met, the strategy in \code{strategy_after} is followed. If absorb is \code{TRUE}, the intervention becomes absorbing once \code{condition} is met.}
+#' \item{Threshold Intervention:} {\code{threshold(lower_bound, upper_bound)} specifies a threshold intervention. 
+#' If the treatment value is between \code{lower_bound} and \code{upper_bound} inclusively, follow the natural value of the treatment. 
+#' Otherwise, set to \code{lower_bound} or \code{upper_bound}, if the treatment value is below \code{lower_bound} or above \code{upper_bound}, correspondingly.}
+#' \item{Grace Period:} {\code{grace_period(type, nperiod, condition)} specifies a dynamic intervention with grace period. 
+#' Once \code{condition} is met, the intervention is initiated within \code{nperiod} time units. 
+#' During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.}
+#' 
+#' The following is the user-defined intervention:
+#' 
+#' \item{User-defined Interventions:} {The output of the user-defined intervention should contain the intervened value for each individual at each time point, and should be of the same size as the number of rows in \code{data}.
+#' 
+#' Please see examples in the "Examples" section.
 #'
 #' In order to obtain an inverse probability (IP) weighted natural course risk based on the observed data, users must specify
 #' a censoring variable through \code{censor_name} and a corresponding censoring model through \code{censor_model}. Please see
@@ -101,122 +73,114 @@
 #' the model specification through \code{competing_model} for hazard-based ICE estimator. Users need to specify whether to treat
 #' the competing event as censoring or total effect through \code{total_effect}.
 #' 
-#' For model statement in \code{outcome_model}, \code{censor_model}, \code{competing_model}, and \code{hazard_model}, users could
-#' specify polynomial terms using functions \code{I} and \code{poly} and spline terms using \code{ns} from splines package
+#' We provide flexible term options in model specification for the outcome, censoring, competing, and hazard model. 
+#' Users could specify polynomial terms using functions \code{I} and \code{poly} and spline terms using \code{ns} from splines package
 #' and \code{rcspline.eval} from Hmisc package. In addition, users could specify lagged terms using the format lag\code{n}_\code{var} 
-#' to indicate lagging the variable \emph{var} \emph{n} periods. If lagged treatment variables are used, 
-#' they will be automatically intervened based on specified interventions. One could also use the polynomial and spline term functions
-#' on the lagged terms.
+#' to indicate lagging the variable \emph{var} with \emph{n} periods. 
+#' If the lagged variable is a treatment variable, this variable is automatically intervened based on user-defined intervention.
+#' The polynomial and spline terms could be used on lagged variables.
 #'
 #'
 #'
 #' @param data a data frame containing the observed data in long format.
-#' @param time_points a numerical value that indicates the total number of time points.
-#' @param id a character string indicating the ID variable name in \code{data}.
-#' @param time_name a character string indicating the time variable name in \code{data}.
-#' @param outcome_name a character string indicating the outcome variable name in \code{data}.
-#' @param censor_name a character string indicating the censor variable name in \code{data}. Default is \code{NULL}.
-#' @param compevent_name a character string indicating the competing variable name in \code{data}. Default is \code{NULL}.
-#' @param comp_effect a numeric specifying how the competing event is handled for all the specified interventions. Default is 0.
-#' \code{0} outputs direct effect for all the specified interventions.
-#' \code{1} outputs total effect for all the specified interventions.
-#' @param outcome_model a formula specifying the model statement for the outcome model. 
-#' @param censor_model a formula specifying the model statement for the censoring model for IP weighted natural course risk. Default is \code{NULL}.
-#' @param competing_model a formula specifying the model statement for the competing model for hazard-based ICE estimator. Default is \code{NULL}.
-#' @param hazard_model a formula specifying the model statement for the hazard model for hazard-based ICE estimator. Default is \code{NULL}.
-#' For hazard-based ICE estimator, if \code{hazard_model} is not specified, then the model statement specified in \code{outcome_model} will be used as the hazard model.
-#' @param global_hazard a logical indicating whether to use global pooled-over-time hazard model or time-specific hazard model. 
-#' This option is for pooled hazard-based ICE only. TRUE for pooled-over-time hazard model. FALSE for time-specific hazard model. Default is FALSE.
-#' @param ref_idx a numerical indicating which intervention to be used as the reference to calculate the risk ratio and risk difference. Default is 0.
-#' 0 refers to using the natural course as the reference intervention.
-#' Any other numbers refer to the corresponding intervention that users specify in the keywords argument.
-#' @param estimator a function to specifying which ICE estimator to use for the estimation. Possible inputs are:
+#' @param time_points a number indicating the total number of time points.
+#' @param id a string indicating the ID variable name in \code{data}.
+#' @param time_name a string specifying the time variable name in \code{data}.
+#' @param outcome_name a string specifying the outcome variable name in \code{data}.
+#' @param censor_name a string specifying the censor variable name in \code{data}. Default is \code{NULL}.
+#' @param compevent_name a string specifying the competing variable name in \code{data}. Default is \code{NULL}.
+#' @param comp_effect a number indicating how the competing event is handled for all the specified interventions. Default is 0.
+#' 0 for controlled direct effect. 1 for total effect.
+#' @param outcome_model a formula specifying the model statement for the outcome. 
+#' @param censor_model a formula specifying the model statement for the censoring event. Default is \code{NULL}.
+#' @param competing_model a formula specifying the model statement for the competing event. Default is \code{NULL}.
+#' @param hazard_model a formula specifying the model statement for the hazard, if hazard-based estimator is used. Default is \code{NULL}. 
+#' If specified, the model in \code{hazard_model} will be used. If NULL, the model in \code{outcome_model} will be used.
+#' @param global_hazard a logical value indicating whether to use global pooled-over-time hazard model or time-specific hazard models, for hazard-based pooled ICE only. 
+#' If \code{TRUE}, use pooled-over-time hazard model. If \code{FALSE}, use time-specific hazard models. Default is \code{FALSE}.
+#' @param ref_idx a number indicating which intervention to be used as the reference to calculate the risk ratio and risk difference. Default is 0.
+#' 0 refers to the natural course as the reference intervention.
+#' Any other numbers refer to the corresponding intervention that users specify in the keyword arguments.
+#' @param estimator a function specifying which ICE estimator to use for the estimation. Possible inputs are:
 #' \itemize{
-#' \item{Classical Pooling over Treatment History ICE Estimator: }{\code{pool(hazard = F)}}
-#' \item{Hazard Based Pooling over Treatment History ICE Estimator: }{\code{pool(hazard = T)}}
-#' \item{Classical Stratifying Treatment History ICE Estimator: }{\code{strat(hazard = F)}}
-#' \item{Hazard Based Stratifying Treatment History ICE Estimator: }{\code{strat(hazard = T)}}
-#' \item{Doubly Robust Weighted ICE Estimator: }{\cr
+#' \item{Classical pooling over treatment history ICE estimator (classical pooled ICE): }{ \code{pool(hazard = F)}}
+#' \item{Hazard-Based pooling over treatment history ICE estimator (hazard-based pooled ICE): }{ \code{pool(hazard = T)}}
+#' \item{Classical stratifying on treatment history ICE estimator (classical stratified ICE): }{ \code{strat(hazard = F)}}
+#' \item{Hazard-Based stratifying on treatment history ICE estimator (hazard-based stratified ICE): }{ \code{strat(hazard = T)}}
+#' \item{Doubly robust weighted ICE estimator (doubly robust ICE): }{\cr
 #' \code{weight(treat_model)}
 #' where \code{treat_model} is a list specifying the treatment model.}
 #' }
-#' @param int_descript a vector of strings containing description for each specified intervention.
-#' @param ci_method a character string specifying the method used for calculating the confidence interval, if \code{nsamples} is larger than 0.
-#' Either "percentile" or "normal." Default is "percentile."
-#' @param nsamples a numeric indicating number of bootstrap samples. If a number larger than 0 is specified, bootstrap samples will be used for
-#' standard error estimate and confidence interval. Default is 0.
-#' @param seed a numeric indicating the starting seed for bootstrap. Default is 1.
-#' @param significance_level a numeric indicating the significance level to be used for confidence interval. Default is 0.05.
-#' @param parallel a logical indicating whether to parallelize the bootstrap process. TRUE for using parallel computing. FALSE for not using parallel computing.
-#' Default is FALSE.
-#' @param ncores a numeric indicating the number of CPU cores to be used in parallel computing. Default is 2.
-#' @param ... keywords arguments for intervention inputs, optional outcome models for stratified ICE, and optional competing models for stratified ICE.
-#' The keyword argument for interventions should follow the below naming convention:
+#' @param int_descript a vector of strings containing descriptions for each specified intervention.
+#' @param ci_method a string specifying the method for calculating the confidence interval, if \code{nsamples} is larger than 0.
+#' Possible values are "percentile" and "normal." Default is "percentile."
+#' @param nsamples a number larger than 0 indicating the number of bootstrap samples. Default is 0.
+#' @param seed a number indicating the starting seed for bootstrapping. Default is 1.
+#' @param coverage a number greater than 0 and less than 100 indicating the coverage of the confidence interval. Default is 95.
+#' @param parallel a logical value indicating whether to parallelize the bootstrap process. Default is \code{FALSE}.
+#' @param ncores a number indicating the number of CPU cores to use in parallel computing. Default is 2.
+#' @param ... keyword arguments to specify intervention inputs. If stratified ICE is used, keyword arguments also allow intervention-specific outcome models and competing models. 
+#' \cr 
+#' To specify interventions, please follow the input convention below:
 #' \itemize{
 #' \item{Each intervention is specified using the keyword argument name with \emph{intervention} prefix.}
-#' \item{Use \emph{i} after \emph{intervention} prefix in keyword argument name to represent the ith intervention strategy.}
-#' \item{Use \emph{.} followed with \emph{treatment variable name} after \emph{interventioni} in keyword argument name to represent the treatment name within the ith intervention strategy.}
+#' \item{Use \emph{i} after \emph{intervention} prefix in keyword argument name to represent the ith strategy.}
+#' \item{Use \emph{.} followed with \emph{treatment variable name} after \emph{interventioni} in keyword argument name to represent the treatment name within the ith strategy.}
 #' }
-#' The input for each keyword argument must be a list encompassing two elements, which are:
-#' a vector of intervened values and an optional vector of time points on which the corresponding intervention is applied.
-#' If the second element is not specified, then the defined intervention will be applied to all time points.
-#' A sample intervention input with two treatments of names A1 and A2 and two intervention strategies look like: \cr
+#' Each input of intervention keyword arguments is a list consisting of a vector of intervened values and an optional vector of time points on which the intervention is applied. 
+#' If the intervention time points are not specified, the intervention is applied to all time points. For example, 
+#' an input considers a simultaneous intervention with always treat on A1 and never treat on A2 at all time points looks like: \cr 
+#' \cr
 #' \code{intervention1.A1 = list(static(1))} \cr
-#' \code{intervention1.A2 = list(dynamic("L1 > 0", static(0), static(1), absorb = F))} \cr
-#' \code{intervention2.A1 = list(static(0))} \cr
-#' \code{intervention2.A2 = list(dynamic("L1 > 0", static(0), static(1), absorb = T))} \cr
-#' A sample intervention input with one treatment of name A and two intervention strategies look like: \cr
-#' \code{intervention1.A1 = list(static(1))} \cr
-#' \code{intervention2.A1 = list(static(0))} \cr
-#' For the above two intervention inputs, since there is no second element input, each specified intervention is applied on all time points.
-#' If one wants to specify the custom time points on which each intervention is applied, a sample intervention input looks like:
+#' \code{intervention1.A2 = list(static(0))} \cr \cr
+#' The above intervention applies to all time points. The following is an example of custom intervention time points, 
+#' with always treat on A1 at time point 1 and 2 and never treat on A2 at time point 3 to 5. \cr 
+#' \cr
 #' \code{intervention1.A1 = list(static(1), 1:2)} \cr
 #' \code{intervention1.A2 = list(static(0), 3:5)} \cr
-#' where the intervention on A1 within intervention strategy 1 is applied on time 1 and 2,
-#' and the intervention on A2 within intervention strategy 1 is applied on time 3 to 5.
-#' If there is no intervention specified, only the natural course risk will be returned. \cr
-#' To specify different outcome model for different intervention, please follow the keyword argument input convention below:
+#' \cr If there is no intervention keyword argument specified, the function returns the natural course risk only. Please see the "Examples" section for more examples.
+#' 
+#' To specify different outcome model and/or competing model for different intervention, please follow the input convention below:
 #'
 #' \itemize{
-#' \item{Each outcome model is specified using keyword argument name starting with \emph{outcomeModel} prefix.}
-#' \item{Use \emph{.n} \emph{outcomeModel} prefix in keyword argument name to specify which intervention being applied to,
+#' \item{Each outcome model is specified using keyword argument name starting with \emph{outcomeModel} or \emph{compModel} prefix for outcome model or competing model correspondingly.}
+#' \item{Use \emph{.n} after \emph{outcomeModel} or \emph{compModel} prefix in keyword argument name to specify which intervention being applied to,
 #' where \emph{n} represents the \emph{n}th intervention.}
 #' }
-#'
-#' To specify different competing model for different intervention, please follow the keyword argument input convention below:
-#'
-#' \itemize{
-#' \item{Each competing model is specified using keyword argument name starting with \emph{compModel} prefix.}
-#' \item{Use \emph{.n} \emph{compModel} prefix in keyword argument name to represent applying to \emph{n}th intervention.}
-#' }
-#' The input to each outcome or competing model keyword argument is a model statement formula.
-#' Please refer to the examples section for more examples.
+#' 
+#' The input to each outcome or competing model keyword argument is a model statement formula. 
+#' If no outcome model and competing model keyword argument is specified, the models specified in \code{outcome_model} and \code{comp_model} are used.
+#' Please refer to the "Examples" section for more examples.
 #'
 #'
 #'
-#' @return A list containing the following components. Each component containing model information includes the fitted models, 
-#' the summary of the fitted models, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-#' and the root mean square error (RMSE) values.
-#' \item{estimator.type}{A character string recording the type of ICE estimator used in the function.}
-#' \item{summary}{A summary table containing the estimated risk, risk ratio, and risk difference for interventions including natural course risk.
-#' Both the observed risk (\code{NP risk}) and the ICE estimated natural course risk are included.
-#' If \code{bootstrap} is TRUE, then the table also includes standard error and confidence interval for ICE risk, risk ratio, and risk difference of each intervention.}
-#' \item{risk.over.time}{A data frame containing the estimated ICE risk at each time point for each intervention.}
-#' \item{initial.outcome}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the outcome model of the first step in the ICE algorithm.}
-#' \item{initial.comp}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the competing model of the first step in the ICE algorithm (if applicable).}
-#' \item{np.risk.model}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the censoring and/or competing model in estimating observed risk (if applicable).}
-#' \item{outcome.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the outcome model of each iteration in the ICE algorithm.}
-#' \item{comp.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the competing model of each iteration in the ICE algorithm (if applicable).}
-#' \item{hazard.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for hazard model, either time-specific models of each time point or one pooled-over-time global model. }
-#' \item{boot.data}{A list containing all the bootstrapped data if \code{bootstrap} is set to \code{TRUE}.}
-#' \item{boot.initial.outcome}{A list containing the fitted models and their information for the outcome model of the first step in the ICE algorithm on the bootstrapped samples.}
-#' \item{boot.inital.comp}{A list containing the fitted models and their information for the competing model (if applicable) of the first step in the ICE algorithm on the bootstrapped samples.}
-#' \item{boot.np.risk.model}{A list containing the fitted models and their information for the censoring and/or competing model used in estimating observed risk on the bootstrapped samples.}
-#' \item{boot.outcome.models.by.step}{A list containing the fitted models and their information for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples.}
-#' \item{boot.comp.models.by.step}{A list containing the fitted models and their information for the competing model (if applicable) of each iteration in the ICE algorithm on the bootstrapped samples.}
-#' \item{boot.hazard.models.by.step}{A list containing the fitted models and their information for the hazard model (if applicable) on the bootstrapped samples.}
+#' @return A list containing the following components. Each component that contains the fitted models includes the model fits, the summary of the fitted model, 
+#' standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values.
+#' \item{estimator.type}{A string describing the type of the estimator.}
+#' \item{summary}{A summary table containing the estimated risk, risk ratio, and risk difference for user-defined interventions including estimated natural course risk and the observed risk.
+#' If \code{nsamples} is greater than 0, the summary table includes standard error and confidence interval for the point estimates.}
+#' \item{risk.over.time}{A data frame containing the estimated risk at each time point for each intervention.}
+#' \item{initial.outcome}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the outcome model in the first step of algorithm.}
+#' \item{initial.comp}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the competing model in the first step of algorithm (if applicable).}
+#' \item{np.risk.model}{A list containing the fitted models for the censoring and/or competing model in estimating observed risk (if applicable).}
+#' \item{outcome.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the outcome model in each iteration of algorithm.}
+#' \item{comp.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the competing model in each iteration of algorithm (if applicable).}
+#' \item{hazard.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the hazard model (if applicable), either time-specific models at all time points or one pooled-over-time global model.} 
+#' \item{boot.data}{A list of bootstrap samples. If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+#' \item{boot.initial.outcome}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the outcome model in the first step of algorithm on the bootstrap samples.
+#' If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+#' \item{boot.initial.comp}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the competing model in the first step of algorithm on the bootstrap samples (if applicable).
+#' If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+#' \item{boot.np.risk.model}{A list containing the fitted models for the censoring and/or competing model in estimating observed risk on the bootstrap samples (if applicable).
+#' If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+#' \item{boot.outcome.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the outcome model in each iteration of algorithm on the bootstrap samples (if applicable).
+#' If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+#' \item{boot.comp.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the competing model in each iteration of algorithm on the bootstrap samples (if applicable).
+#' If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+#' \item{boot.hazard.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the hazard model (if applicable), either time-specific models at all time points or one pooled-over-time global model, on the bootstrap samples.
+#' If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
 #' @export
-#' @import tidyverse stringr data.table reshape2
+#' @import tidyverse stringr data.table reshape2 nnet
 #'
 #' @references Wen L, Young JG, Robins JM, Hernán MA. Parametric g-formula implementations for causal survival analyses. Biometrics. 2021;77(2):740-753.
 #' @references McGrath S, Lin V, Zhang Z, Petito LC, Logan RW, Hernán MA, and JG Young. gfoRmula: An R package for estimating the effects of sustained treatment strategies via the parametric g-formula. Patterns. 2020;1:100008.
@@ -865,10 +829,10 @@ ice <- function(data, time_points, id, time_name,
   compModel_interv <- compModel_args_list$suffix
 
   # make outcome model list
-  outcomeModels <- get_model_formula(interv_list, outcome_interv, outcomeModel_interv, ninterv, "outcomeModel")
+  outcomeModels <- get_model_formula(interv_list, outcome_interv, outcomeModel_interv, ninterv, "outcomeModel", outcome_model)
 
   # make competing model list
-  compModels <- get_model_formula(interv_list, comp_interv, compModel_interv, ninterv, "compModel")
+  compModels <- get_model_formula(interv_list, comp_interv, compModel_interv, ninterv, "compModel", competing_model)
 
 
   if (ref_idx > ninterv | ref_idx < 0) {
@@ -1303,12 +1267,12 @@ ice <- function(data, time_points, id, time_name,
                           rd_se = 0, 
                           ice_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
                           ice_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
-                          ice_cv_upper = ref_first_boot$ref_cv_upper, 
-                          ice_cv_lower = ref_first_boot$ref_cv_lower, 
+                          # ice_cv_upper = tail(ref_first_boot$ref_cv_all_upper, 1), 
+                          # ice_cv_lower = tail(ref_first_boot$ref_cv_all_lower, 1), 
                           ref_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
                           ref_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
-                          ref_cv_upper = ref_first_boot$ref_cv_upper, 
-                          ref_cv_lower = ref_first_boot$ref_cv_lower, 
+                          # ref_cv_upper = tail(ref_first_boot$ref_cv_all_upper, 1), 
+                          # ref_cv_lower = tail(ref_first_boot$ref_cv_all_lower, 1), 
                           ref_ipw_se = ref_first_boot$ref_ipw_se, 
                           ref_ipw_cv_all_upper = ref_first_boot$ref_ipw_cv_all_upper,
                           ref_ipw_cv_all_lower = ref_first_boot$ref_ipw_cv_all_lower,
@@ -1318,7 +1282,7 @@ ice <- function(data, time_points, id, time_name,
                           rd_cv_lower = 0, 
                           outcome_init = ref_first_boot$ref_outcome_init, 
                           comp_init = ref_first_boot$ref_comp_init, 
-                          np_model = ref_first_boot$ref_np_model, 
+                          np_model = ref_first_boot$np_model, 
                           outcome_by_step = ref_first_boot$ref_outcome_by_step, 
                           comp_by_step = ref_first_boot$ref_comp_by_step, 
                           hazard_by_step = ref_first_boot$ref_hazard_by_step)
@@ -1329,7 +1293,7 @@ ice <- function(data, time_points, id, time_name,
       } else {
 
       this_boot <- bootstrap_ice(ice_pool, K, nboot, significance_level, parallel, ncores, ref_description,
-                                 ref_intervention_varlist[[1]], this_total_effect, boot_interv,
+                                 ref_intervention_varlist, this_total_effect, boot_interv,
                                  this_interv, this_int_var, this_descript, this_time, ref_time,
                                  data, id, set_seed,
                                  time_name = time_name, outcome_name = outcome_name,
@@ -1347,12 +1311,12 @@ ice <- function(data, time_points, id, time_name,
         
       } 
 
-      this_se <- this_boot$ice_se[K+1]
+      this_se <- tail(this_boot$ice_se, 1)
       this_rr_se <- this_boot$rr_se
       this_rd_se <- this_boot$rd_se
 
-      this_cv_upper <- this_boot$ice_cv_upper
-      this_cv_lower <- this_boot$ice_cv_lower
+      this_cv_upper <- tail(this_boot$ice_cv_all_upper, 1)
+      this_cv_lower <- tail(this_boot$ice_cv_all_lower, 1)
       this_rr_cv_upper <- this_boot$rr_cv_upper
       this_rr_cv_lower <- this_boot$rr_cv_lower
       this_rd_cv_upper <- this_boot$rd_cv_upper
@@ -1454,8 +1418,8 @@ ice <- function(data, time_points, id, time_name,
         summary[ref_idx + 1, 5] <- this_boot$ref_se[K+1]
 
         if (ref_idx == 0) {
-          ice_critical_value[1, 1] <- this_boot$ref_cv_lower
-          ice_critical_value[2, 1] <- this_boot$ref_cv_upper
+          ice_critical_value[1, 1] <- tail(this_boot$ref_cv_all_lower, 1)
+          ice_critical_value[2, 1] <- tail(this_boot$ref_cv_all_upper, 1)
         }
       }
 
@@ -1576,6 +1540,8 @@ ice <- function(data, time_points, id, time_name,
       ref_description <- intervention_descriptions[[ref_idx]]
       boot_interv <- list(interventions[[ref_idx]])
       ref_int_times <- list(intervention_times[[ref_idx]])
+      ref_outcome_model <- outcomeModels[[ref_idx]]
+      ref_competing_model <- compModels[[ref_idx]]
 
       if (!is.character(unlist(ref_intervention_varlist))) {
         stop("Please input the treatment variable at the second element of the input list for each intervention argument.")
@@ -1595,7 +1561,8 @@ ice <- function(data, time_points, id, time_name,
 
       ref <- ice_strat(data = data, K = K, id = id, time_name = time_name, outcome_name = outcome_name,
                       censor_name = censor_name, competing_name = competing_name, total_effect = ref_total_effect,
-                      outcome_model = outcome_model, censor_model = censor_model, competing_model = competing_model,
+                      outcome_model = ref_outcome_model, censor_model = censor_model, 
+                      competing_model = ref_competing_model,
                       hazard_model = hazard_model,
                       interventions = boot_interv, intervention_names = ref_intervention_varlist,
                       compute_nc_risk = T, hazard_based = hazard, weighted = weight,
@@ -1710,7 +1677,7 @@ ice <- function(data, time_points, id, time_name,
         if (any(is.na(as.character(this_outcome_formula)))) {
           this_outcome_formula <- outcome_model
         }
-        
+
         this_comp_formula <- compModels[[int]]
         
         if (any(is.na(as.character(this_comp_formula)))) {
@@ -1810,12 +1777,12 @@ ice <- function(data, time_points, id, time_name,
                             rd_se = 0, 
                             ice_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
                             ice_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
-                            ice_cv_upper = ref_first_boot$ref_cv_upper, 
-                            ice_cv_lower = ref_first_boot$ref_cv_lower, 
+                            # ice_cv_upper = tail(ref_first_boot$ref_cv_all_upper, 1), 
+                            # ice_cv_lower = tail(ref_first_boot$ref_cv_all_lower, 1), 
                             ref_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
                             ref_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
-                            ref_cv_upper = ref_first_boot$ref_cv_upper, 
-                            ref_cv_lower = ref_first_boot$ref_cv_lower, 
+                            # ref_cv_upper = tail(ref_first_boot$ref_cv_all_upper, 1), 
+                            # ref_cv_lower = tail(ref_first_boot$ref_cv_all_lower, 1), 
                             ref_ipw_se = ref_first_boot$ref_ipw_se, 
                             ref_ipw_cv_all_upper = ref_first_boot$ref_ipw_cv_all_upper,
                             ref_ipw_cv_all_lower = ref_first_boot$ref_ipw_cv_all_lower,
@@ -1825,7 +1792,7 @@ ice <- function(data, time_points, id, time_name,
                             rd_cv_lower = 0, 
                             outcome_init = ref_first_boot$ref_outcome_init, 
                             comp_init = ref_first_boot$ref_comp_init, 
-                            np_model = ref_first_boot$ref_np_model, 
+                            np_model = ref_first_boot$np_model, 
                             outcome_by_step = ref_first_boot$ref_outcome_by_step, 
                             comp_by_step = ref_first_boot$ref_comp_by_step, 
                             hazard_by_step = ref_first_boot$ref_hazard_by_step)
@@ -1836,7 +1803,7 @@ ice <- function(data, time_points, id, time_name,
         } else {
 
         this_boot <- bootstrap_ice(ice_strat, K, nboot, significance_level, parallel, ncores, ref_description,
-                                   ref_intervention_varlist[[1]], this_total_effect, boot_interv,
+                                   ref_intervention_varlist, this_total_effect, boot_interv,
                                    this_interv, this_int_var, this_descript, this_time, ref_time,
                                    data, id, set_seed,
                                    time_name = time_name, outcome_name = outcome_name,
@@ -1856,12 +1823,12 @@ ice <- function(data, time_points, id, time_name,
         
         
 
-        this_se <- this_boot$ice_se[K+1]
+        this_se <- tail(this_boot$ice_se, 1)
         this_rr_se <- this_boot$rr_se
         this_rd_se <- this_boot$rd_se
 
-        this_cv_upper <- this_boot$ice_cv_upper
-        this_cv_lower <- this_boot$ice_cv_lower
+        this_cv_upper <- tail(this_boot$ice_cv_all_upper, 1)
+        this_cv_lower <- tail(this_boot$ice_cv_all_lower, 1)
         this_rr_cv_upper <- this_boot$rr_cv_upper
         this_rr_cv_lower <- this_boot$rr_cv_lower
         this_rd_cv_upper <- this_boot$rd_cv_upper
@@ -1959,8 +1926,8 @@ ice <- function(data, time_points, id, time_name,
         summary[ref_idx + 1, 5] <- this_boot$ref_se[K+1]
 
         if (ref_idx == 0) {
-          ice_critical_value[1, 1] <- this_boot$ref_cv_lower
-          ice_critical_value[2, 1] <- this_boot$ref_cv_upper
+          ice_critical_value[1, 1] <- tail(this_boot$ref_cv_all_lower, 1)
+          ice_critical_value[2, 1] <- tail(this_boot$ref_cv_all_upper, 1)
         }
       }
 
@@ -2092,13 +2059,16 @@ split_args <- function(argument, target_string) {
 #' @param model_interv the list of model inputs related to the target keyword argument.
 #' @param ninterv the number of interventions.
 #' @param arg_str the argument keyword.
+#' @param original_model the global original model statements specified through regular argument input.
 #'
 #' @return a list containing the model inputs corresponding to the interventions.
 #'
 #' @internal
-get_model_formula <- function(interv_list, arg_interv, model_interv, ninterv, arg_str) {
+get_model_formula <- function(interv_list, arg_interv, model_interv, ninterv, arg_str, original_model) {
   models <- as.list(rep(NA, ninterv))
-
+  
+  interv_list <- unique(interv_list)
+  
   for (i in 1:ninterv) {
 
     interv_i <- interv_list[i]
@@ -2106,6 +2076,10 @@ get_model_formula <- function(interv_list, arg_interv, model_interv, ninterv, ar
       arg_name_i <- paste0(arg_str, ".", interv_i)
       outcome_formula <- arg_interv[[which(names(arg_interv) == arg_name_i)]]
       models[[i]] <- outcome_formula
+    } else {
+      if (!is.null(original_model)) {
+        models[[i]] <- original_model
+      }
     }
 
   }

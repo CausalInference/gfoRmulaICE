@@ -2,21 +2,20 @@
 % Please edit documentation in R/helper.R
 \name{natural_course}
 \alias{natural_course}
-\title{Natural Course Intervention Function}
+\title{Natural Course}
 \usage{
 natural_course(data = interv_data, treat_var = treatment_varname)
 }
 \arguments{
 \item{data}{a data frame containing the observed data.}
 
-\item{treat_var}{a character string specifying the observed treatment variable in \code{data}.}
+\item{treat_var}{a string specifying the treatment variable in \code{data}.}
 }
 \value{
-a vector containing the intervened value in the same size as the number of rows in \code{data}.
+a vector containing the intervened values of the same size as the number of rows in \code{data}.
 }
 \description{
-This function implements the natural course intervention under the observed treatment.
-This function is to be used in the main ICE estimator as an input in the \code{interventions} argument.
+This function specifies the natural course intervention on the treatment variable in \code{data}.
 }
 \examples{
 data <- readRDS("test_data_competing.rds")

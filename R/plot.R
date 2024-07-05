@@ -1,15 +1,15 @@
-#' Plot risk estimated by ICE estimator over time
+#' Plot for ICE estimator objects
 #'
-#' This function provides visualization of estimated risk on all user-defined interventions
-#' from the fitted ICE estimator object with natural course risk over time.
+#' This function provides visualization of estimated risk 
+#' for all specified interventions, estimated natural course risk, and observed risk at each time point.
 #' (This function is going to be converted to the S3 method in R so it is named "plot_risk" for now.
 #' After conversion, users could use the base function plot().)
 #'
 #' @param ... ICE estimator objects.
-#' @param plot_obs a logical indicating whether to add the observed risk over time to the plot.
-#' Default is TRUE
-#' @param label a numeric specifying which time label is used in x axis. 0 represents using generic numerical time index, and
-#' 1 represents using the original time index in the data set. Default is 0.
+#' @param plot_obs a logical value indicating whether to plot the observed risk over time.
+#' Default is \code{TRUE}.
+#' @param label a number specifying which time label is used in x-axis. 0 represents using generic numerical time index, and
+#' 1 represents using the original time label from the data. Default is 0.
 #'
 #' @return a plot for risks of all the interventions specified in \code{...}.
 #' @export
@@ -28,7 +28,6 @@
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
-#' competing_model = D ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = F),
 #' int_descript = "Static Intervention",

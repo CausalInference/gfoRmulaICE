@@ -1,13 +1,13 @@
-#' Static Intervention Function
+#' Static
 #'
-#' This function implements the static intervention, specifically always treat and never treat.
-#' Always treat refers to the constant treatment across all time points. Never treat refers to no treatment across all time points.
+#' This function specifies the static intervention, either treat with a constant value or never treat, 
+#' on the treatment variable in \code{data}.
 #'
 #'
-#' @param value a numeric specifying the intervention value. 1 for always treat and 0 for never treat.
+#' @param value a number specifying the intervention value. 0 for never treat.
 #' @param data a data frame containing the observed data.
 #'
-#' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
+#' @return a vector containing the intervened values of the same size as the number of rows in \code{data}.
 #' @export
 #'
 #' @examples
@@ -21,15 +21,14 @@ static <- function(value, data = interv_data) {
   return(interv_it)
 }
 
-#' Natural Course Intervention Function
+#' Natural Course
 #'
-#' This function implements the natural course intervention under the observed treatment.
-#' This function is to be used in the main ICE estimator as an input in the \code{interventions} argument.
+#' This function specifies the natural course intervention on the treatment variable in \code{data}.
 #'
 #' @param data a data frame containing the observed data.
-#' @param treat_var a character string specifying the observed treatment variable in \code{data}.
+#' @param treat_var a string specifying the treatment variable in \code{data}.
 #'
-#' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
+#' @return a vector containing the intervened values of the same size as the number of rows in \code{data}.
 #' @export
 #'
 #' @examples
@@ -101,107 +100,21 @@ natural_course_ipweighted <- function(data, id, censor_varname,
   return(list(risk_weighted = risk_weighted, logit_censor = logit_censor))
 }
 
-#' #' Dynamic Intervention Function
-#' #'
-#' #' This function implements the dynamic intervention strategy. Dynamic intervention strategy refers to the class of treatment mechanisms that depend on the covariate values. This function provides an example of dynamic intervention strategy. The specific mechanism is described as following:
-#' #' \itemize{
-#' #' \item For \code{type} being \code{compare}, the treatment is determined based on the condition of \code{direction} and \code{value}.
-#' #' For example, if \code{direction} is >, then treat if \code{var} > \code{value}, and not treat otherwise.
-#' #' \item For \code{type} being \code{absorbing}, the initiation of treatment is based on the same mechanism as \code{type} being \code{compare}, and
-#' #' adopts always treat once the treatment is initiated for each individual.
-#' #' }
-#' #' Possible \code{direction} includes \code{>, <, >=, <=, =, !=}.
-#' #'
-#' #' @param type a character string specifying the type of dynamic intervention. Possible inputs are \code{compare} and \code{absorbing}.
-#' #' @param var a character string specifying the intervention variable name in \code{data}.
-#' #' @param direction a character string specifying the comparison of \code{var} and \code{value}.
-#' #' Possible inputs are \code{>, <, >=, <=, =, !=}.
-#' #' @param value a numeric specifying the comparison value on \code{var}.
-#' #' @param id a character string specifying the id variable in \code{data}.
-#' #' @param data a data frame containing the observed data.
-#' #'
-#' #' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
-#' #' @export
-#' #'
-#' #' @examples
-#' #' data <- readRDS("test_data_competing.rds")
-#' #' dynamic <- dynamic(type = "absorbing", var = "L1", value = 0, direction = ">", id = "id", data = data)
-#' #' dynamic
-#' dynamic <- function(type, var, direction, value, id = id_var, data = interv_data) {
-#' 
-#'   if (type == "compare" | type == "absorbing") {
-#' 
-#'     if (direction == ">") {
-#' 
-#'       interv_it <- ifelse(data[, var] > value, 1, 0)
-#' 
-#'     } else if (direction == "<") {
-#' 
-#'       interv_it <- ifelse(data[, var] < value, 1, 0)
-#' 
-#'     } else if (direction == "<=") {
-#' 
-#'       interv_it <- ifelse(data[, var] <= value, 1, 0)
-#' 
-#'     } else if (direction == ">=") {
-#' 
-#'       interv_it <- ifelse(data[, var] >= value, 1, 0)
-#' 
-#'     } else if (direction == "=") {
-#' 
-#'       interv_it <- ifelse(data[, var] == value, 1, 0)
-#' 
-#'     } else if (direction == "!=") {
-#' 
-#'       interv_it <- ifelse(data[, var] != value, 1, 0)
-#'     }
-#'     data[, paste0("interv_it")] <- interv_it
-#'     data$interv_it_compare <- interv_it
-#'   }
-#' 
-#'   if (type == "absorbing") {
-#' 
-#'     data[, paste0("interv_it")] <- NA
-#' 
-#'     for (i in 1:length(unique(data[, id]))) {
-#' 
-#'       interv_index <- which(data[data[, id] == unique(data[, id])[i], ]$interv_it_compare == 1)[1]
-#'       interv_it <- data[data[, id] == unique(data[, id])[i], ]$interv_it_compare
-#'       if (is.na(interv_index)) {
-#'         data[data[, id] == unique(data[, id])[i], paste0("interv_it")] <- interv_it
-#'       } else {
-#'         interv_it[interv_index:length(interv_it)] <- 1
-#'         data[data[, id] == unique(data[, id])[i], paste0("interv_it")] <- interv_it
-#'       }
-#'     }
-#'   }
-#' 
-#'   interv_it <- data[, paste0("interv_it")]
-#' 
-#'   return(interv_it)
-#' }
 
-#' Intervention with Grace Period Strategy
+#' Strategy with Grace Period
+#' 
+#' This function specifies an intervention in which treatment is initiated within the grace period of \code{nperiod} time units. 
+#' During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.
 #'
-#' This function implements a particular intervention with grace period. There are two choices of grace type: "natural" or "uniform," specified by the argument \code{type}.
-#' \itemize{
-#' \item{Natural grace period describes the following mechanism:
-#' When the condition in \code{condition} is met, initiate treatment in \code{n} time units, where \code{n} is specified by \code{nperiod}.
-#' If there is no intervention, follow the observed treatment initiation distribution.}
-#' \item{Uniform grace period describes the following mechanism:
-#' When the condition in \code{condition} is met, initiate treatment in \code{n} time units, where \code{n} is specified by \code{nperiod}.
-#' If there is no intervention, follow the uniform distribution of treatment initiation.}
-#' }
-#'
-#' @param type a character string specifying the type of grace period strategy. "Uniform" for uniform grace period, and "natural" for natural grace period.
-#' @param nperiod a numeric specifying the length of grace period.
-#' @param condition a character string specifying the logical expression, upon which is met, the treatment is initiated in \code{n} time units, where \code{n} is specified by \code{nperiod}.
+#' @param type a string specifying the type of grace period strategy. Possible values are "uniform" and "natural".
+#' @param nperiod a number indicating the length of grace period.
+#' @param condition a string specifying the logical expression, upon which is met, the treatment is initiated within \code{nperiod} time units.
 #' @param data a data frame containing the observed data.
-#' @param id a character string indicating the ID variable name in \code{data}.
-#' @param time_name a character string indicating the time variable name in \code{data}.
-#' @param outcome_name a character string indicating the outcome variable name in \code{data}.
+#' @param id a string specifying the ID variable name in \code{data}.
+#' @param time_name a string specifying the time variable name in \code{data}.
+#' @param outcome_name a string specifying the outcome variable name in \code{data}.
 #'
-#' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
+#' @return a vector containing the intervened value of the same size as the number of rows in \code{data}.
 #' @export
 #'
 #' @examples
@@ -209,7 +122,6 @@ natural_course_ipweighted <- function(data, id, censor_varname,
 #' grace_period <- grace_period(type = "uniform", nperiod = 2, condition = "L1 == 0", data = data,
 #'                              id = "id", time_name = "t0", outcome_name = "Y")
 #' grace_period
-
 grace_period <- function(type, nperiod, condition,
                          # condition = dynamic_cond, 
                          data = interv_data, id = idvar, time_name = time0var, 
@@ -496,48 +408,45 @@ product <- function(data, columns){
   return(vector)
 }
 
-#' Indicator for the pooling over treatment history ICE estimator in the main function \code{ice}
+#' Indicator for the pooling over treatment history ICE estimator
 #'
 #' This function identifies the pooling over treatment history ICE estimator. The classical pooling over
-#' treatment history ICE estimator is specified by \code{hazard = F}. The hazard based pooling over treatment
-#' history ICE estimator is specified by \code{hazard = T}.
+#' treatment history ICE estimator is specified by \code{pool(hazard = F)}. The hazard based pooling over treatment
+#' history ICE estimator is specified by \code{pool(hazard = T)}.
 #'
-#' @param hazard a logical indicating whether to use hazard-based ICE estimator or classical ICE estimator.
-#' TRUE for hazard-based estimator. FALSE for classical estimator.
+#' @param hazard a logical value indicating whether to use hazard-based ICE estimator.
 #'
-#' @return a logical on whether to use hazard-based ICE estimator.
+#' @return a logical value on whether to use hazard-based ICE estimator.
 #' @export
 #'
 pool <- function(hazard) {
   return(hazard)
 }
 
-#' Indicator for the stratifying treatment history ICE estimator in the main function \code{ice}
+#' Indicator for the stratifying on treatment history ICE estimator
 #'
-#' This function identifies the stratifying treatment history ICE estimator. The classical stratifying
-#' treatment history ICE estimator is specified by \code{hazard = F}. The hazard based stratifying treatment
-#' history ICE estimator is specified by \code{hazard = T}.
+#' This function identifies the stratifying on treatment history ICE estimator. The classical stratifying on 
+#' treatment history ICE estimator is specified by \code{strat(hazard = F)}. The hazard based stratifying on treatment
+#' history ICE estimator is specified by \code{strat(hazard = T)}.
 #'
-#' @param hazard a logical indicating whether to use hazard-based ICE estimator or classical ICE estimator.
-#' TRUE for hazard-based estimator. FALSE for classical estimator.
+#' @param hazard a logical value indicating whether to use hazard-based ICE estimator.
 #'
-#' @return a logical on whether to use hazard-based ICE estimator.
+#' @return a logical value on whether to use hazard-based ICE estimator.
 #' @export
 #'
 strat <- function(hazard) {
   return(hazard)
 }
 
-#' Indicator for the weighted ICE estimator in the main function \code{ice}
+#' Indicator for the doubly robust ICE estimator
 #'
-#' This function identifies the doubly robust weighted ICE estimator. The treatment models could be specified by
-#' \code{treat_model} and the treatment variables could be specified by \code{obs_treatment_varnames}.
+#' This function identifies the doubly robust ICE estimator. The treatment models could be specified by
+#' \code{treat_model}.
 #'
-#' @param treat_model a list of formulas specifying the model statement for the corresponding treatment variable used in the doubly robust ICE estimator. The length of list must match with
+#' @param treat_model a list of formulas specifying the treatment model for the corresponding treatment variable. The length of list must match
 #' the number of treatment variables. 
 #'
-#' @return the model specification for each treatment model and
-#' the observed treatment variable names extracted from the specified model.
+#' @return treatment model specifications and treatment variable names.
 #' @export
 #'
 weight <- function(treat_model = list()) {
@@ -547,21 +456,19 @@ weight <- function(treat_model = list()) {
   return(list(treat_model = treat_model, obs_treat = obs_treat_unique))
 }
 
-#' Threshold Intervention
+#' Threshold
 #'
-#' This function implements the threshold intervention.
-#' At each time, if an individual's treatment value is within the user-specified range inclusively,
-#' then follow the natural value of the treatment. Otherwise, if the treatment value is below the
-#' lower bound specified by the user, then set to the lower bound of the range,
-#' and if the treatment value is above the upper bound specified by the user, then set to the upper bound of the range.
-#' For more details, please see Young et al 2014.
+#' This function specifies the threshold intervention on the treatment variable in \code{data}.
+#' If treatment value is between the lower bound and the upper bound, it follows the natural value of the treatment. 
+#' If treatment value is either below the lower bound or above the upper bound, it is set to the lower bound or the upper bound, correspondingly.
+#' See Young et al. (2014) for more details.
 #'
-#' @param lower_bound a numeric specifying the lower bound of the threshold.
-#' @param upper_bound a numeric specifying the upper bound of the threshold.
-#' @param var a character string specifying the treatment variable for the intervention.
+#' @param lower_bound a number indicating the lower bound of the threshold.
+#' @param upper_bound a number indicating the upper bound of the threshold.
+#' @param var a string specifying the treatment variable for the intervention.
 #' @param data a data frame containing the observed data.
 #'
-#' @return the intervened values on the intervention variable.
+#' @return a vector containing the intervened values of the same size as the number of rows in \code{data}.
 #' @export
 #'
 #' @references Young JG, Herńan MA, Robins JM. Identification, estimation and approximation of risk under interventions that depend on the natural value of treatment using observational data. Epidemiologic Methods. 2014;3(1):1-19.
@@ -626,9 +533,9 @@ get_rmse <- function(fit) {
 }
 
 
-#' Output the Summary Table from ICE Estimator Object
+#' Summary Table for ICE Estimator Objects
 #'
-#' (This function is going to be converted to the S3 method in R so it is named "summary_table" for now.
+#' This function returns a summary table for ICE estimator objects. (This function is going to be converted to the S3 method in R so it is named "summary_table" for now.
 #' After conversion, users could use the base function summary().)
 #'
 #' @param ... the ICE estimator objects.
@@ -652,8 +559,8 @@ get_rmse <- function(fit) {
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' int_descript = c("Static Intervention"),
-#' intervention1.A1 = list(static_A1),
-#' intervention1.A2 = list(static_A2)
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1))
 #' )
 #'
 #' fit_hazard_pool <- ice(
@@ -668,10 +575,11 @@ get_rmse <- function(fit) {
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2,
 #' censor_model = C ~ L1 + L2 + A1 + A2,
+#' competing_model = D ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' int_descript = c("Static Intervention"),
-#' intervention1.A1 = list(static_A1),
-#' intervention1.A2 = list(static_A2)
+#' intervention1.A1 = list(static(3)),
+#' intervention1.A2 = list(static(1))
 #' )
 #'
 #' summary_table(fit_classical_pool, fit_hazard_pool)
@@ -726,24 +634,22 @@ get_column_name_covar <- function(icovar) {
   return(covar_name)
 }
 
-#' Dynamic Intervention Function
+#' Dynamic
 #' 
-#' This function implements the dynamic intervention strategy. Dynamic intervention strategy refers to the class of treatment mechanisms that depend on the covariate values. 
-#' This function provides an example of dynamic intervention strategy. The specific mechanism is described below:
-#' \itemize{
-#' \item Follow the strategy specified in \code{strategy_before} until a user-defined condition dependent on covariate values is met. 
-#' \item Upon the user-defined condition is met, the strategy specified in \code{strategy_after} is initiated.
-#' }
+#' This function specifies a dynamic intervention on the treatment variable specified in \code{data}. 
+#' This function follows the treatment strategy specified in \code{strategy_before} until a user-defined condition that depends on covariate values is met. Upon the condition is met, the strategy specified in \code{strategy_after} is followed.
 #'
-#' @param condition a character string that specifies a logical expression, upon which is met, the strategy specified in \code{strategy_after} is followed.
-#' @param strategy_before a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed after the condition in \code{condition} is met.
-#' @param strategy_after a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed before the condition in \code{condition} is met.
-#' @param absorb a logical indicating whether the strategy specified in \code{strategy_after} is absorbing upon the first time when the condition specified in \code{condition} is met.
-#' @param id a character string indicating the ID variable name in \code{data}.
-#' @param time a character string indicating the time variable name in \code{data}.
+#' @param condition a string that specifies a logical expression, upon which is met, the strategy specified in \code{strategy_after} is followed.
+#' @param strategy_before a function or vector of intervened values that specifies the strategy followed after \code{condition} is met. 
+#' The vector of intervened values should be the same length as the number of rows in the data frame \code{data}.
+#' @param strategy_after a function or vector of intervened values that specifies the strategy followed before \code{condition} is met.
+#' The vector of intervened values should be the same length as the number of rows in the data frame \code{data}.
+#' @param absorb a logical value indicating whether the strategy specified in \code{strategy_after} becomes absorbing upon the first time when \code{condition} is met.
+#' @param id a string specifying the ID variable name in \code{data}.
+#' @param time a string specifying the time variable name in \code{data}.
 #' @param data a data frame containing the observed data.
 #'
-#' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
+#' @return a vector containing the intervened value of the same size as the number of rows in \code{data}.
 #' @export
 #'
 #' @examples
@@ -777,7 +683,7 @@ dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE,
   return(interv_values)
 }
 
-#' Calculate intervened values for dynamic intervention strategy.
+#' Calculate intervened values for dynamic strategy.
 #'
 #' @param condition a character string that specifies a logical expression, upon which is met, the strategy specified in \code{strategy_after} is followed.
 #' @param strategy_before_values a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed after the condition in \code{condition} is met.

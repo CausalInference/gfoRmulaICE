@@ -2,19 +2,18 @@
 % Please edit documentation in R/helper.R
 \name{pool}
 \alias{pool}
-\title{Indicator for the pooling over treatment history ICE estimator in the main function \code{ice}}
+\title{Indicator for the pooling over treatment history ICE estimator}
 \usage{
 pool(hazard)
 }
 \arguments{
-\item{hazard}{a logical indicating whether to use hazard-based ICE estimator or classical ICE estimator.
-TRUE for hazard-based estimator. FALSE for classical estimator.}
+\item{hazard}{a logical value indicating whether to use hazard-based ICE estimator.}
 }
 \value{
-a logical on whether to use hazard-based ICE estimator.
+a logical value on whether to use hazard-based ICE estimator.
 }
 \description{
 This function identifies the pooling over treatment history ICE estimator. The classical pooling over
-treatment history ICE estimator is specified by \code{hazard = F}. The hazard based pooling over treatment
-history ICE estimator is specified by \code{hazard = T}.
+treatment history ICE estimator is specified by \code{pool(hazard = F)}. The hazard based pooling over treatment
+history ICE estimator is specified by \code{pool(hazard = T)}.
 }

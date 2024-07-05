@@ -2,7 +2,7 @@
 % Please edit documentation in R/helper.R
 \name{grace_period}
 \alias{grace_period}
-\title{}
+\title{Strategy with Grace Period}
 \usage{
 grace_period(
   type,
@@ -15,28 +15,26 @@ grace_period(
 )
 }
 \arguments{
-\item{type}{a character string specifying the type of grace period strategy. "Uniform" for uniform grace period, and "natural" for natural grace period.}
+\item{type}{a string specifying the type of grace period strategy. Possible values are "uniform" and "natural".}
 
-\item{nperiod}{a numeric specifying the length of grace period.}
+\item{nperiod}{a number indicating the length of grace period.}
 
-\item{condition}{a character string specifying the logical expression, upon which is met, the treatment is initiated in \code{n} time units, where \code{n} is specified by \code{nperiod}.}
+\item{condition}{a string specifying the logical expression, upon which is met, the treatment is initiated within \code{nperiod} time units.}
 
 \item{data}{a data frame containing the observed data.}
 
-\item{id}{a character string indicating the ID variable name in \code{data}.}
+\item{id}{a string specifying the ID variable name in \code{data}.}
 
-\item{time_name}{a character string indicating the time variable name in \code{data}.}
+\item{time_name}{a string specifying the time variable name in \code{data}.}
 
-\item{outcome_name}{a character string indicating the outcome variable name in \code{data}.}
+\item{outcome_name}{a string specifying the outcome variable name in \code{data}.}
 }
 \value{
-a vector containing the intervened value in the same size as the number of rows in \code{data}.
+a vector containing the intervened value of the same size as the number of rows in \code{data}.
 }
 \description{
-
-}
-\details{
-
+This function specifies an intervention in which treatment is initiated within the grace period of \code{nperiod} time units. 
+During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.
 }
 \examples{
 data <- readRDS("test_data_competing.rds")

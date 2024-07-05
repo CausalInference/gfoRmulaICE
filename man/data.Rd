@@ -14,8 +14,8 @@ A data frame with 26581 rows and 9 variables:
   \item{A1}{Categorical treatment variable with levels 1, 2, and 3.}
   \item{A2}{Binary treatment variable.}
   \item{C}{Censoring event indicator.}
-  \item{D}{Competing event indicator, time-varying indicator of failure.}
-  \item{Y}{Survival outcome, time-varying indicator of failure.}
+  \item{D}{Competing event indicator.}
+  \item{Y}{Outcome indicator.}
 }
 }
 \usage{

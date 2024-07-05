@@ -2,7 +2,7 @@
 % Please edit documentation in R/helper.R
 \name{threshold}
 \alias{threshold}
-\title{Threshold Intervention}
+\title{Threshold}
 \usage{
 threshold(
   lower_bound,
@@ -12,24 +12,22 @@ threshold(
 )
 }
 \arguments{
-\item{lower_bound}{a numeric specifying the lower bound of the threshold.}
+\item{lower_bound}{a number indicating the lower bound of the threshold.}
 
-\item{upper_bound}{a numeric specifying the upper bound of the threshold.}
+\item{upper_bound}{a number indicating the upper bound of the threshold.}
 
-\item{var}{a character string specifying the treatment variable for the intervention.}
+\item{var}{a string specifying the treatment variable for the intervention.}
 
 \item{data}{a data frame containing the observed data.}
 }
 \value{
-the intervened values on the intervention variable.
+a vector containing the intervened values of the same size as the number of rows in \code{data}.
 }
 \description{
-This function implements the threshold intervention.
-At each time, if an individual's treatment value is within the user-specified range inclusively,
-then follow the natural value of the treatment. Otherwise, if the treatment value is below the
-lower bound specified by the user, then set to the lower bound of the range,
-and if the treatment value is above the upper bound specified by the user, then set to the upper bound of the range.
-For more details, please see Young et al 2014.
+This function specifies the threshold intervention on the treatment variable in \code{data}.
+If treatment value is between the lower bound and the upper bound, it follows the natural value of the treatment. 
+If treatment value is either below the lower bound or above the upper bound, it is set to the lower bound or the upper bound, correspondingly.
+See Young et al. (2014) for more details.
 }
 \examples{
 data <- readRDS("test_data_competing.rds")

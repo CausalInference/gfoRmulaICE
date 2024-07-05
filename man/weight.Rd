@@ -2,19 +2,18 @@
 % Please edit documentation in R/helper.R
 \name{weight}
 \alias{weight}
-\title{Indicator for the weighted ICE estimator in the main function \code{ice}}
+\title{Indicator for the doubly robust ICE estimator}
 \usage{
 weight(treat_model = list())
 }
 \arguments{
-\item{treat_model}{a list of formulas specifying the model statement for the corresponding treatment variable used in the doubly robust ICE estimator. The length of list must match with
+\item{treat_model}{a list of formulas specifying the treatment model for the corresponding treatment variable. The length of list must match
 the number of treatment variables.}
 }
 \value{
-the model specification for each treatment model and
-the observed treatment variable names extracted from the specified model.
+treatment model specifications and treatment variable names.
 }
 \description{
-This function identifies the doubly robust weighted ICE estimator. The treatment models could be specified by
-\code{treat_model} and the treatment variables could be specified by \code{obs_treatment_varnames}.
+This function identifies the doubly robust ICE estimator. The treatment models could be specified by
+\code{treat_model}.
 }

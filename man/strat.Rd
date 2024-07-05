@@ -2,19 +2,18 @@
 % Please edit documentation in R/helper.R
 \name{strat}
 \alias{strat}
-\title{Indicator for the stratifying treatment history ICE estimator in the main function \code{ice}}
+\title{Indicator for the stratifying on treatment history ICE estimator}
 \usage{
 strat(hazard)
 }
 \arguments{
-\item{hazard}{a logical indicating whether to use hazard-based ICE estimator or classical ICE estimator.
-TRUE for hazard-based estimator. FALSE for classical estimator.}
+\item{hazard}{a logical value indicating whether to use hazard-based ICE estimator.}
 }
 \value{
-a logical on whether to use hazard-based ICE estimator.
+a logical value on whether to use hazard-based ICE estimator.
 }
 \description{
-This function identifies the stratifying treatment history ICE estimator. The classical stratifying
-treatment history ICE estimator is specified by \code{hazard = F}. The hazard based stratifying treatment
-history ICE estimator is specified by \code{hazard = T}.
+This function identifies the stratifying on treatment history ICE estimator. The classical stratifying on 
+treatment history ICE estimator is specified by \code{strat(hazard = F)}. The hazard based stratifying on treatment
+history ICE estimator is specified by \code{strat(hazard = T)}.
 }

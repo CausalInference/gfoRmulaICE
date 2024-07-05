@@ -2,7 +2,7 @@
 % Please edit documentation in R/ICE.R
 \name{ice}
 \alias{ice}
-\title{Singly Robust and Doubly Robust Iterative Conditional Expectation (ICE) Estimator for the Specified Intervention}
+\title{Iterative Conditional Expectation Estimator}
 \usage{
 ice(
   data,
@@ -33,240 +33,131 @@ ice(
 \arguments{
 \item{data}{a data frame containing the observed data in long format.}
 
-\item{time_points}{a numerical value that indicates the total number of time points.}
+\item{time_points}{a number indicating the total number of time points.}
 
-\item{id}{a character string indicating the ID variable name in \code{data}.}
+\item{id}{a string indicating the ID variable name in \code{data}.}
 
-\item{time_name}{a character string indicating the time variable name in \code{data}.}
+\item{time_name}{a string specifying the time variable name in \code{data}.}
 
-\item{outcome_name}{a character string indicating the outcome variable name in \code{data}.}
+\item{outcome_name}{a string specifying the outcome variable name in \code{data}.}
 
-\item{censor_name}{a character string indicating the censor variable name in \code{data}. Default is \code{NULL}.}
+\item{censor_name}{a string specifying the censor variable name in \code{data}. Default is \code{NULL}.}
 
-\item{compevent_name}{a character string indicating the competing variable name in \code{data}. Default is \code{NULL}.}
+\item{compevent_name}{a string specifying the competing variable name in \code{data}. Default is \code{NULL}.}
 
-\item{comp_effect}{a numeric specifying how the competing event is handled for all the specified interventions. Default is 0.
-\code{0} outputs direct effect for all the specified interventions.
-\code{1} outputs total effect for all the specified interventions.}
+\item{comp_effect}{a number indicating how the competing event is handled for all the specified interventions. Default is 0.
+0 for controlled direct effect. 1 for total effect.}
 
-\item{outcome_model}{a formula specifying the model statement for the outcome model.}
+\item{outcome_model}{a formula specifying the model statement for the outcome.}
 
-\item{censor_model}{a formula specifying the model statement for the censoring model for IP weighted natural course risk. Default is \code{NULL}.}
+\item{censor_model}{a formula specifying the model statement for the censoring event. Default is \code{NULL}.}
 
-\item{competing_model}{a formula specifying the model statement for the competing model for hazard-based ICE estimator. Default is \code{NULL}.}
+\item{competing_model}{a formula specifying the model statement for the competing event. Default is \code{NULL}.}
 
-\item{hazard_model}{a formula specifying the model statement for the hazard model for hazard-based ICE estimator. Default is \code{NULL}.
-For hazard-based ICE estimator, if \code{hazard_model} is not specified, then the model statement specified in \code{outcome_model} will be used as the hazard model.}
+\item{hazard_model}{a formula specifying the model statement for the hazard, if hazard-based estimator is used. Default is \code{NULL}. 
+If specified, the model in \code{hazard_model} will be used. If NULL, the model in \code{outcome_model} will be used.}
 
-\item{global_hazard}{a logical indicating whether to use global pooled-over-time hazard model or time-specific hazard model. 
-This option is for pooled hazard-based ICE only. TRUE for pooled-over-time hazard model. FALSE for time-specific hazard model. Default is FALSE.}
+\item{global_hazard}{a logical value indicating whether to use global pooled-over-time hazard model or time-specific hazard models, for hazard-based pooled ICE only. 
+If \code{TRUE}, use pooled-over-time hazard model. If \code{FALSE}, use time-specific hazard models. Default is \code{FALSE}.}
 
-\item{ref_idx}{a numerical indicating which intervention to be used as the reference to calculate the risk ratio and risk difference. Default is 0.
-0 refers to using the natural course as the reference intervention.
-Any other numbers refer to the corresponding intervention that users specify in the keywords argument.}
+\item{ref_idx}{a number indicating which intervention to be used as the reference to calculate the risk ratio and risk difference. Default is 0.
+0 refers to the natural course as the reference intervention.
+Any other numbers refer to the corresponding intervention that users specify in the keyword arguments.}
 
-\item{estimator}{a function to specifying which ICE estimator to use for the estimation. Possible inputs are:
+\item{estimator}{a function specifying which ICE estimator to use for the estimation. Possible inputs are:
 \itemize{
-\item{Classical Pooling over Treatment History ICE Estimator: }{\code{pool(hazard = F)}}
-\item{Hazard Based Pooling over Treatment History ICE Estimator: }{\code{pool(hazard = T)}}
-\item{Classical Stratifying Treatment History ICE Estimator: }{\code{strat(hazard = F)}}
-\item{Hazard Based Stratifying Treatment History ICE Estimator: }{\code{strat(hazard = T)}}
-\item{Doubly Robust Weighted ICE Estimator: }{\cr
+\item{Classical pooling over treatment history ICE estimator (classical pooled ICE): }{ \code{pool(hazard = F)}}
+\item{Hazard-Based pooling over treatment history ICE estimator (hazard-based pooled ICE): }{ \code{pool(hazard = T)}}
+\item{Classical stratifying on treatment history ICE estimator (classical stratified ICE): }{ \code{strat(hazard = F)}}
+\item{Hazard-Based stratifying on treatment history ICE estimator (hazard-based stratified ICE): }{ \code{strat(hazard = T)}}
+\item{Doubly robust weighted ICE estimator (doubly robust ICE): }{\cr
 \code{weight(treat_model)}
 where \code{treat_model} is a list specifying the treatment model.}
 }}
 
-\item{int_descript}{a vector of strings containing description for each specified intervention.}
+\item{int_descript}{a vector of strings containing descriptions for each specified intervention.}
 
-\item{ci_method}{a character string specifying the method used for calculating the confidence interval, if \code{nsamples} is larger than 0.
-Either "percentile" or "normal." Default is "percentile."}
+\item{ci_method}{a string specifying the method for calculating the confidence interval, if \code{nsamples} is larger than 0.
+Possible values are "percentile" and "normal." Default is "percentile."}
 
-\item{nsamples}{a numeric indicating number of bootstrap samples. If a number larger than 0 is specified, bootstrap samples will be used for
-standard error estimate and confidence interval. Default is 0.}
+\item{nsamples}{a number larger than 0 indicating the number of bootstrap samples. Default is 0.}
 
-\item{seed}{a numeric indicating the starting seed for bootstrap. Default is 1.}
+\item{seed}{a number indicating the starting seed for bootstrapping. Default is 1.}
 
-\item{significance_level}{a numeric indicating the significance level to be used for confidence interval. Default is 0.05.}
+\item{parallel}{a logical value indicating whether to parallelize the bootstrap process. Default is \code{FALSE}.}
 
-\item{parallel}{a logical indicating whether to parallelize the bootstrap process. TRUE for using parallel computing. FALSE for not using parallel computing.
-Default is FALSE.}
+\item{ncores}{a number indicating the number of CPU cores to use in parallel computing. Default is 2.}
 
-\item{ncores}{a numeric indicating the number of CPU cores to be used in parallel computing. Default is 2.}
-
-\item{...}{keywords arguments for intervention inputs, optional outcome models for stratified ICE, and optional competing models for stratified ICE.
-The keyword argument for interventions should follow the below naming convention:
+\item{...}{keyword arguments to specify intervention inputs. If stratified ICE is used, keyword arguments also allow intervention-specific outcome models and competing models. 
+\cr 
+To specify interventions, please follow the input convention below:
 \itemize{
 \item{Each intervention is specified using the keyword argument name with \emph{intervention} prefix.}
-\item{Use \emph{i} after \emph{intervention} prefix in keyword argument name to represent the ith intervention strategy.}
-\item{Use \emph{.} followed with \emph{treatment variable name} after \emph{interventioni} in keyword argument name to represent the treatment name within the ith intervention strategy.}
+\item{Use \emph{i} after \emph{intervention} prefix in keyword argument name to represent the ith strategy.}
+\item{Use \emph{.} followed with \emph{treatment variable name} after \emph{interventioni} in keyword argument name to represent the treatment name within the ith strategy.}
 }
-The input for each keyword argument must be a list encompassing two elements, which are:
-a vector of intervened values and an optional vector of time points on which the corresponding intervention is applied.
-If the second element is not specified, then the defined intervention will be applied to all time points.
-A sample intervention input with two treatments of names A1 and A2 and two intervention strategies look like: \cr
+Each input of intervention keyword arguments is a list consisting of a vector of intervened values and an optional vector of time points on which the intervention is applied. 
+If the intervention time points are not specified, the intervention is applied to all time points. For example, 
+an input considers a simultaneous intervention with always treat on A1 and never treat on A2 at all time points looks like: \cr 
+\cr
 \code{intervention1.A1 = list(static(1))} \cr
-\code{intervention1.A2 = list(dynamic("L1 > 0", static(0), static(1), absorb = F))} \cr
-\code{intervention2.A1 = list(static(0))} \cr
-\code{intervention2.A2 = list(dynamic("L1 > 0", static(0), static(1), absorb = T))} \cr
-A sample intervention input with one treatment of name A and two intervention strategies look like: \cr
-\code{intervention1.A1 = list(static(1))} \cr
-\code{intervention2.A1 = list(static(0))} \cr
-For the above two intervention inputs, since there is no second element input, each specified intervention is applied on all time points.
-If one wants to specify the custom time points on which each intervention is applied, a sample intervention input looks like:
+\code{intervention1.A2 = list(static(0))} \cr \cr
+The above intervention applies to all time points. The following is an example of custom intervention time points, 
+with always treat on A1 at time point 1 and 2 and never treat on A2 at time point 3 to 5. \cr 
+\cr
 \code{intervention1.A1 = list(static(1), 1:2)} \cr
 \code{intervention1.A2 = list(static(0), 3:5)} \cr
-where the intervention on A1 within intervention strategy 1 is applied on time 1 and 2,
-and the intervention on A2 within intervention strategy 1 is applied on time 3 to 5.
-If there is no intervention specified, only the natural course risk will be returned. \cr
-To specify different outcome model for different intervention, please follow the keyword argument input convention below:
+\cr If there is no intervention keyword argument specified, the function returns the natural course risk only. Please see the "Examples" section for more examples.
+
+To specify different outcome model and/or competing model for different intervention, please follow the input convention below:
 
 \itemize{
-\item{Each outcome model is specified using keyword argument name starting with \emph{outcomeModel} prefix.}
-\item{Use \emph{.n} \emph{outcomeModel} prefix in keyword argument name to specify which intervention being applied to,
+\item{Each outcome model is specified using keyword argument name starting with \emph{outcomeModel} or \emph{compModel} prefix for outcome model or competing model correspondingly.}
+\item{Use \emph{.n} after \emph{outcomeModel} or \emph{compModel} prefix in keyword argument name to specify which intervention being applied to,
 where \emph{n} represents the \emph{n}th intervention.}
 }
 
-To specify different competing model for different intervention, please follow the keyword argument input convention below:
+The input to each outcome or competing model keyword argument is a model statement formula. 
+If no outcome model and competing model keyword argument is specified, the models specified in \code{outcome_model} and \code{comp_model} are used.
+Please refer to the "Examples" section for more examples.}
 
-\itemize{
-\item{Each competing model is specified using keyword argument name starting with \emph{compModel} prefix.}
-\item{Use \emph{.n} \emph{compModel} prefix in keyword argument name to represent applying to \emph{n}th intervention.}
-}
-The input to each outcome or competing model keyword argument is a model statement formula.
-Please refer to the examples section for more examples.}
+\item{coverage}{a number greater than 0 and less than 100 indicating the coverage of the confidence interval. Default is 95.}
 }
 \value{
-A list containing the following components. Each component containing model information includes the fitted models, 
-the summary of the fitted models, standard errors of the coefficients, variance-covariance matrices of the parameters, 
-and the root mean square error (RMSE) values.
-\item{estimator.type}{A character string recording the type of ICE estimator used in the function.}
-\item{summary}{A summary table containing the estimated risk, risk ratio, and risk difference for interventions including natural course risk.
-Both the observed risk (\code{NP risk}) and the ICE estimated natural course risk are included.
-If \code{bootstrap} is TRUE, then the table also includes standard error and confidence interval for ICE risk, risk ratio, and risk difference of each intervention.}
-\item{risk.over.time}{A data frame containing the estimated ICE risk at each time point for each intervention.}
-\item{initial.outcome}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the outcome model of the first step in the ICE algorithm.}
-\item{initial.comp}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the competing model of the first step in the ICE algorithm (if applicable).}
-\item{np.risk.model}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the censoring and/or competing model in estimating observed risk (if applicable).}
-\item{outcome.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the outcome model of each iteration in the ICE algorithm.}
-\item{comp.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for the competing model of each iteration in the ICE algorithm (if applicable).}
-\item{hazard.models.by.step}{A list containing sublists whose names are the specified intervention descriptions, and each sublist contains the fitted models and their information for hazard model, either time-specific models of each time point or one pooled-over-time global model. }
-\item{boot.data}{A list containing all the bootstrapped data if \code{bootstrap} is set to \code{TRUE}.}
-\item{boot.initial.outcome}{A list containing the fitted models and their information for the outcome model of the first step in the ICE algorithm on the bootstrapped samples.}
-\item{boot.inital.comp}{A list containing the fitted models and their information for the competing model (if applicable) of the first step in the ICE algorithm on the bootstrapped samples.}
-\item{boot.np.risk.model}{A list containing the fitted models and their information for the censoring and/or competing model used in estimating observed risk on the bootstrapped samples.}
-\item{boot.outcome.models.by.step}{A list containing the fitted models and their information for the outcome model of each iteration in the ICE algorithm on the bootstrapped samples.}
-\item{boot.comp.models.by.step}{A list containing the fitted models and their information for the competing model (if applicable) of each iteration in the ICE algorithm on the bootstrapped samples.}
-\item{boot.hazard.models.by.step}{A list containing the fitted models and their information for the hazard model (if applicable) on the bootstrapped samples.}
+A list containing the following components. Each component that contains the fitted models includes the model fits, the summary of the fitted model, 
+standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values.
+\item{estimator.type}{A string describing the type of the estimator.}
+\item{summary}{A summary table containing the estimated risk, risk ratio, and risk difference for user-defined interventions including estimated natural course risk and the observed risk.
+If \code{nsamples} is greater than 0, the summary table includes standard error and confidence interval for the point estimates.}
+\item{risk.over.time}{A data frame containing the estimated risk at each time point for each intervention.}
+\item{initial.outcome}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the outcome model in the first step of algorithm.}
+\item{initial.comp}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the competing model in the first step of algorithm (if applicable).}
+\item{np.risk.model}{A list containing the fitted models for the censoring and/or competing model in estimating observed risk (if applicable).}
+\item{outcome.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the outcome model in each iteration of algorithm.}
+\item{comp.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the competing model in each iteration of algorithm (if applicable).}
+\item{hazard.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the hazard model (if applicable), either time-specific models at all time points or one pooled-over-time global model.} 
+\item{boot.data}{A list of bootstrap samples. If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+\item{boot.initial.outcome}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the outcome model in the first step of algorithm on the bootstrap samples.
+If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+\item{boot.initial.comp}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the competing model in the first step of algorithm on the bootstrap samples (if applicable).
+If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+\item{boot.np.risk.model}{A list containing the fitted models for the censoring and/or competing model in estimating observed risk on the bootstrap samples (if applicable).
+If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+\item{boot.outcome.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the outcome model in each iteration of algorithm on the bootstrap samples (if applicable).
+If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+\item{boot.comp.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the competing model in each iteration of algorithm on the bootstrap samples (if applicable).
+If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
+\item{boot.hazard.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the hazard model (if applicable), either time-specific models at all time points or one pooled-over-time global model, on the bootstrap samples.
+If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
 }
 \description{
-This function estimates the risk over time for survival outcome using the given observed data set following
-multiple user-defined intervention strategies by the parametric g-formula iterative conditional expectation (ICE)
-estimator. This function allows users to access all singly robust and doubly robust ICE estimators:
-classical pooling over treatment history ICE estimator, classical stratifying on treatment history ICE estimator,
-hazard-based pooling over treatment history ICE estimator, hazard-based stratifying on treatment history ICE estimator,
-and a doubly robust inverse probability weighted ICE estimator. Logistic regression is used for outcome model and hazard of death (if applicable).
-Please see Wen et al. (2021) more details regarding the parametric g-formula
-iterative conditional expectation estimator.
+This function implements iterative conditional expectation (ICE) estimators under user-defined treatment strategies.
+Available ICE estimators are classical and hazard-based pooling over treatment history ICE, 
+classical and hazard-based stratifying on treatment history ICE, and doubly robust ICE estimators. 
+See Wen et al. (2021) for more details regarding the parametric g-formula iterative conditional expectation estimator.
 }
 \details{
-Users could specify which version ICE estimator to use through \code{estimator}.
-\itemize{
-\item{\code{pool(hazard = F)} specifies the classical pooling over treatment history ICE estimator. }
-\item{\code{pool(hazard = T)} specifies the hazard-based pooling over treatment history ICE estimator. }
-\item{\code{strat(hazard = F)} specifies the classical stratifying on treatment history ICE estimator. }
-\item{\code{strat(hazard = T)} specifies the hazard-based stratify on treatment history ICE estimator. }
-\item{\code{weight(treat_model)} specifies the IP weighted ICE estimator
-where \code{treat_model} specifies the treatment model.}
-}
-For stratified ICE, the estimator will automatically add in the treatment variables that are not intervened as covariates
-into the model specification for each time point. To provide flexible choices on the model specification inputs, we also
-provide keyword argument options for users to specify a different model statement, which is different from the model statement specified
-in \code{outcome_model} or \code{competing_model}, for user-chosen interventions.
-The input to each outcome or competing model keyword argument is a model statement formula.
-To specify different outcome model for different intervention, please follow the keyword argument input convention below:
 
-\itemize{
-\item{Each outcome model is specified using keyword argument name starting with \emph{outcomeModel} prefix.}
-\item{Use \emph{.n} \emph{outcomeModel} prefix in keyword argument name to specify which intervention being applied to,
-where \emph{n} represents the \emph{n}th intervention.}
-}
-
-To specify different competing model for different intervention, please follow the keyword argument input convention below:
-
-\itemize{
-\item{Each competing model is specified using keyword argument name starting with \emph{compModel} prefix.}
-\item{Use \emph{.n} \emph{compModel} prefix in keyword argument name to represent applying to \emph{n}th intervention.}
-}
-
-If an outcome or competing model is specified for an intervention using keyword argument, then the outcome or competing model will be used for the intervention.
-If there is no outcome or competing model keyword argument specified, the outcome or competing model specified in \code{outcome_model} or \code{competing_model} will be
-used for the intervention.
-
-For example, the following input specifies \code{Y ~ L1} as outcome model for intervention 1,
-\code{D ~ L1} as competing model for intervention 2,
-\code{D ~ L1 + L2} as competing model for intervention 1,
-\code{Y ~ L1 + L2} as outcome model for intervention 2.
-
-\code{fit_hazard_strat <- ice(data = data, K = 4, id = "id", time_name = "t0", } \cr
-\code{outcome_name = "Y", censor_name = "C", competing_name = "D", } \cr
-\code{estimator = strat(hazard = T), comp_effect = 1, } \cr
-\code{censor_model = C ~ L1 + L2, ref_idx = 0,} \cr
-\code{int_descript = c("Static Intervention", "Dynamic Intervention"),} \cr
-\code{outcome_model = Y ~ L1 + L2,} \cr
-\code{competing_model = D ~ L1 + L2,} \cr
-\code{intervention1.A1 = list(static(0)),} \cr
-\code{intervention1.A2 = list(static(1)),} \cr
-\code{intervention2.A1 = list(dynamic("L1 > 0", static(0), static(1), absorb = F)),} \cr
-\code{intervention2.A2 = list(dynamic("L2 == 0", static(0), static(1), absorb = T)),} \cr
-\code{outcomeModel.1 = Y ~ L1,} \cr
-\code{compModel.2 = D ~ L1} \cr
-
-Because the keyword argument for outcome model is not specified for intervention 2, the outcome model for intervention 2 is
-\code{Y ~ L1 + L2} as specified in \code{outcome_model}.
-Similarly, because the keyword argument for competing model is not specified for intervention 1, the competing model for intervention 1 is
-\code{D ~ L1 + L2} as specified in \code{competing_model}.
-Please see more examples in the examples section.
-Note that for stratified ICE in the case of direct effect, the keyword argument competing model statement inputs are ignored.
-
-Users could specify user-defined interventions or implement built-in interventions provided by the package
-using the intervention input convention described in the parameter description section.
-
-For the package built-in intervention strategy functions, if one wants to implement the strategy within the ICE method,
-please follow the instructions described below. Furthermore, users could assess the intervened values by
-specifying additional arguments following the detailed documentation for each function.
-Built-in interventions include following:
-\itemize{
-\item{Always Treat:} {\code{static(1)}}
-\item{Never Treat:} {\code{static(0)}}
-\item{Dynamic Treat Based on \code{condition}:} {\code{dynamic(condition, strategy_before, strategy_after, absorb)}. 
-\code{condition} is a string specifying a logical expression. The strategy specified in \code{strategy_before} is followed until \code{condition} is met. 
-Upon \code{condition} is met, the strategy specified in \code{strategy_after} is followed. \code{absorb} is a logical specifying whether to use absorbing strategy.
-If \code{absorb} is TRUE, then the strategy specified in \code{strategy_after} is absorbing upon the first time when \code{condition} is met.
-If \code{absorb} is FALSE, then the strategy specified in \code{strategy_after} is followed every time \code{condition} is met.}
-\item{Threshold Intervention Based on \code{var}:} {\code{threshold(lower_bound, upper_bound)}. If treatment value is within the range between \code{lower_bound} and \code{upper_bound} inclusively,
-then follow the natural value of the treatment. Otherwise, if the treatment value is below \code{lower_bound}, then set to \code{lower_bound}.
-If the treatment value is above the upper bound, then set to \code{upper_bound}.}
-\item{Grace Period:} {\code{grace_period(type, nperiod, condition)}. \code{type} could be "uniform" or "natural". \code{nperiod} specifies the length of grace period.
-When a defined intervention condition based on \code{condition} is met, initiate treatment in \code{nperiod} time units. If there is no intervention,
-follow the observed treatment initiation distribution (for natural grace period) or the uniform distribution of treatment initiation (for uniform grace period). }
-\item{User-Defined Intervention:} {The output of the user-defined intervention should be a vector of intervened value of the intervention variable for each individual at each time point in the size as the number of rows in \code{data}.}
-}
-Some examples are provided in the example section.
-
-In order to obtain an inverse probability (IP) weighted natural course risk based on the observed data, users must specify
-a censoring variable through \code{censor_name} and a corresponding censoring model through \code{censor_model}. Please see
-Chiu et al. (2023) for more details regarding the IP weighted estimate of the natural course risk.
-
-If competing event exists in the data, users need to specify the name of the competing variable through \code{competing_name} and
-the model specification through \code{competing_model} for hazard-based ICE estimator. Users need to specify whether to treat
-the competing event as censoring or total effect through \code{total_effect}.
-
-For model statement in \code{outcome_model}, \code{censor_model}, \code{competing_model}, and \code{hazard_model}, users could
-specify polynomial terms using functions \code{I} and \code{poly} and spline terms using \code{ns} from splines package
-and \code{rcspline.eval} from Hmisc package. In addition, users could specify lagged terms using the format lag\code{n}_\code{var} 
-to indicate lagging the variable \emph{var} \emph{n} periods. If lagged treatment variables are used, 
-they will be automatically intervened based on specified interventions. One could also use the polynomial and spline term functions
-on the lagged terms.
 }
 \examples{
 

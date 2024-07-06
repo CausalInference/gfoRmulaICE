@@ -2,9 +2,6 @@
 #'
 #' A dataset with 26581 observations on 10000 individuals and 4 time points. The dataset is in long format with each row representing the record of one individual at one time point.
 #'
-#' @docType data
-#' @name compData
-#'
 #' @format A data frame with 26581 rows and 9 variables:
 #' \describe{
 #'   \item{t0}{Time index.}
@@ -17,5 +14,4 @@
 #'   \item{D}{Competing event indicator.}
 #'   \item{Y}{Outcome indicator.}
 #' }
-#' @export
-NULL
+"compData"

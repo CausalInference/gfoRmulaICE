@@ -664,6 +664,7 @@ ice <- function(data, time_points, id, time_name,
     }
   }
   
+  
   ## preprocess threshold intervention
 
   sub_kwarg <- substitute(list(...))
@@ -671,6 +672,45 @@ ice <- function(data, time_points, id, time_name,
   kwarg_list <- as.list(sub_kwarg)
   kwarg_name_list <- names(kwarg_list)
   threshold_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "threshold")
+  
+  ## preprocess natural course - need to add treatment variable into the argument
+  
+  nc_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "natural_course")
+  
+  if (length(nc_idx) > 0) {
+    nc_kwarg <- kwarg_name_list[nc_idx]
+    nc_interv_list_split <- str_split(nc_kwarg, "[.]")
+    nc_interv_list <- lapply(nc_interv_list_split, function(x) {x[1]})
+    nc_interv_list_all_names <- lapply(nc_interv_list_split, function(x) {x[2]})
+
+    for (i in 1:length(nc_idx)) {
+      ikwarg <- nc_kwarg[i]
+      ivar <- as.character(nc_interv_list_all_names[i])
+      raw_list <- str_remove_all(as.character(kwarg_list[ikwarg]), " ")
+      ikwarg_start_idx <- str_locate(pattern = paste0(ikwarg, "="), clean_kwarg_str)[1, 2]
+      ikwarg_end_idx <- ikwarg_start_idx + nchar(raw_list) + 1
+      nc_arg_idx <- str_locate_all(pattern = "natural_course[\\(][\\)]", raw_list)[[1]]
+      num_nc <- nrow(nc_arg_idx)
+      add_string <- paste0("treat_var=\"", ivar, "\"")
+      
+      ## add the treatment variable in each call of natural course
+      
+      if (num_nc > 0) {
+      for (j in 1:num_nc) {
+        if (j == 1) {
+        idx_replace <- nc_arg_idx[j, 2] - 1
+        } else {
+          idx_replace <- str_locate_all(pattern = "natural_course[\\(][\\)]", raw_list)[[1]][1, 2] - 1
+        }
+        
+        raw_list <- paste0(substr(raw_list, 1, idx_replace), add_string, substr(raw_list, idx_replace + 1, nchar(raw_list)))
+      }
+      } 
+      
+      clean_kwarg_str <- paste0(substr(clean_kwarg_str, 1, ikwarg_start_idx), raw_list, 
+                                substr(clean_kwarg_str, ikwarg_end_idx, nchar(clean_kwarg_str)))
+    }
+  }
 
   if (length(threshold_idx) > 0) {
   threshold_kwarg <- kwarg_name_list[threshold_idx]

@@ -18,10 +18,6 @@ A data frame with 26581 rows and 9 variables:
   \item{Y}{Outcome indicator.}
 }
 }
-\usage{
-data
-}
 \description{
 A dataset with 26581 observations on 10000 individuals and 4 time points. The dataset is in long format with each row representing the record of one individual at one time point.
 }
-\keyword{datasets}

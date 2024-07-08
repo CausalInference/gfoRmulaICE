@@ -513,8 +513,6 @@ intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 plot_risk(ice_fit5b)
 
 
-
-
 }
 \references{
 Wen L, Young JG, Robins JM, Hernán MA. Parametric g-formula implementations for causal survival analyses. Biometrics. 2021;77(2):740-753.

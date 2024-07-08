@@ -57,7 +57,7 @@
 #' \item{ref_data_err_mssg}{A list of strings for error messages of any data error from each bootstrap replicate for the reference intervention.}
 #'
 #' @export
-#' @import doParallel
+#' @import doParallel parallel foreach
 #'
 bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_description,
                           ref_intervention_varnames, total_effect,

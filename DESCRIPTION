@@ -14,8 +14,12 @@ Imports:
     ggplot2,
     nnet,
     doParallel,
+    parallel,
+    foreach,
     stringr,
     tidyverse,
+    dplyr,
+    rlang,
     reshape2
 Suggests: 
     testthat (>= 3.0.0)

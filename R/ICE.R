@@ -179,8 +179,6 @@
 #' If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
 #' \item{boot.hazard.models.by.step}{A list, where the name of each sublist corresponds to each specified intervention description, and each sublist contains the fitted models for the hazard model (if applicable), either time-specific models at all time points or one pooled-over-time global model, on the bootstrap samples.
 #' If \code{nsamples} is set to 0, a \code{NULL} value is returned.}
-#' @export
-#' @import tidyverse stringr data.table reshape2 nnet
 #'
 #' @references Wen L, Young JG, Robins JM, Hernán MA. Parametric g-formula implementations for causal survival analyses. Biometrics. 2021;77(2):740-753.
 #' @references McGrath S, Lin V, Zhang Z, Petito LC, Logan RW, Hernán MA, and JG Young. gfoRmula: An R package for estimating the effects of sustained treatment strategies via the parametric g-formula. Patterns. 2020;1:100008.
@@ -547,8 +545,8 @@
 #' plot_risk(ice_fit5b)
 #' 
 #' 
-#' 
-#' 
+#' @import tidyverse rlang dplyr stringr data.table reshape2 nnet
+#' @export
 
 ice <- function(data, time_points, id, time_name,
                 outcome_name, censor_name = NULL,

@@ -37,8 +37,7 @@ This function specifies an intervention in which treatment is initiated within t
 During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.
 }
 \examples{
-data <- readRDS("test_data_competing.rds")
+data <- gfoRmulaICE::compData
 grace_period <- grace_period(type = "uniform", nperiod = 2, condition = "L1 == 0", data = data,
                              id = "id", time_name = "t0", outcome_name = "Y")
-grace_period
 }

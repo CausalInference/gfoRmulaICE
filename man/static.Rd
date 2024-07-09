@@ -19,7 +19,6 @@ This function specifies the static intervention, either treat with a constant va
 on the treatment variable in \code{data}.
 }
 \examples{
-data <- readRDS("test_data_competing.rds")
+data <- gfoRmulaICE::compData
 always_treat <- static(value = 1, data = data)
-always_treat
 }

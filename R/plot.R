@@ -16,6 +16,8 @@
 #' @import ggplot2
 #'
 #' @examples
+#' 
+#' data <- gfoRmulaICE::compData
 #'
 #' ice_fit1 <- ice(
 #' data = data, 

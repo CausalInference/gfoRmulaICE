@@ -18,7 +18,7 @@ a vector containing the intervened values of the same size as the number of rows
 This function specifies the natural course intervention on the treatment variable in \code{data}.
 }
 \examples{
-data <- readRDS("test_data_competing.rds")
+data <- gfoRmulaICE::compData
 natural_course <- natural_course(data = data, treat_var = "A")
-natural_course
+
 }

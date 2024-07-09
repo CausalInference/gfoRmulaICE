@@ -30,9 +30,8 @@ If treatment value is either below the lower bound or above the upper bound, it 
 See Young et al. (2014) for more details.
 }
 \examples{
-data <- readRDS("test_data_competing.rds")
+data <- gfoRmulaICE::compData
 threshold_treat <- threshold(lower_bound = 0, upper_bound = 2, var = "A", data = data)
-threshold_treat
 }
 \references{
 Young JG, Herńan MA, Robins JM. Identification, estimation and approximation of risk under interventions that depend on the natural value of treatment using observational data. Epidemiologic Methods. 2014;3(1):1-19.

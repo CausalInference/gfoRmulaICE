@@ -11,9 +11,8 @@
 #' @export
 #'
 #' @examples
-#' data <- readRDS("test_data_competing.rds")
+#' data <- gfoRmulaICE::compData
 #' always_treat <- static(value = 1, data = data)
-#' always_treat
 static <- function(value, data = interv_data) {
 
   interv_it <- rep(value, nrow(data))
@@ -32,9 +31,9 @@ static <- function(value, data = interv_data) {
 #' @export
 #'
 #' @examples
-#' data <- readRDS("test_data_competing.rds")
+#' data <- gfoRmulaICE::compData
 #' natural_course <- natural_course(data = data, treat_var = "A")
-#' natural_course
+#' 
 natural_course <- function(data = interv_data, treat_var = treatment_varname) {
   interv_it <- data[, treat_var]
 
@@ -118,10 +117,9 @@ natural_course_ipweighted <- function(data, id, censor_varname,
 #' @export
 #'
 #' @examples
-#' data <- readRDS("test_data_competing.rds")
+#' data <- gfoRmulaICE::compData
 #' grace_period <- grace_period(type = "uniform", nperiod = 2, condition = "L1 == 0", data = data,
 #'                              id = "id", time_name = "t0", outcome_name = "Y")
-#' grace_period
 grace_period <- function(type, nperiod, condition,
                          # condition = dynamic_cond, 
                          data = interv_data, id = idvar, time_name = time0var, 
@@ -474,9 +472,8 @@ weight <- function(treat_model = list()) {
 #' @references Young JG, Herńan MA, Robins JM. Identification, estimation and approximation of risk under interventions that depend on the natural value of treatment using observational data. Epidemiologic Methods. 2014;3(1):1-19.
 #'
 #' @examples
-#' data <- readRDS("test_data_competing.rds")
+#' data <- gfoRmulaICE::compData
 #' threshold_treat <- threshold(lower_bound = 0, upper_bound = 2, var = "A", data = data)
-#' threshold_treat
 threshold <- function(lower_bound, upper_bound, var = threshold_treatment, data = interv_data){
   interv_it <- case_when(data[, var] >= lower_bound & data[, var] <= upper_bound ~ data[, var],
                          data[, var] > upper_bound ~ upper_bound,
@@ -544,6 +541,8 @@ get_rmse <- function(fit) {
 #' @export
 #'
 #' @examples
+#' 
+#' data <- gfoRmulaICE::compData
 #'
 #' fit_classical_pool <- ice(
 #' data = data,
@@ -653,12 +652,18 @@ get_column_name_covar <- function(icovar) {
 #' @export
 #'
 #' @examples
-#' data <- readRDS("test_data_competing.rds")
-#' # Dynamic intervention example 1: 
-#' # Treat when L1 = 0, and not treat otherwise.
-#' dynamic <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
+#' data <- gfoRmulaICE::compData
+#' # Dynamic intervention example 1: treat when L1 = 0, and not treat otherwise.
+#' dynamic1 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
 #' absorb = FALSE, id = "id", time_name = "t0", data = data)
-#' dynamic
+#' 
+#' # Dynamic intervention example 2: never treat upon until L1 = 0, after which follows always treat.
+#' dynamic2 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
+#' absorb = TRUE, id = "id", time_name = "t0", data = data)
+#' 
+#' # Dynamic intervention example 3: never treat upon until L1 = 0, after which follows natural course.
+#' dynamic3 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = natural_course(), 
+#' absorb = FALSE, id = "id", time_name = "t0", data = data)
 dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE, 
                     id = id_var, time = time0var, data = interv_data) {
   

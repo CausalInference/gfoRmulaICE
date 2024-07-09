@@ -26,6 +26,8 @@ After conversion, users could use the base function plot().)
 }
 \examples{
 
+data <- gfoRmulaICE::compData
+
 ice_fit1 <- ice(
 data = data, 
 time_points = 4, 

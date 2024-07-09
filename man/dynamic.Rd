@@ -39,10 +39,16 @@ This function specifies a dynamic intervention on the treatment variable specifi
 This function follows the treatment strategy specified in \code{strategy_before} until a user-defined condition that depends on covariate values is met. Upon the condition is met, the strategy specified in \code{strategy_after} is followed.
 }
 \examples{
-data <- readRDS("test_data_competing.rds")
-# Dynamic intervention example 1: 
-# Treat when L1 = 0, and not treat otherwise.
-dynamic <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
+data <- gfoRmulaICE::compData
+# Dynamic intervention example 1: treat when L1 = 0, and not treat otherwise.
+dynamic1 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
 absorb = FALSE, id = "id", time_name = "t0", data = data)
-dynamic
+
+# Dynamic intervention example 2: never treat upon until L1 = 0, after which follows always treat.
+dynamic2 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
+absorb = TRUE, id = "id", time_name = "t0", data = data)
+
+# Dynamic intervention example 3: never treat upon until L1 = 0, after which follows natural course.
+dynamic3 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = natural_course(), 
+absorb = FALSE, id = "id", time_name = "t0", data = data)
 }

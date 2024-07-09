@@ -18,6 +18,8 @@ After conversion, users could use the base function summary().)
 }
 \examples{
 
+data <- gfoRmulaICE::compData
+
 fit_classical_pool <- ice(
 data = data,
 K = 4,

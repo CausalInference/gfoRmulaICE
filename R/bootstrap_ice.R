@@ -11,7 +11,7 @@
 #' @param ref_description a string describing the reference intervention in this bootstrap.
 #' @param ref_intervention_varnames a list of strings specifying the treatment variables to be used for the reference intervention in this bootstrap.
 #' @param total_effect a logical value indicating how the competing event is handled for the defined intervention.
-#' TRUE for total effect. FALSE for controlled direct effect.
+#' \code{TRUE} for total effect. \code{FALSE} for controlled direct effect.
 #' @param ref_intervention a list of functions specifying the intervention to be used as reference.
 #' @param interventions a list of functions defining the intervention to be used in this bootstrap.
 #' @param intervention_varnames a list of strings specifying the treatment variables to be used for the defined intervention in this bootstrap.

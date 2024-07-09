@@ -44,7 +44,7 @@ bootstrap_ice(
 \item{ref_intervention_varnames}{a list of strings specifying the treatment variables to be used for the reference intervention in this bootstrap.}
 
 \item{total_effect}{a logical value indicating how the competing event is handled for the defined intervention.
-TRUE for total effect. FALSE for controlled direct effect.}
+\code{TRUE} for total effect. \code{FALSE} for controlled direct effect.}
 
 \item{ref_intervention}{a list of functions specifying the intervention to be used as reference.}
 

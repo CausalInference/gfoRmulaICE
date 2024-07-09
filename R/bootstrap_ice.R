@@ -68,7 +68,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
 
   set.seed(set_seed)
   
-  sig_level <- 1 - coverage
+  sig_level <- 100 - coverage
 
   n <- length(unique(data[, id]))
 
@@ -208,7 +208,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     #   
     # }, mc.cores = ncores)
     # 
-    # print(names(boot_result))
     
 
     boot_result <- foreach(i = 1:nboot, .combine = "c", .packages = c("tidyverse", "nnet", "stringr", "base"),
@@ -377,7 +376,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
 
                            }
     
-    # print(boot_result)
     cat(paste0(" Bootstrap Progress: ", intervention_description, "\n"))
 
     
@@ -455,7 +453,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     ref_ipw_se_all <- agg_result[(7+2*K):(length(agg_result))]
 
 
-    quantile_result_upper <- apply(result, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
+    quantile_result_upper <- apply(result, 2, quantile, probs = (100 - sig_level/2)/100, na.rm = T)
     ice_cv_upper <- quantile_result_upper[1]
     ref_cv_upper <- quantile_result_upper[2]
     rr_cv_upper <- quantile_result_upper[3]
@@ -464,7 +462,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     ref_cv_all_upper <- quantile_result_upper[(6+K):(6+2*K)]
     ref_ipw_cv_all_upper <- quantile_result_upper[(7+2*K):(length(quantile_result_upper))]
     
-    quantile_result_lower <- apply(result, 2, quantile, probs = sig_level/2, na.rm = T)
+    quantile_result_lower <- apply(result, 2, quantile, probs = (sig_level/2)/100, na.rm = T)
     ice_cv_lower <- quantile_result_lower[1]
     ref_cv_lower <- quantile_result_lower[2]
     rr_cv_lower <- quantile_result_lower[3]
@@ -684,34 +682,28 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     }
     
     ice_se <- sd(unlist(ice_boot), na.rm = T)
-    ice_cv_upper <- quantile(unlist(ice_boot), probs = 1 - sig_level/2, na.rm = T)
-    ice_cv_lower <- quantile(unlist(ice_boot), probs = sig_level/2, na.rm = T)
+    ice_cv_upper <- quantile(unlist(ice_boot), probs = (100 - sig_level/2)/100, na.rm = T)
+    ice_cv_lower <- quantile(unlist(ice_boot), probs = (sig_level/2)/100, na.rm = T)
     ref_se <- sd(unlist(ref_boot), na.rm = T)
-    ref_cv_upper <- quantile(unlist(ref_boot), probs = 1 - sig_level/2, na.rm = T)
-    ref_cv_lower <- quantile(unlist(ref_boot), probs = sig_level/2, na.rm = T)
+    ref_cv_upper <- quantile(unlist(ref_boot), probs = (100 - sig_level/2)/100, na.rm = T)
+    ref_cv_lower <- quantile(unlist(ref_boot), probs = (sig_level/2)/100, na.rm = T)
     rr_se <- sd(unlist(rr_boot), na.rm = T)
-    rr_cv_upper <- quantile(unlist(rr_boot), probs = 1 - sig_level/2, na.rm = T)
-    rr_cv_lower <- quantile(unlist(rr_boot), probs = sig_level/2, na.rm = T)
+    rr_cv_upper <- quantile(unlist(rr_boot), probs = (100 - sig_level/2)/100, na.rm = T)
+    rr_cv_lower <- quantile(unlist(rr_boot), probs = (sig_level/2)/100, na.rm = T)
     rd_se <- sd(unlist(rd_boot), na.rm = T)
-    rd_cv_upper <- quantile(unlist(rd_boot), probs = 1 - sig_level/2, na.rm = T)
-    rd_cv_lower <- quantile(unlist(rd_boot), probs = sig_level/2, na.rm = T)
+    rd_cv_upper <- quantile(unlist(rd_boot), probs = (100 - sig_level/2)/100, na.rm = T)
+    rd_cv_lower <- quantile(unlist(rd_boot), probs = (sig_level/2)/100, na.rm = T)
     ice_se_all <- apply(ice_boot_all, 2, sd, na.rm = T)
     ref_se_all <- apply(ref_boot_all, 2, sd, na.rm = T)
     ref_ipw_se_all <- apply(ref_ipw_boot_all, 2, sd, na.rm = T)
     
-    # print(ice_se)
-    # print(ref_se_all)
-    # print(ice_boot_all)
-    # print(ref_boot_all)
-    # print(intervention_description)
+    ice_cv_all_upper <- apply(ice_boot_all, 2, quantile, probs = (100 - sig_level/2)/100, na.rm = T)
+    ref_cv_all_upper <- apply(ref_boot_all, 2, quantile, probs = (100 - sig_level/2)/100, na.rm = T)
+    ref_ipw_cv_all_upper <- apply(ref_ipw_boot_all, 2, quantile, probs = (100 - sig_level/2)/100, na.rm = T)
     
-    ice_cv_all_upper <- apply(ice_boot_all, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
-    ref_cv_all_upper <- apply(ref_boot_all, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
-    ref_ipw_cv_all_upper <- apply(ref_ipw_boot_all, 2, quantile, probs = 1 - sig_level/2, na.rm = T)
-    
-    ice_cv_all_lower <- apply(ice_boot_all, 2, quantile, probs = sig_level/2, na.rm = T)
-    ref_cv_all_lower <- apply(ref_boot_all, 2, quantile, probs = sig_level/2, na.rm = T)
-    ref_ipw_cv_all_lower <- apply(ref_ipw_boot_all, 2, quantile, probs = sig_level/2, na.rm = T)
+    ice_cv_all_lower <- apply(ice_boot_all, 2, quantile, probs = (sig_level/2)/100, na.rm = T)
+    ref_cv_all_lower <- apply(ref_boot_all, 2, quantile, probs = (sig_level/2)/100, na.rm = T)
+    ref_ipw_cv_all_lower <- apply(ref_ipw_boot_all, 2, quantile, probs = (sig_level/2)/100, na.rm = T)
     
     data_err <- na.omit(data_err)
     model_err <- na.omit(model_err)
@@ -787,9 +779,7 @@ interv_boot <- function(interv, idx) {
   interv_it <- c()
   for (itreat in 1:length(interv[[1]])) {
     interv_treat <- as.vector(unlist(interv[[1]][[itreat]]))[idx]
-    # print(interv_treat)
     interv_it <- c(interv_it, list(interv_treat))
-    # print(interv_it)
   }
 
   return(list(interv_it))

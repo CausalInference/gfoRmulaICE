@@ -24,7 +24,7 @@ ice(
   ci_method = "percentile",
   nsamples = 0,
   seed = 1,
-  significance_level = 0.05,
+  coverage = 95,
   parallel = F,
   ncores = 2,
   ...
@@ -84,6 +84,8 @@ Possible values are "percentile" and "normal." Default is "percentile."}
 
 \item{seed}{a number indicating the starting seed for bootstrapping. Default is 1.}
 
+\item{coverage}{a number greater than 0 and less than 100 indicating the coverage of the confidence interval. Default is 95.}
+
 \item{parallel}{a logical value indicating whether to parallelize the bootstrap process. Default is \code{FALSE}.}
 
 \item{ncores}{a number indicating the number of CPU cores to use in parallel computing. Default is 2.}
@@ -120,8 +122,6 @@ where \emph{n} represents the \emph{n}th intervention.}
 The input to each outcome or competing model keyword argument is a model statement formula. 
 If no outcome model and competing model keyword argument is specified, the models specified in \code{outcome_model} and \code{comp_model} are used.
 Please refer to the "Examples" section for more examples.}
-
-\item{coverage}{a number greater than 0 and less than 100 indicating the coverage of the confidence interval. Default is 95.}
 }
 \value{
 A list containing the following components. Each component that contains the fitted models includes the model fits, the summary of the fitted model, 

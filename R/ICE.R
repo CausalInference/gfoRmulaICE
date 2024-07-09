@@ -558,7 +558,7 @@ ice <- function(data, time_points, id, time_name,
                 int_descript,
                 ci_method = "percentile",
                 nsamples = 0, seed = 1,
-                significance_level = 0.05, parallel = F, ncores = 2,
+                coverage = 95, parallel = F, ncores = 2,
                 ...) {
   
   interv_data <<- data
@@ -600,6 +600,8 @@ ice <- function(data, time_points, id, time_name,
   } else {
     normal_quantile <- F
   }
+  
+  significance_level <- 1 - coverage / 100
   
   # preprocess the hazard model
   
@@ -1330,7 +1332,7 @@ ice <- function(data, time_points, id, time_name,
         
       } else {
 
-      this_boot <- bootstrap_ice(ice_pool, K, nboot, significance_level, parallel, ncores, ref_description,
+      this_boot <- bootstrap_ice(ice_pool, K, nboot, coverage, parallel, ncores, ref_description,
                                  ref_intervention_varlist, this_total_effect, boot_interv,
                                  this_interv, this_int_var, this_descript, this_time, ref_time,
                                  data, id, set_seed,
@@ -1840,7 +1842,7 @@ ice <- function(data, time_points, id, time_name,
           
         } else {
 
-        this_boot <- bootstrap_ice(ice_strat, K, nboot, significance_level, parallel, ncores, ref_description,
+        this_boot <- bootstrap_ice(ice_strat, K, nboot, coverage, parallel, ncores, ref_description,
                                    ref_intervention_varlist, this_total_effect, boot_interv,
                                    this_interv, this_int_var, this_descript, this_time, ref_time,
                                    data, id, set_seed,
@@ -2016,12 +2018,22 @@ ice <- function(data, time_points, id, time_name,
       }
     }
 
-    summary[1:(ninterv + 1), 8] <- summary[1:(ninterv + 1), 2] - ice_critical_value_lower * summary[1:(ninterv + 1), 5]
-    summary[1:(ninterv + 1), 9] <- summary[1:(ninterv + 1), 2] + ice_critical_value_upper * summary[1:(ninterv + 1), 5]
-    summary[-(ref_idx + 1), 10] <- summary[-(ref_idx + 1), 3] - rr_critical_value_lower * summary[-(ref_idx + 1), 6]
-    summary[-(ref_idx + 1), 11] <- summary[2:(ninterv + 1), 3] + rr_critical_value_upper * summary[-(ref_idx + 1), 6]
-    summary[-(ref_idx + 1), 12] <- summary[2:(ninterv + 1), 4] - rd_critical_value_lower * summary[-(ref_idx + 1), 7]
-    summary[-(ref_idx + 1), 13] <- summary[2:(ninterv + 1), 4] + rd_critical_value_upper * summary[-(ref_idx + 1), 7]
+    if (normal_quantile) {
+      summary[1:(ninterv + 1), 8] <- summary[1:(ninterv + 1), 2] - ice_critical_value_lower * summary[1:(ninterv + 1), 5]
+      summary[1:(ninterv + 1), 9] <- summary[1:(ninterv + 1), 2] + ice_critical_value_upper * summary[1:(ninterv + 1), 5]
+      summary[-(ref_idx + 1), 10] <- summary[-(ref_idx + 1), 3] - rr_critical_value_lower * summary[-(ref_idx + 1), 6]
+      summary[-(ref_idx + 1), 11] <- summary[2:(ninterv + 1), 3] + rr_critical_value_upper * summary[-(ref_idx + 1), 6]
+      summary[-(ref_idx + 1), 12] <- summary[2:(ninterv + 1), 4] - rd_critical_value_lower * summary[-(ref_idx + 1), 7]
+      summary[-(ref_idx + 1), 13] <- summary[2:(ninterv + 1), 4] + rd_critical_value_upper * summary[-(ref_idx + 1), 7]
+    } else {
+      summary[1:(ninterv + 1), 8] <- ice_critical_value_lower
+      summary[1:(ninterv + 1), 9] <- ice_critical_value_upper
+      summary[-(ref_idx + 1), 10] <- rr_critical_value_lower
+      summary[-(ref_idx + 1), 11] <- rr_critical_value_upper
+      summary[-(ref_idx + 1), 12] <- rd_critical_value_lower
+      summary[-(ref_idx + 1), 13] <- rd_critical_value_upper
+    }
+    
     
     if (normal_quantile) {
     risk_time$Critical_Value_Lower <- ice_critical_value_lower
@@ -2081,7 +2093,6 @@ ice <- function(data, time_points, id, time_name,
 #' @internal
 split_args <- function(argument, target_string) {
   split_list <- str_split(names(argument), target_string)
-  # print(split_list)
   origin_list <- lapply(split_list, function(x) {x[2]})
   split_by_dot <- str_split(origin_list, "[.]")
   prefix <- lapply(split_by_dot, function(x) {x[1]})
@@ -2140,9 +2151,6 @@ get_model_formula <- function(interv_list, arg_interv, model_interv, ninterv, ar
 construct_interv_value <- function(data, timevar, int_value, int_time, int_var){
 
   nint <- length(int_var)
-  # print(int_var)
-
-  # print(int_value)
 
   new_int_value <- list()
 

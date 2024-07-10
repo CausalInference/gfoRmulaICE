@@ -561,7 +561,7 @@ ice <- function(data, time_points, id, time_name,
                 coverage = 95, parallel = F, ncores = 2,
                 ...) {
   
-  interv_data <<- data
+  interv_data <<- as.data.frame(data)
   idvar <<- id
   time0var <<- time_name
   outcomevar <<- outcome_name

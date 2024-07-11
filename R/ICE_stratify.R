@@ -543,11 +543,75 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
     ## weighted ICE
     ntreatment = length(obs_treatment_varnames)
     data[, "pred_obs_prod"] <- 1
-
+    
     for (i in 1:ntreatment) {
       treatment_i <- obs_treatment_varnames[[i]]
       nA_level <- length(unique(data[, treatment_i]))
       acovar <- treat_model_covar[[i]]
+      
+      acovar_lags <- unique(acovar[str_detect(acovar, "lag[0-9999]_")])
+      
+      if (length(acovar_lags) > 0) {
+        
+        data$factor_id <- as.factor(data[, id])
+        
+        for (i in 1:length(acovar_lags)) {
+          ilag <- acovar_lags[i]
+          
+          if (str_detect(ilag, "^[a-zA-Z._]+\\(")) {
+            ilag <- str_split(ilag, ",")[[1]][1]
+            ilag <- str_split(ilag, "\\(")[[1]][2]
+          }
+          
+          lag_components <- str_split(ilag, "_")
+          lag_unit <- as.numeric(str_replace_all(lag_components[[1]][1], "lag", ""))
+          lag_var <- lag_components[[1]][2]
+          
+          
+          group_dta <- data %>% group_by(factor_id)
+          group_dta[, "lag_var_new"] <- data[, lag_var]
+          group_dta <- group_dta %>%
+            mutate(lagged_var = dplyr::lag(lag_var_new, n = lag_unit, default = 0))
+          
+          data[, ilag] <- group_dta$lagged_var
+          
+        }
+      }
+      
+      ## need to rebuild covars by calling the transform functions
+      ## treatment model covar
+      acovar_new <- c()
+      data_add <- data
+      for (i in 1:length(acovar)) {
+        
+        icovar <- acovar[i]
+        
+        column_name <- get_column_name_covar(icovar)
+        
+        if (!column_name %in% colnames(data)) {
+          old_ncol <- ncol(data_add)
+          data_add <- data %>% mutate(eval(parse(text = icovar)))
+          new_ncol <- ncol(data_add)
+          
+          new_column <- data_add[, new_ncol]
+          new_column <- as.matrix(new_column)
+          
+          ## create new columns
+          
+          if (ncol(new_column) > 1) {
+            multiple_varname <- paste0(paste0(column_name, "."), 1:(ncol(new_column)))
+            data[, multiple_varname] <- new_column
+            acovar_new <- c(acovar_new, multiple_varname)
+          } else {
+            data[, column_name] <- as.vector(new_column)
+            acovar_new <- c(acovar_new, column_name)
+          }
+        } else {
+          acovar_new <- c(acovar_new, icovar)
+        }
+      }
+      
+      acovar <- acovar_new
 
       aformula <- as.formula(paste0(treatment_i, "~", paste0(acovar, collapse = "+")))
 

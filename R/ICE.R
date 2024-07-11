@@ -605,13 +605,13 @@ ice <- function(data, time_points, id, time_name,
   
   # preprocess the hazard model
   
-  if (any(str_detect(as.character(substitute(estimator)), "pool")) | 
-      any(str_detect(as.character(substitute(estimator)), "strat")) & 
+  if ((any(str_detect(as.character(substitute(estimator)), "pool")) | 
+      any(str_detect(as.character(substitute(estimator)), "strat"))) & 
       any(str_detect(as.character(substitute(estimator)), "T")) & is.null(hazard_model)) {
     
     hazard_model <- outcome_model
-  } else if (any(str_detect(as.character(substitute(estimator)), "pool")) | 
-             any(str_detect(as.character(substitute(estimator)), "strat")) & 
+  } else if ((any(str_detect(as.character(substitute(estimator)), "pool")) | 
+             any(str_detect(as.character(substitute(estimator)), "strat"))) & 
              any(str_detect(as.character(substitute(estimator)), "F")) & !is.null(hazard_model)) {
     warning("Hazard model is ignored for Classical ICE estimators.")
   }
@@ -790,10 +790,9 @@ ice <- function(data, time_points, id, time_name,
 
   if (!total_effect %in% 0:2) {
 
-    stop("Please input 0, 1, or 2 for comp_effect.
+    stop("Please input 0 or 1 for comp_effect.
          0 outputs direct effect for all interventions.
-         1 outputs total effect for all interventions.
-         2 outputs both direct effect and total effect for all interventions.")
+         1 outputs total effect for all interventions.")
   }
 
   if (!is.data.frame(data)) {
@@ -933,6 +932,7 @@ ice <- function(data, time_points, id, time_name,
     stop("Please input the observed treatment column that is within the input data frame.")
   }
   }
+  
 
   if (total_effect == 0) {
     ref_total_effect_list <- list(F)
@@ -1019,6 +1019,7 @@ ice <- function(data, time_points, id, time_name,
     # check model input for pooled ICE
 
 
+    
     if (!any(str_detect(as.character(outcome_model)[3], unlist(obs_treatment_name)))) {
       stop("Please include treatment variable as covariate in the outcome model for pooled ICE.")
     }
@@ -1041,6 +1042,7 @@ ice <- function(data, time_points, id, time_name,
         }
       }
     }
+    
 
 
     risk_descript <- c()
@@ -1357,6 +1359,7 @@ ice <- function(data, time_points, id, time_name,
 
       this_cv_upper <- tail(this_boot$ice_cv_all_upper, 1)
       this_cv_lower <- tail(this_boot$ice_cv_all_lower, 1)
+      
       this_rr_cv_upper <- this_boot$rr_cv_upper
       this_rr_cv_lower <- this_boot$rr_cv_lower
       this_rd_cv_upper <- this_boot$rd_cv_upper
@@ -1546,7 +1549,7 @@ ice <- function(data, time_points, id, time_name,
     
     if (any(!is.na(unlist(compModels)))) {
       if ((any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F) & (ref_total_effect == F)) | (any(str_detect(as.character(substitute(estimator)), "weight")) & (hazard == F) & (ref_total_effect == F))) {
-      warning("The competing model is used for nonparametric risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
+      warning("The competing model is used for observed risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
       } 
     }
 
@@ -2006,10 +2009,10 @@ ice <- function(data, time_points, id, time_name,
       ice_critical_value_lower <- as.vector(ice_critical_value[1, ])
       ice_critical_value_upper <- as.vector(ice_critical_value[2, ])
       if (ref_idx != 0) {
-        rr_critical_value_lower <- as.vector(rr_critical_value[1, ])[-ref_idx]
-        rd_critical_value_lower <- as.vector(rd_critical_value[1, ])[-ref_idx]
-        rr_critical_value_upper <- as.vector(rr_critical_value[2, ])[-ref_idx]
-        rd_critical_value_upper <- as.vector(rd_critical_value[2, ])[-ref_idx]
+        rr_critical_value_lower <- as.vector(rr_critical_value[1, ])[-(ref_idx+1)]
+        rd_critical_value_lower <- as.vector(rd_critical_value[1, ])[-(ref_idx+1)]
+        rr_critical_value_upper <- as.vector(rr_critical_value[2, ])[-(ref_idx+1)]
+        rd_critical_value_upper <- as.vector(rd_critical_value[2, ])[-(ref_idx+1)]
       } else {
         rr_critical_value_lower <- as.vector(rr_critical_value[1, ])[-1]
         rd_critical_value_lower <- as.vector(rd_critical_value[1, ])[-1]

@@ -58,7 +58,7 @@
 #'
 #' plot_risk(ice_fit1, ice_fit2)
 #'
-plot_risk <- function(..., plot_np = T, label = 0) {
+plot_risk <- function(..., plot_obs = T, label = 0) {
   
   plot_np <- plot_obs
 

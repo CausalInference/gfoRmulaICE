@@ -1474,12 +1474,12 @@ ice <- function(data, time_points, id, time_name,
     
     if (bootstrap) {
       
-      risk_time <- match_boot_values(risk_time, data.frame(se_all), "SE")
+      risk_time <- match_boot_values(risk_time, data.frame(se_all, check.names = F), "SE")
       
       if (normal_quantile == F) {
 
-      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper), "Critical_Value_Upper")
-      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower), "Critical_Value_Lower")
+      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper, check.names = F), "Critical_Value_Upper")
+      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower, check.names = F), "Critical_Value_Lower")
       }
     }
 
@@ -1982,11 +1982,11 @@ ice <- function(data, time_points, id, time_name,
     
     if (bootstrap) {
       
-      risk_time <- match_boot_values(risk_time, data.frame(se_all), "SE")
+      risk_time <- match_boot_values(risk_time, data.frame(se_all, check.names = F), "SE")
       
       if (normal_quantile == F) {
-        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper), "Critical_Value_Upper")
-        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower), "Critical_Value_Lower")
+        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper, check.names = F), "Critical_Value_Upper")
+        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower, check.names = F), "Critical_Value_Lower")
       }
     }
 
@@ -2181,7 +2181,7 @@ match_boot_values <- function(risk_df, cv_df, col) {
   names <- colnames(cv_df)
   for (icv in 1:ncol(cv_df)) {
     cv_name <- names[icv]
-    cv_name <- str_replace_all(cv_name, "[.]", " ")
+    # cv_name <- str_replace_all(cv_name, "[.]", " ")
     risk_df[risk_df$Intervention == cv_name, col] <- as.vector(cv_df[, names[icv]])
   }
   

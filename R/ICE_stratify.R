@@ -234,6 +234,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
     if (str_detect(ilag, "^[a-zA-Z._]+\\(")) {
       ilag <- str_split(ilag, ",")[[1]][1]
       ilag <- str_split(ilag, "\\(")[[1]][2]
+      ilag <- str_split(ilag, "\\)")[[1]][1]
     }
     
     lag_components <- str_split(ilag, "_")
@@ -280,7 +281,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         outcome_covar_new <- c(outcome_covar_new, column_name)
       }
     } else {
-      outcome_covar_new <- c(outcome_covar_new, icovar)
+      outcome_covar_new <- c(outcome_covar_new, column_name)
     }
   }
   
@@ -313,7 +314,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         censor_covar_new <- c(censor_covar_new, column_name)
       }
     } else {
-      censor_covar_new <- c(censor_covar_new, icovar)
+      censor_covar_new <- c(censor_covar_new, column_name)
     }
   }
   }
@@ -347,7 +348,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         competing_covar_new <- c(competing_covar_new, column_name)
       }
     } else {
-      competing_covar_new <- c(competing_covar_new, icovar)
+      competing_covar_new <- c(competing_covar_new, column_name)
     }
   }
   }
@@ -382,7 +383,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           hazard_covar_new <- c(hazard_covar_new, column_name)
         }
       } else {
-        hazard_covar_new <- c(hazard_covar_new, icovar)
+        hazard_covar_new <- c(hazard_covar_new, column_name)
       }
     }
     
@@ -561,6 +562,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           if (str_detect(ilag, "^[a-zA-Z._]+\\(")) {
             ilag <- str_split(ilag, ",")[[1]][1]
             ilag <- str_split(ilag, "\\(")[[1]][2]
+            ilag <- str_split(ilag, "\\)")[[1]][1]
           }
           
           lag_components <- str_split(ilag, "_")
@@ -607,7 +609,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
             acovar_new <- c(acovar_new, column_name)
           }
         } else {
-          acovar_new <- c(acovar_new, icovar)
+          acovar_new <- c(acovar_new, column_name)
         }
       }
       

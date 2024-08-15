@@ -235,6 +235,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
     if (str_detect(ilag, "^[a-zA-Z._]+\\(")) {
       ilag <- str_split(ilag, ",")[[1]][1]
       ilag <- str_split(ilag, "\\(")[[1]][2]
+      ilag <- str_split(ilag, "\\)")[[1]][1]
     }
     
     lag_components <- str_split(ilag, "_")
@@ -281,7 +282,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         outcome_covar_new <- c(outcome_covar_new, column_name)
       }
     } else {
-      outcome_covar_new <- c(outcome_covar_new, icovar)
+      outcome_covar_new <- c(outcome_covar_new, column_name)
     }
   }
   
@@ -314,7 +315,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         censor_covar_new <- c(censor_covar_new, column_name)
       }
     } else {
-      censor_covar_new <- c(censor_covar_new, icovar)
+      censor_covar_new <- c(censor_covar_new, column_name)
     }
   }
   }
@@ -349,7 +350,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         competing_covar_new <- c(competing_covar_new, column_name)
       }
     } else {
-      competing_covar_new <- c(competing_covar_new, icovar)
+      competing_covar_new <- c(competing_covar_new, column_name)
     }
   }
   }
@@ -385,7 +386,8 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
           haz_covar_new <- c(haz_covar_new, column_name)
         }
       } else {
-        haz_covar_new <- c(haz_covar_new, icovar)
+          haz_covar_new <- c(haz_covar_new, column_name)
+        
       }
     }
   }
@@ -514,7 +516,13 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
       # lag_treat_names_list <- list(treatment_varname = lag_treat_names)
       all_treat_lags <- c(all_treat_lags, lag_treat_names)
       
-      lags <- sapply(str_split(lag_treat_names, "_"), function(x) {as.numeric(str_replace(x[1], "lag", ""))})
+      lags <- sapply(str_split(lag_treat_names, "_"), function(x) {
+        if (any(x %in% c("rcspline", "poly", "ns"))) {
+          return(as.numeric(str_replace(x[2], "lag", "")))
+        } else {
+        as.numeric(str_replace(x[1], "lag", ""))
+        }
+        })
       
       for (i in 1:length(lags)) {
         lag_unit <- lags[i]

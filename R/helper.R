@@ -618,14 +618,14 @@ summary_table <- function(...) {
 get_column_name_covar <- function(icovar) {
   
   if (str_detect(icovar, "I()")) {
-    covar_name <- str_replace_all(icovar, "[I()]", "")
+    covar_name <- str_replace_all(str_replace_all(icovar, "I", ""), "[()]", "")
     covar_name <- str_replace_all(covar_name, "\\^", "_degree")
   } else if (str_detect(icovar, "poly()")) {
-    covar_name <- paste0("poly_", str_split(str_replace_all(icovar, "[poly()]", ""), ",")[[1]][1])
+    covar_name <- paste0("poly_", str_split(str_replace_all(str_replace_all(icovar, "poly", ""), "[()]", ""), ",")[[1]][1])
   } else if (str_detect(icovar, "ns()")) {
-    covar_name <- paste0("ns_", str_split(str_replace_all(icovar, "[ns()]", ""), ",")[[1]][1])
+    covar_name <- paste0("ns_", str_split(str_replace_all(str_replace_all(icovar, "ns", ""), "[()]", ""), ",")[[1]][1])
   } else if (str_detect(icovar, "rcspline.eval()")) {
-    covar_name <- paste0("rcspline_", str_split(str_replace_all(icovar, "[rcspline.eval()]", ""), ",")[[1]][1])
+    covar_name <- paste0("rcspline_", str_split(str_replace_all(str_replace_all(icovar, "rcspline.eval", ""), "[()]", ""), ",")[[1]][1])
   } else {
     covar_name <- icovar
   }

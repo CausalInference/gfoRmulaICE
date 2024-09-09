@@ -46,6 +46,7 @@
 #' @param global_hazard a logical indicating whether to use global pooled-over-time hazard model or time-specific hazard model. 
 #' TRUE for pooled-over-time hazard model. FALSE for time-specific hazard model.
 #' @param intervention_description a character string specifying a description of the implemented intervention strategy.
+#' @param verbose a logical specifying whether progress of the algorithm is printed.
 #'
 #' @return A list containing the following components:
 #' \item{gformula_risk_last_time} {The estimated risk for the specified intervention(s) at the last time step.}
@@ -179,7 +180,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
                      interventions,
                      intervention_names, intervention_times = NULL,
                      compute_nc_risk = T, hazard_based, global_hazard = NULL,
-                     intervention_description)
+                     intervention_description, verbose = TRUE)
                      # global_haz_model, )
 {
 
@@ -434,7 +435,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
 
         competing_formula <- as.formula(paste0(competing_varname, "~",
                                                paste0(competing_covar_nc, collapse = "+")))
-        competing_fit <- glm(competing_formula, data = data, family = binomial)
+        competing_fit <- speedglm(competing_formula, data = data, family = binomial())
 
         ## add in this competing fit
 
@@ -566,7 +567,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   ## if outcome model and hazard model share the same input argument, how do you separate model fit here?
   ## this fit will be used for prediction of outcome in the first iteration and only for hazard estimation.
   ## but for global option, if the user specifies time in the model, then it must be different than the outcome model.
-  yfitog = glm(formula_full, family = binomial(), data = data) #This is from the data generation mechanism
+  yfitog = speedglm(formula_full, family = binomial(), data = data) #This is from the data generation mechanism
 
   paramtmp = (yfitog)$coef
 
@@ -598,7 +599,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
 
   if (!is.null(competing_varname) & (total_effect == T) & hazard_based) {
     formula_full_comp <- as.formula(paste0(competing_varname,"~", paste0(c(competing_covar), collapse = "+")))
-    yfitog_comp = glm(formula_full_comp, family = binomial(), data = data)
+    yfitog_comp = speedglm(formula_full_comp, family = binomial(), data = data)
     paramcomp = (yfitog_comp)$coef
 
     ## add in this competing fit
@@ -643,7 +644,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
     if (global_hazard) {
       
       formula_haz_global <- as.formula(paste0(outcome_varname,"~", paste0(c(haz_global_covar), collapse = "+")))
-      haz_fit_global <- glm(formula_haz_global, family = binomial(), data = data) 
+      haz_fit_global <- speedglm(formula_haz_global, family = binomial(), data = data) 
       paramhaz <- haz_fit_global$coef
       
       this_haz_fit <- list(haz_fit_global)
@@ -694,7 +695,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         haz_formula_t <- as.formula(paste0(outcome_varname, "_", i, "~",
                                              paste0(haz_covar_t, collapse = "+")))
         
-        tmp_fit <- glm(haz_formula_t, family = binomial(), data = tmpdata)
+        tmp_fit <- speedglm(haz_formula_t, family = binomial(), data = tmpdata)
         
         haz_pred_times[[i]] <- tmp_fit
         
@@ -766,9 +767,17 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   meany <- matrix(NA, ncol = K + 1, nrow = 1)
 
   ## 5. regression at each time point
+  
+  if (verbose) {
+  cat("Running ", intervention_description[[1]], "... \n")
+  }
     for (i in 1:K) {
 
       t <- K - i + 1
+      
+      if (verbose) {
+      cat(paste0("Running Time ", t, "...", "\n"))
+      }
 
       covar_t <- paste0(outcome_covar, sep = paste0("_", t - 1))
 
@@ -835,7 +844,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
 
             fit_formula <- as.formula(paste0("y", t, "pred", "~",
                                              paste0(c(covar_iter, interact_covar), collapse = "+")))
-            fit_temp = glm(fit_formula, family = quasibinomial(), data = data_fit)
+            fit_temp = speedglm(fit_formula, family = quasibinomial(), data = data_fit)
 
             this_outcome_fit <- list(fit_temp)
             this_outcome_summary <- list(get_summary(fit_temp))

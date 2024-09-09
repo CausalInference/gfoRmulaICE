@@ -85,7 +85,7 @@ plot_risk <- function(..., plot_obs = T, label = 0) {
   ## pre-process
   
   risk_df$Intervention <- ifelse(str_detect(risk_df$Intervention, "Natural Course") & !str_detect(risk_df$Intervention, "nonparametric"), 
-                                 paste0("Natural Course (parametric ICE)", str_split(risk_df$Intervention, "Natural Course")[[1]][2]), 
+                                 paste0("Natural Course (parametric ICE)"), #, str_split(risk_df$Intervention, "Natural Course")[[1]][2]), 
                                  risk_df$Intervention)
 
   if (!plot_np) {

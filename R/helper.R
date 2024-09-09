@@ -138,12 +138,12 @@ grace_period <- function(type, nperiod, condition,
   
   ## get the variable
   
-  var_idx <- which(str_detect(condition_elements, "[^a-zA-Z]"))[1]
+  var_idx <- which(str_detect(condition_elements, "[^a-zA-Z0-9]"))[1]
   if (var_idx - 1 <= 0) {
     stop("Please enter a valid condition.")
   } else {
-    var <- paste0(condition_elements[1:var_idx], collapse = "")
-    condition_sep <- paste0(condition_elements[(var_idx+1) : length(condition_elements)], collapse = "")
+    var <- paste0(condition_elements[1:(var_idx-1)], collapse = "")
+    condition_sep <- paste0(condition_elements[(var_idx) : length(condition_elements)], collapse = "")
   }
   
   

@@ -119,6 +119,7 @@
 #' @param coverage a number greater than 0 and less than 100 indicating the coverage of the confidence interval. Default is 95.
 #' @param parallel a logical value indicating whether to parallelize the bootstrap process. Default is \code{FALSE}.
 #' @param ncores a number indicating the number of CPU cores to use in parallel computing. Default is 2.
+#' @param verbose a logical specifying whether progress of the algorithm is printed. Default is TRUE.
 #' @param ... keyword arguments to specify intervention inputs. If stratified ICE is used, keyword arguments also allow intervention-specific outcome models and competing models. 
 #' \cr 
 #' To specify interventions, please follow the input convention below:
@@ -559,6 +560,7 @@ ice <- function(data, time_points, id, time_name,
                 ci_method = "percentile",
                 nsamples = 0, seed = 1,
                 coverage = 95, parallel = F, ncores = 2,
+                verbose = TRUE,
                 ...) {
   
   interv_data <<- as.data.frame(data)
@@ -1049,8 +1051,9 @@ ice <- function(data, time_points, id, time_name,
     risk_interv <- c()
     outcome_by_step <- outcome_init <- comp_init <- np_model <- c()
 
+    if (ref_idx == 0) {
     nc_intervention_varlist <- list(obs_treatment_name)
-    nc_descript <- "Natural Course"
+    nc_descript <- list("Natural Course")
 
     nc_interventions <- list()
     for (i_nc in 1:length(nc_intervention_varlist[[1]])) {
@@ -1069,12 +1072,11 @@ ice <- function(data, time_points, id, time_name,
                     compute_nc_risk = T, 
                     hazard_based = hazard, 
                     global_hazard = global_hazard,
-                    intervention_description = nc_descript) 
+                    intervention_description = nc_descript, 
+                    verbose = verbose) 
                     #global_haz_model = global_hazard_model)
 
     summary[1, 1:2] <- c(ref$weight_h$risk[K], ref$gformula_risk_last_time)
-
-    if (ref_idx == 0) {
 
       ref_intervention_varlist <- nc_intervention_varlist
       ref_description = nc_descript
@@ -1112,7 +1114,8 @@ ice <- function(data, time_points, id, time_name,
                     intervention_times = ref_int_times,
                     compute_nc_risk = T, hazard_based = hazard, 
                     global_hazard = global_hazard, 
-                    intervention_description = ref_description)
+                    intervention_description = ref_description, 
+                    verbose = verbose)
                     #global_haz_model = global_hazard_model)
 
       if (bootstrap) {
@@ -1160,7 +1163,7 @@ ice <- function(data, time_points, id, time_name,
     risk_descript <- c(risk_descript, c(rep(str_to_title(ref_description), K+1), rep("Natural Course (nonparametric)", K+1)))
     risk_interv <- c(risk_interv, c(ref$gformula_risk[1, ], c(0, ref$weight_h$risk)))
 
-    if (bootstrap) {
+    if (bootstrap | ref_idx != 0) {
       intervention_descriptions <- c(intervention_descriptions, list("Natural Course"))
     }
 
@@ -1206,6 +1209,8 @@ ice <- function(data, time_points, id, time_name,
         this_comp_formula <- competing_model
         this_total_effect <- ref_total_effect
         
+      } else if (int == ref_idx) {
+        next
       } else {
         this_int_var <- list(intervention_varnames[[int]])
         this_interv <- list(interventions[[int]])
@@ -1231,7 +1236,8 @@ ice <- function(data, time_points, id, time_name,
                            hazard_model = hazard_model, 
                             interventions = this_interv, intervention_names = this_int_var, intervention_times = this_time,
                             hazard_based = hazard, intervention_description = this_descript, 
-                           global_hazard = global_hazard) 
+                           global_hazard = global_hazard, 
+                           verbose = verbose) 
                            # global_haz_model = global_hazard_model)
       
       this_outcome_init <- list(this_fit$outcome_init)
@@ -1288,6 +1294,10 @@ ice <- function(data, time_points, id, time_name,
         risk_descript <- c(risk_descript, rep(str_to_title(this_descript), K+1))
         risk_interv <- c(risk_interv, this_fit$gformula_risk[1, ])
 
+      } else {
+        summary[1, 1:2] <- c(this_fit$weight_h$risk[K], this_fit$gformula_risk_last_time)
+        risk_descript <- c(risk_descript, rep(str_to_title(this_descript), K+1))
+        risk_interv <- c(risk_interv, this_fit$gformula_risk[1, ])
       }
 
 
@@ -1343,7 +1353,8 @@ ice <- function(data, time_points, id, time_name,
                                  hazard_based = hazard, outcome_model = outcome_model,
                                  censor_model = censor_model, competing_model = competing_model,
                                  hazard_model = hazard_model, 
-                                 global_hazard = global_hazard)
+                                 global_hazard = global_hazard, 
+                                 verbose = verbose)
       }
       
       # record the reference intervention bootstrap
@@ -1534,9 +1545,9 @@ ice <- function(data, time_points, id, time_name,
       stop("Please input a formula to specify the treatment model statement for each treatment variable.")
       }
     }
-
+    if (ref_idx == 0) {
     nc_intervention_varlist <- list(obs_treatment_name)
-    nc_descript <- "Natural Course"
+    nc_descript <- list("Natural Course")
 
 
     nc_interventions <- list()
@@ -1561,11 +1572,11 @@ ice <- function(data, time_points, id, time_name,
                      compute_nc_risk = T, hazard_based = hazard, weighted = weight,
                      intervention_description = nc_descript,
                      treat_model = this_treat_model,
-                     obs_treatment_names = this_obs_treatment_varnames)
+                     obs_treatment_names = this_obs_treatment_varnames, 
+                     verbose = verbose)
 
     summary[1, c(1:2)] <- c(ref$weight_h$risk[K], ref$gformula_risk_last_time)
 
-    if (ref_idx == 0) {
 
       ref_intervention_varlist <- nc_intervention_varlist
       ref_description <- nc_descript
@@ -1611,7 +1622,8 @@ ice <- function(data, time_points, id, time_name,
                       compute_nc_risk = T, hazard_based = hazard, weighted = weight,
                       intervention_description = ref_description, intervention_times = ref_int_times,
                       treat_model = this_treat_model,
-                      obs_treatment_names = this_obs_treatment_varnames)
+                      obs_treatment_names = this_obs_treatment_varnames, 
+                      verbose = verbose)
 
       if (bootstrap) {
         summary[ref_idx + 1, c(2:4, 6:7, 10:13)] <- c(ref$gformula_risk_last_time, 1, 0, 1, 0, 1, 1, 0, 0)
@@ -1662,7 +1674,7 @@ ice <- function(data, time_points, id, time_name,
     risk_descript <- c(risk_descript, c(rep(str_to_title(ref_description), K+1), rep("Natural Course (nonparametric)", K+1)))
     risk_interv <- c(risk_interv, c(ref$gformula_risk[1, ], c(0, ref$weight_h$risk)))
 
-    if (bootstrap) {
+    if (bootstrap | ref_idx != 0) {
       intervention_descriptions <- c(intervention_descriptions, list("Natural Course"))
     }
 
@@ -1707,6 +1719,8 @@ ice <- function(data, time_points, id, time_name,
         this_comp_formula <- competing_model
         this_total_effect <- ref_total_effect
         
+      } else if (int == ref_idx) {
+        next
       } else {
         this_int_var <- list(intervention_varnames[[int]])
         this_interv <- list(interventions[[int]])
@@ -1746,7 +1760,8 @@ ice <- function(data, time_points, id, time_name,
                             interventions = this_interv, intervention_names = this_int_var,
                             hazard_based = hazard, weighted = weight, treat_model = this_treat_model,
                             obs_treatment_names = this_obs_treatment_varnames, intervention_description = this_descript,
-                            intervention_times = this_time)
+                            intervention_times = this_time, 
+                            verbose = verbose)
       
       this_outcome_init <- list(this_fit$outcome_init)
       # this_comp_init <- list(this_fit$comp_init)
@@ -1800,6 +1815,10 @@ ice <- function(data, time_points, id, time_name,
       summary[int+1, 2] <- this_fit$gformula_risk_last_time
       risk_descript <- c(risk_descript, rep(str_to_title(this_descript), K+1))
       risk_interv <- c(risk_interv, this_fit$gformula_risk[1, ])
+      } else {
+        summary[1, 1:2] <- c(this_fit$weight_h$risk[K], this_fit$gformula_risk_last_time)
+        risk_descript <- c(risk_descript, rep(str_to_title(this_descript), K+1))
+        risk_interv <- c(risk_interv, this_fit$gformula_risk[1, ])
       }
 
       if (bootstrap) {
@@ -1854,7 +1873,8 @@ ice <- function(data, time_points, id, time_name,
                                    hazard_based = hazard, weighted = weight, treat_model = this_treat_model,
                                    obs_treatment_names = this_obs_treatment_varnames,
                                    outcome_model = outcome_model, censor_model = censor_model,
-                                   competing_model = competing_model, hazard_model = hazard_model)
+                                   competing_model = competing_model, hazard_model = hazard_model, 
+                                   verbose = verbose)
         }
         
         # record the reference intervention bootstrap

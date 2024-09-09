@@ -48,7 +48,8 @@
 #' @param obs_treatment_names a list of character strings specifying the treatment variables to be used in the model for observed treatments of the weighted ICE estimator.
 #' @param intervention_times a list of numerics indicating the time points to which the specified intervention is applied. Default to be \code{NULL}.
 #' @param intervention_description a character string specifying the description of the specified intervention strategy.
-#'
+#' @param verbose a logical specifying whether progress of the algorithm is printed.
+#' 
 #' @return A list containing the following components:
 #' \item{gformula_risk_last_time} {The estimated risk for the specified intervention(s) at the last time step.}
 #' \item{gformula_risk} {A table containing the estimated risk for the specified intervention(s) at each time step.}
@@ -164,7 +165,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
                       interventions, intervention_names, intervention_times = NULL,
                       compute_nc_risk = T, hazard_based, weighted = F,
                       treat_model, obs_treatment_names,
-                      intervention_description) {
+                      intervention_description, verbose = TRUE) {
 
   ## 0. some pre-processing
 
@@ -417,7 +418,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       if (total_effect == F) {
         competing_formula <- as.formula(paste0(competing_varname, "~",
                                                paste0(competing_covar_nc, collapse = "+")))
-      competing_fit <- glm(competing_formula, data = data, family = binomial)
+      competing_fit <- speedglm(competing_formula, data = data, family = binomial)
 
       ## add in this competing fit
 
@@ -626,12 +627,12 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       if (null_censor) {
         data$pred_c = 0
       } else {
-        cfit = glm(cformula, family = binomial(), data = data)
+        cfit = speedglm(cformula, family = binomial(), data = data)
         data$pred_c = predict(cfit, newdata = data, type="response")
       }
 
       if (!is.null(competing_varname) & total_effect == F) {
-        dfit = glm(dformula, family = binomial(), data = data)
+        dfit = speedglm(dformula, family = binomial(), data = data)
         data$pred_d = predict(dfit, newdata = data, type="response")
 
         data$pred_d = (1- data$pred_d) * (1-data$pred_c)
@@ -664,7 +665,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         data <- data %>% dplyr::select(-c("pred_obs_all"))
 
         } else {
-          afit = glm(aformula, family = binomial(), data = data)
+          afit = speedglm(aformula, family = binomial(), data = data)
           
 
 
@@ -724,7 +725,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   ## 4. reshape data and fit outcome model
   tmpdata = as.data.frame(dffullwide)
   formula_full <- as.formula(paste0(outcome_varname,"~", paste0(c(outcome_covar), collapse = "+")))
-  yfitog = glm(formula_full, family = binomial(), data = data) #This is from the data generation mechanism
+  yfitog = speedglm(formula_full, family = binomial(), data = data) #This is from the data generation mechanism
 
   paramtmp = (yfitog)$coef
 
@@ -890,7 +891,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       outcome_formula <- as.formula(paste0(outcome_varname, "_", i, "~",
                                            paste0(covar_outcome_t, collapse = "+")))
 
-      tmp_fit <- glm(outcome_formula, family = binomial(), data = pred_data)
+      tmp_fit <- speedglm(outcome_formula, family = binomial(), data = pred_data)
 
       outcome_pred_times[[i]] <- tmp_fit
 
@@ -993,7 +994,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         comp_formula <- as.formula(paste0(competing_varname, "_", i-1, "~",
                                           paste0(covar_competing_t, collapse = "+")))
 
-        tmp_fit <- glm(comp_formula, family = binomial(), data = pred_data)
+        tmp_fit <- speedglm(comp_formula, family = binomial(), data = pred_data)
 
         comp_pred_times[[i]] <- tmp_fit
 
@@ -1029,12 +1030,21 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
 
   ## 6. regression at each time point
+  
+  if (verbose) {
+    cat("Running ", intervention_description[[1]], "... \n")
+  }
+  
   meany <- matrix(NA, ncol = K + 1, nrow = length(my.arrayofA))
 
   for (i in 1:K) {
     t <- K - i + 1
     it_run <- T
     it <- t
+    
+    if (verbose) {
+      cat(paste0("Running Time ", t, "...", "\n"))
+    }
 
     if (hazard_based) {
       this_fit <- outcome_pred_times[[t]]
@@ -1174,17 +1184,17 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           fitdata$w <- 1/fitdata[, paste0("pi", q)]
 
           if (q == t - 1) {
-            fit <- glm(temp_formula, family = quasibinomial(), weight = fitdata$w, data = fitdata)
+            fit <- speedglm(temp_formula, family = quasibinomial(), weight = fitdata$w, data = fitdata)
           } else {
-            fit <- glm(temp_formula, family = quasibinomial(), weight = fitdata$w, data = fitdata)
+            fit <- speedglm(temp_formula, family = quasibinomial(), weight = fitdata$w, data = fitdata)
           }
 
         } else {
 
           if (q == t - 1) {
-            fit <- glm(temp_formula, family = binomial(), data = fitdata)
+            fit <- speedglm(temp_formula, family = binomial(), data = fitdata)
           } else {
-            fit <- glm(temp_formula, family = quasibinomial(), data = fitdata)
+            fit <- speedglm(temp_formula, family = quasibinomial(), data = fitdata)
           }
 
         }

@@ -58,10 +58,13 @@
 #' \item{Grace Period:} {\code{grace_period(type, nperiod, condition)} specifies a dynamic intervention with grace period. 
 #' Once \code{condition} is met, the intervention is initiated within \code{nperiod} time units. 
 #' During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.}
+#' }
 #' 
 #' The following is the user-defined intervention:
 #' 
-#' \item{User-defined Interventions:} {The output of the user-defined intervention should contain the intervened value for each individual at each time point, and should be of the same size as the number of rows in \code{data}.
+#' \itemize{
+#' \item{User-defined Interventions:} {The output of the user-defined intervention should contain the intervened value for each individual at each time point, and should be of the same size as the number of rows in \code{data}.}
+#' }
 #' 
 #' Please see examples in the "Examples" section.
 #'
@@ -546,7 +549,7 @@
 #' plot_risk(ice_fit5b)
 #' 
 #' 
-#' @import tidyverse rlang dplyr stringr data.table reshape2 nnet
+#' @import tidyverse rlang dplyr stringr data.table reshape2 nnet speedglm tuple
 #' @export
 
 ice <- function(data, time_points, id, time_name,
@@ -1194,7 +1197,9 @@ ice <- function(data, time_points, id, time_name,
       
       this_descript <- intervention_descriptions[[int]]
       
-      if (this_descript == "Natural Course") {
+      if (!(this_descript == "Natural Course" & ref_idx == 0) & !(ref_idx == int & ref_idx != 0)) {
+      
+      if (this_descript == "Natural Course" & ref_idx != 0) {
         this_int_var <- list(obs_treatment_name)
         this_interv <- list()
         for (i_nc in 1:length(this_int_var[[1]])) {
@@ -1209,8 +1214,6 @@ ice <- function(data, time_points, id, time_name,
         this_comp_formula <- competing_model
         this_total_effect <- ref_total_effect
         
-      } else if (int == ref_idx) {
-        next
       } else {
         this_int_var <- list(intervention_varnames[[int]])
         this_interv <- list(interventions[[int]])
@@ -1298,6 +1301,8 @@ ice <- function(data, time_points, id, time_name,
         summary[1, 1:2] <- c(this_fit$weight_h$risk[K], this_fit$gformula_risk_last_time)
         risk_descript <- c(risk_descript, rep(str_to_title(this_descript), K+1))
         risk_interv <- c(risk_interv, this_fit$gformula_risk[1, ])
+      }
+      
       }
 
 
@@ -1704,7 +1709,9 @@ ice <- function(data, time_points, id, time_name,
       
       this_descript <- intervention_descriptions[[int]]
       
-      if (this_descript == "Natural Course") {
+      if (!(this_descript == "Natural Course" & ref_idx == 0) & !(ref_idx == int & ref_idx != 0)) {
+        
+        if (this_descript == "Natural Course" & ref_idx != 0) {
         this_int_var <- list(obs_treatment_name)
         this_interv <- list()
         for (i_nc in 1:length(this_int_var[[1]])) {
@@ -1719,8 +1726,6 @@ ice <- function(data, time_points, id, time_name,
         this_comp_formula <- competing_model
         this_total_effect <- ref_total_effect
         
-      } else if (int == ref_idx) {
-        next
       } else {
         this_int_var <- list(intervention_varnames[[int]])
         this_interv <- list(interventions[[int]])
@@ -1819,6 +1824,7 @@ ice <- function(data, time_points, id, time_name,
         summary[1, 1:2] <- c(this_fit$weight_h$risk[K], this_fit$gformula_risk_last_time)
         risk_descript <- c(risk_descript, rep(str_to_title(this_descript), K+1))
         risk_interv <- c(risk_interv, this_fit$gformula_risk[1, ])
+      }
       }
 
       if (bootstrap) {
@@ -2084,9 +2090,8 @@ ice <- function(data, time_points, id, time_name,
   risk_time_all$originTime <- c(0, unique_time_names)[as.integer(risk_time_all$Time) + 1]
 
   risk_time_all$originTime[which(is.na(risk_time_all$originTime))] <- 0
-
-
-  return(list(estimator.type = ice_colname, 
+  
+  out <- list(estimator.type = ice_colname, 
               summary = summary_all, risk.over.time = risk_time_all,
               initial.outcome = outcome_init, initial.comp = comp_init, 
               np.risk.model = np_model, outcome.models.by.step = outcome_by_step, 
@@ -2099,10 +2104,9 @@ ice <- function(data, time_points, id, time_name,
               boot.outcome.models.by.step = outcome_by_step_boot,
               boot.comp.models.by.step = comp_by_step_boot,
               boot.hazard.models.by.step = hazard_by_step_boot)
-              # boot.models = fit_all_boot, boot.summary = fit_summary_boot,
-              # boot.stderr = fit_stderr_boot, boot.vcov = fit_vcov_boot,
-              # boot.rmse = fit_rmse, estimator.type = ice_colname)
-  )
+  
+  class(out) <- c("ICE")
+  return(out)
 
 }
 
@@ -2113,7 +2117,7 @@ ice <- function(data, time_points, id, time_name,
 #'
 #' @return a list containing the information of the targeted keyword argument.
 #'
-#' @internal
+#' @noRd
 split_args <- function(argument, target_string) {
   split_list <- str_split(names(argument), target_string)
   origin_list <- lapply(split_list, function(x) {x[2]})
@@ -2135,7 +2139,7 @@ split_args <- function(argument, target_string) {
 #'
 #' @return a list containing the model inputs corresponding to the interventions.
 #'
-#' @internal
+#' @noRd
 get_model_formula <- function(interv_list, arg_interv, model_interv, ninterv, arg_str, original_model) {
   models <- as.list(rep(NA, ninterv))
   
@@ -2170,7 +2174,7 @@ get_model_formula <- function(interv_list, arg_interv, model_interv, ninterv, ar
 #'
 #' @return the intervened values on specified intervention time points.
 #'
-#' @internal
+#' @noRd
 construct_interv_value <- function(data, timevar, int_value, int_time, int_var){
 
   nint <- length(int_var)
@@ -2195,7 +2199,7 @@ construct_interv_value <- function(data, timevar, int_value, int_time, int_var){
 
 #' Match bootstrap values to aggregate data frame
 #'
-#' @internal
+#' @noRd
 match_boot_values <- function(risk_df, cv_df, col) {
   risk_df[, col] <- NA
   names <- colnames(cv_df)
@@ -2211,7 +2215,7 @@ match_boot_values <- function(risk_df, cv_df, col) {
 
 #' Append item to list
 #'
-#' @internal
+#' @noRd
 append_list <- function(item, name, append_list, item_name) {
   item_list <- list(item[[item_name]])
   names(item_list) <- name

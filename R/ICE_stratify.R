@@ -74,7 +74,7 @@
 #' @references Haneuse S, Rotnitzky A. Estimation of the effect of interventions that modify the received treatment. Statistics in medicine. 2013;32(30):5260-5277.
 #' @references McGrath S, Young JG, Hernán MA. Revisiting the g-null Paradox. Epidemiology. 2022;33(1):114-120.
 #' 
-#' @internal
+#' @noRd
 #'
 #' @examples
 #'
@@ -418,7 +418,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       if (total_effect == F) {
         competing_formula <- as.formula(paste0(competing_varname, "~",
                                                paste0(competing_covar_nc, collapse = "+")))
-      competing_fit <- speedglm(competing_formula, data = data, family = binomial)
+      competing_fit <- speedglm(competing_formula, data = data, family = binomial())
 
       ## add in this competing fit
 

@@ -27,6 +27,7 @@ ice(
   coverage = 95,
   parallel = F,
   ncores = 2,
+  verbose = TRUE,
   ...
 )
 }
@@ -89,6 +90,8 @@ Possible values are "percentile" and "normal." Default is "percentile."}
 \item{parallel}{a logical value indicating whether to parallelize the bootstrap process. Default is \code{FALSE}.}
 
 \item{ncores}{a number indicating the number of CPU cores to use in parallel computing. Default is 2.}
+
+\item{verbose}{a logical specifying whether progress of the algorithm is printed. Default is TRUE.}
 
 \item{...}{keyword arguments to specify intervention inputs. If stratified ICE is used, keyword arguments also allow intervention-specific outcome models and competing models. 
 \cr 
@@ -157,7 +160,83 @@ classical and hazard-based stratifying on treatment history ICE, and doubly robu
 See Wen et al. (2021) for more details regarding the parametric g-formula iterative conditional expectation estimator.
 }
 \details{
+Users could specify which version ICE estimator to use through \code{estimator}.
+\itemize{
+\item{\code{pool(hazard = F)} specifies the classical pooling over treatment history ICE estimator. }
+\item{\code{pool(hazard = T)} specifies the hazard-based pooling over treatment history ICE estimator. }
+\item{\code{strat(hazard = F)} specifies the classical stratifying on treatment history ICE estimator. }
+\item{\code{strat(hazard = T)} specifies the hazard-based stratifying on treatment history ICE estimator. }
+\item{\code{weight(treat_model)} specifies the doubly robust weighted ICE estimator
+where \code{treat_model} specifies the treatment model.}
+}
+To provide flexible choices on model inputs for stratified ICE and doubly robust ICE, we allow users to specify intervention-specific model statements through keyword arguments. 
+In the case where intervention-specific model statements are specified, 
+treatment variables that are not intervened under some strategies will be considered as a covariate and automatically added into the model specification at each time point.
+Please see more details on how to specify intervention-specific model specifications in the "Arguments" section.
 
+For example, the following input specifies \code{Y ~ L1} as outcome model for intervention 1,
+\code{D ~ L1} as competing model for intervention 2,
+\code{D ~ L1 + L2} as competing model for intervention 1,
+\code{Y ~ L1 + L2} as outcome model for intervention 2.
+
+\code{fit_hazard_strat <- ice(data = data, K = 4, id = "id", time_name = "t0", } \cr
+\code{outcome_name = "Y", censor_name = "C", competing_name = "D", } \cr
+\code{estimator = strat(hazard = T), comp_effect = 1, } \cr
+\code{censor_model = C ~ L1 + L2, ref_idx = 0,} \cr
+\code{int_descript = c("Static Intervention", "Dynamic Intervention"),} \cr
+\code{outcome_model = Y ~ L1 + L2,} \cr
+\code{competing_model = D ~ L1 + L2,} \cr
+\code{intervention1.A1 = list(static(0)),} \cr
+\code{intervention1.A2 = list(static(1)),} \cr
+\code{intervention2.A1 = list(dynamic("L1 > 0", static(0), static(1), absorb = F)),} \cr
+\code{intervention2.A2 = list(dynamic("L2 == 0", static(0), static(1), absorb = T)),} \cr
+\code{outcomeModel.1 = Y ~ L1,} \cr
+\code{compModel.2 = D ~ L1} \cr
+
+Because the keyword argument for outcome model is not specified for intervention 2, the outcome model for intervention 2 is
+\code{Y ~ L1 + L2} as specified in \code{outcome_model}.
+Similarly, because the keyword argument for competing model is not specified for intervention 1, the competing model for intervention 1 is
+\code{D ~ L1 + L2} as specified in \code{competing_model}.
+In the case of controlled direct effect, the keyword arguments for competing models are ignored. Please see more examples in the "Examples" section.
+
+Both built-in interventions and user-defined interventions are available. 
+
+The following are the built-in intervention functions in the package:
+\itemize{
+\item{Static Intervention:} {\code{static(value)} specifies a constant intervention with \code{value}.}
+\item{Dynamic Intervention:} {\cr \code{dynamic(condition, strategy_before, strategy_after, absorb)} 
+specifies a dynamic intervention where the strategy in \code{strategy_before} is followed until \code{condition} is met. 
+Upon \code{condition} is met, the strategy in \code{strategy_after} is followed. If absorb is \code{TRUE}, the intervention becomes absorbing once \code{condition} is met.}
+\item{Threshold Intervention:} {\code{threshold(lower_bound, upper_bound)} specifies a threshold intervention. 
+If the treatment value is between \code{lower_bound} and \code{upper_bound} inclusively, follow the natural value of the treatment. 
+Otherwise, set to \code{lower_bound} or \code{upper_bound}, if the treatment value is below \code{lower_bound} or above \code{upper_bound}, correspondingly.}
+\item{Grace Period:} {\code{grace_period(type, nperiod, condition)} specifies a dynamic intervention with grace period. 
+Once \code{condition} is met, the intervention is initiated within \code{nperiod} time units. 
+During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.}
+}
+
+The following is the user-defined intervention:
+
+\itemize{
+\item{User-defined Interventions:} {The output of the user-defined intervention should contain the intervened value for each individual at each time point, and should be of the same size as the number of rows in \code{data}.}
+}
+
+Please see examples in the "Examples" section.
+
+In order to obtain an inverse probability (IP) weighted natural course risk based on the observed data, users must specify
+a censoring variable through \code{censor_name} and a corresponding censoring model through \code{censor_model}. Please see
+Chiu et al. (2023) for more details regarding the IP weighted estimate of the natural course risk.
+
+If competing event exists in the data, users need to specify the name of the competing variable through \code{competing_name} and
+the model specification through \code{competing_model} for hazard-based ICE estimator. Users need to specify whether to treat
+the competing event as censoring or total effect through \code{total_effect}.
+
+We provide flexible term options in model specification for the outcome, censoring, competing, and hazard model. 
+Users could specify polynomial terms using functions \code{I} and \code{poly} and spline terms using \code{ns} from splines package
+and \code{rcspline.eval} from Hmisc package. In addition, users could specify lagged terms using the format lag\code{n}_\code{var} 
+to indicate lagging the variable \emph{var} with \emph{n} periods. 
+If the lagged variable is a treatment variable, this variable is automatically intervened based on user-defined intervention.
+The polynomial and spline terms could be used on lagged variables.
 }
 \examples{
 

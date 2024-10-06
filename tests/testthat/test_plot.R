@@ -1,8 +1,4 @@
-library(gfoRmulaICE)
 data <- gfoRmulaICE::compData
-library(data.table)
-library(splines)
-library(Hmisc)
 set.seed(1)
 
 ## test plots for ICE
@@ -26,7 +22,7 @@ test_that(
                     intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1), absorb = T)),
                     intervention3.A2 = list(dynamic("L1 == 0", static(0), natural_course()))
     )
-    
+
     plot1 <- plot_risk(ice_fit1)
     expect_equal(class(plot1), c("gg", "ggplot"))
     })

@@ -213,33 +213,47 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     boot_result <- foreach(i = 1:nboot, .combine = "c", .packages = c("tidyverse", "nnet", "stringr", "base"),
                            .errorhandling='pass') %do% {
 
-      unique_idx <- unique(data[, id])
-
-      select_index <- sample(1:length(unique_idx), replace = T)
-      boot_index <- unique_idx[select_index]
-      nindx <- length(boot_index)
-
-      row_idx <- lapply(1:nindx, function(i) {
-        select_idx <- which(data[, id] %in% boot_index[i])
-        return(select_idx)
-      }
-      )
-
-      row_idx <- unlist(row_idx)
-
-      boot_data <- lapply(1:nindx, function(i) {
-        select_data <- data[which(data[, id] %in% boot_index[i]), ]
-        select_data[, paste0("original_", id)] <- select_data[, id]
-        select_data[, id] <- i
-        return(select_data)
-      }
-      )
-
-      boot_data <- dplyr::bind_rows(boot_data)
+      # unique_idx <- unique(data[, id])
+      # 
+      # select_index <- sample(1:length(unique_idx), replace = T)
+      # boot_index <- unique_idx[select_index]
+      # nindx <- length(boot_index)
+      # 
+      # row_idx <- lapply(1:nindx, function(i) {
+      #   select_idx <- which(data[, id] %in% boot_index[i])
+      #   return(select_idx)
+      # }
+      # )
+      # 
+      # row_idx <- unlist(row_idx)
+      # 
+      # boot_data <- lapply(1:nindx, function(i) {
+      #   select_data <- data[which(data[, id] %in% boot_index[i]), ]
+      #   select_data[, paste0("original_", id)] <- select_data[, id]
+      #   select_data[, id] <- i
+      #   return(select_data)
+      # }
+      # )
+      # 
+      # boot_data <- dplyr::bind_rows(boot_data)
 
       # row_idx <- which(data[, id] %in% boot_index)
 
       # boot_data <- data[which(data[, id] %in% boot_index), ]
+                             
+     unique_idx <- unique(data[, id])
+     nidx <- length(unique_idx)
+     select_ids <- as.data.table(sample(1:nidx, nidx, replace = T))
+     select_ids[, "new_id"] <- 1:nidx
+     colnames(select_ids)[1] <- id
+     boot_data <- data
+     boot_data <- as.data.table(boot_data)
+     setkey(boot_data, id)
+     boot_data <- boot_data[J(select_ids), allow.cartesian = T]
+     boot_data <- as.data.frame(boot_data)
+     boot_data[, id] <- boot_data[, "new_id"]
+     
+     row_idx <- matchAll(as.vector(select_ids[, id]), data[, id])
 
 
       ice <- try(
@@ -491,30 +505,67 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     ref_data_err <- ref_model_err <- c()
     ref_data_err_mssg <- ref_model_err_mssg <- c()
     for (i in 1:nboot) {
+      
+      # data_len <- length(unique(obs_data$newid))
+      # ids <- as.data.table(sample(1:data_len, data_len, replace = TRUE))
+      # ids[, 'bid' := 1:data_len]
+      # colnames(ids) <- c("newid", "bid")
+      # resample_data <- copy(obs_data)
+      # setkey(resample_data, "newid")
+      # resample_data <- resample_data[J(ids), allow.cartesian = TRUE]  # create the new data set names "sample"
+      # resample_data[, 'newid' := resample_data$bid]
+      # resample_data[, 'bid' := NULL]
 
       unique_idx <- unique(data[, id])
+      nidx <- length(unique_idx)
+      select_ids <- as.data.table(sample(1:nidx, nidx, replace = T))
+      select_ids[, "new_id"] <- 1:nidx
+      colnames(select_ids)[1] <- id
+      boot_data <- data
+      boot_data <- as.data.table(boot_data)
+      setkey(boot_data, id)
+      boot_data <- boot_data[J(select_ids), allow.cartesian = T]
+      boot_data <- as.data.frame(boot_data)
+      boot_data[, id] <- boot_data[, "new_id"]
+      
+      row_idx <- matchAll(as.vector(select_ids[, id]), data[, id])
+      
 
-      select_index <- sample(1:length(unique_idx), replace = T)
-      boot_index <- unique_idx[select_index]
-      nindx <- length(boot_index)
+      # select_index <- sample(1:length(unique_idx), replace = T)
+      # boot_index <- unique_idx[select_index]
+      # nindx <- length(boot_index)
+      # 
+      # row_idx <- data[, id] %in% boot_index
+      # 
+      # 
+      # idx_info <- lapply(1:nindx, function(i) {
+      #   select_idx <- which(data[, id] %in% boot_index[i])
+      #   new_ids <- rep(i, length(select_idx))
+      #   return(new_ids)
+      # }
+      # )
+    # print(unlist(idx_info))
+      # idx_info <- unlist(idx_info)
+      # new_ids <- unlist(idx_info)
+      # row_idx <- as.vector(idx_info[str_detect(names(idx_info), "select_idx")])
+      # new_ids <- as.vector(idx_info[str_detect(names(idx_info), "new_ids")])
       
-      row_idx <- lapply(1:nindx, function(i) {
-        select_idx <- which(data[, id] %in% boot_index[i])
-        return(select_idx)
-      }
-      )
+      # print(row_idx)
+      # print(which(data[, id] %in% boot_index))
+      # 
+      # boot_data <- lapply(1:nindx, function(i) {
+      #   select_data <- data[which(data[, id] %in% boot_index[i]), ] 
+      #   select_data[, paste0("original_", id)] <- select_data[, id]
+      #   select_data[, id] <- i
+      #   return(select_data)
+      # }
+      # )
+      # 
+      # boot_data <- dplyr::bind_rows(boot_data)
       
-      row_idx <- unlist(row_idx)
-      
-      boot_data <- lapply(1:nindx, function(i) {
-        select_data <- data[which(data[, id] %in% boot_index[i]), ] 
-        select_data[, paste0("original_", id)] <- select_data[, id]
-        select_data[, id] <- i
-        return(select_data)
-      }
-      )
-      
-      boot_data <- dplyr::bind_rows(boot_data)
+      # boot_data <- data[which(data[, id] %in% boot_index), ]
+      # boot_data <- data[row_idx, ]
+      # boot_data[, id] <- new_ids
 
       # row_idx <- which(data[, id] %in% boot_index)
       # 
@@ -535,7 +586,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
                intervention_description = ref_description, intervention_times = ref_intervention_times, ...), 
         silent = T
       )
-        
+      
         if (class(ice) == "try-error") {
           if (str_detect(ice[1], "Argument mu must be a nonempty numeric vector")) {
             data_issue_err <- i
@@ -774,7 +825,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
 #'
 #' @return a list containing the intervened values for bootstrap sample.
 #'
-#' @internal
+#' @noRd
 interv_boot <- function(interv, idx) {
   interv_it <- c()
   for (itreat in 1:length(interv[[1]])) {
@@ -791,7 +842,7 @@ interv_boot <- function(interv, idx) {
 #' @param boot_result a list containing all the bootstrap results.
 #'
 #' @return a list containing the model information for each bootstrap replicate.
-#' @internal
+#' @noRd
 get_boot_models <- function(name, boot_result) {
   
   all_res <- boot_result[names(boot_result) == name]

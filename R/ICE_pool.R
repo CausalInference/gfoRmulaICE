@@ -72,7 +72,7 @@
 #' @references Haneuse S, Rotnitzky A. Estimation of the effect of interventions that modify the received treatment. Statistics in medicine. 2013;32(30):5260-5277.
 #' @references McGrath S, Young JG, Hernán MA. Revisiting the g-null Paradox. Epidemiology. 2022;33(1):114-120.
 #' 
-#' @internal
+#' @noRd
 #'
 #' @examples
 #'
@@ -917,9 +917,9 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
                     time_idx <- which(has_time == T)
                     haz_global_covar_tmp <- haz_global_covar[-time_idx]
                     pred_data <- data.frame(matrix(NA, 
-                                                   ncol = length(haz_global_covar_tmp) + 1, 
+                                                   ncol = length(haz_global_covar_tmp) + length(time_idx), 
                                                    nrow = nrow(data_fit)))
-                    colnames(pred_data) <- c(time_name, haz_global_covar_tmp)
+                    colnames(pred_data) <- haz_global_covar_tmp <- c(haz_global_covar[time_idx], haz_global_covar_tmp)
                     pred_data[, time_name] <- rep(iter - 1, nrow(data_fit))
                   } else {
                     haz_global_covar_tmp <- haz_global_covar
@@ -928,7 +928,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
                                                    nrow = nrow(data_fit)))
                     colnames(pred_data) <- haz_global_covar_tmp
                   }
-                    
+                  
                     for (i in 1:length(haz_global_covar_tmp)) {
                       this_covar_iter <- paste0(haz_global_covar_tmp[i], sep = paste0("_", iter -1))
                       pred_data[, haz_global_covar_tmp[i]] <- data_fit[, this_covar_iter]

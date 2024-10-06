@@ -23,7 +23,7 @@ The vector of intervened values should be the same length as the number of rows 
 \item{strategy_after}{a function or vector of intervened values that specifies the strategy followed before \code{condition} is met.
 The vector of intervened values should be the same length as the number of rows in the data frame \code{data}.}
 
-\item{absorb}{a logical value indicating whether the strategy specified in \code{strategy_after} becomes absorbing upon the first time when \code{condition} is met.}
+\item{absorb}{a logical value indicating whether the strategy specified in \code{strategy_after} becomes absorbing (always treat with the specified strategy) upon the first time when \code{condition} is met.}
 
 \item{id}{a string specifying the ID variable name in \code{data}.}
 

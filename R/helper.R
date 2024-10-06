@@ -58,7 +58,7 @@ natural_course <- function(data = interv_data, treat_var = treatment_varname) {
 #'
 #' @return A list containing the inverse probability weighted estimates of the natural course risk and
 #' a model object for the probability of censoring used in the inverse probability weighted estimate of the natural course risk.
-#' @internal
+#' @noRd
 
 natural_course_ipweighted <- function(data, id, censor_varname,
                                       K, time0, outcome_varname, covar,
@@ -278,9 +278,10 @@ grace_period <- function(type, nperiod, condition,
 #' @param duration a numeric specifying the duration of grace period.
 #'
 #' @return the randomly generated treatment.
-#' @internal
+#' @noRd
 
 uniform_sample <- function(r, duration) {
+
   p <- 1 / (duration + 1 - r)
   na_p <- p[-which(is.na(r))]
   if (anyNA(na_p)){
@@ -386,7 +387,7 @@ compute_weighted_hazard <- function(prob_censor, data, id, censor_varname,
 #'
 #' @return a vector of the product of the variables specified in \code{columns}.
 #' 
-#' @internal
+#' @noRd
 #'
 product <- function(data, columns){
 
@@ -488,7 +489,7 @@ threshold <- function(lower_bound, upper_bound, var = threshold_treatment, data 
 #'
 #' @return the standard errors of the coefficients of the fitted model.
 #'
-#' @internal
+#' @noRd
 get_stderr <- function(fit) {
   return(sqrt(diag(vcov(fit))))
 }
@@ -499,7 +500,7 @@ get_stderr <- function(fit) {
 #'
 #' @return the variance-covariance matrices of the parameters of the fitted model.
 #' 
-#' @internal
+#' @noRd
 #'
 get_vcov <- function(fit) {
   return(vcov(fit))
@@ -511,7 +512,7 @@ get_vcov <- function(fit) {
 #'
 #' @return the summary table of the fitted model.
 #' 
-#' @internal
+#' @noRd
 #'
 get_summary <- function(fit) {
   return(summary(fit))
@@ -523,98 +524,46 @@ get_summary <- function(fit) {
 #'
 #' @return the root mean square error (RMSE) values of the fitted model.
 #' 
-#' @internal
+#' @noRd
 #'
 get_rmse <- function(fit) {
   return(sqrt(mean(fit$residuals^2)))
 }
 
 
-#' Summary Table for ICE Estimator Objects
-#'
-#' This function returns a summary table for ICE estimator objects. (This function is going to be converted to the S3 method in R so it is named "summary_table" for now.
-#' After conversion, users could use the base function summary().)
-#'
-#' @param ... the ICE estimator objects.
-#'
-#' @return a data frame containing the summary table for all specified ICE estimator objects.
-#' @export
-#'
-#' @examples
-#' 
-#' data <- gfoRmulaICE::compData
-#'
-#' fit_classical_pool <- ice(
-#' data = data,
-#' K = 4,
-#' id = "id",
-#' time_name = "t0",
-#' outcome_name = "Y",
-#' censor_name = "C",
-#' competing_name = "D",
-#' estimator = pool(hazard = F),
-#' comp_effect = 0,
-#' outcome_model = Y ~ L1 + L2 + A1 + A2,
-#' censor_model = C ~ L1 + L2 + A1 + A2,
-#' ref_idx = 0,
-#' int_descript = c("Static Intervention"),
-#' intervention1.A1 = list(static(3)),
-#' intervention1.A2 = list(static(1))
-#' )
-#'
-#' fit_hazard_pool <- ice(
-#' data = data,
-#' K = 4,
-#' id = "id",
-#' time_name = "t0",
-#' outcome_name = "Y",
-#' censor_name = "C",
-#' competing_name = "D",
-#' estimator = pool(hazard = T),
-#' comp_effect = 0,
-#' outcome_model = Y ~ L1 + L2 + A1 + A2,
-#' censor_model = C ~ L1 + L2 + A1 + A2,
-#' competing_model = D ~ L1 + L2 + A1 + A2,
-#' ref_idx = 0,
-#' int_descript = c("Static Intervention"),
-#' intervention1.A1 = list(static(3)),
-#' intervention1.A2 = list(static(1))
-#' )
-#'
-#' summary_table(fit_classical_pool, fit_hazard_pool)
-summary_table <- function(...) {
-  fit_ice <- list(...)
-
-  summary_all <- data.frame()
-
-  if (length(fit_ice) == 1) {
-    return(fit_ice[[1]]$summary)
-  } else {
-
-  for (i in 1:length(fit_ice)) {
-    ifit <- fit_ice[[i]]
-    summary_ice <- ifit$summary
-    estimator_name <- ifit$estimator.type
-    colnames(summary_ice)[2] <- "ICE Risk"
-    summary_ice$Estimator <- estimator_name
-    summary_ice$Intervention <- rownames(summary_ice)
-    rownames(summary_ice) <- NULL
-
-    summary_ice <- summary_ice[, c("Intervention", "Estimator", head(colnames(summary_ice), -2))]
-
-    summary_all <- rbind(summary_all, summary_ice)
-  }
-
-  return(summary_all)
-  }
-}
+# summary_table <- function(...) {
+#   fit_ice <- list(...)
+# 
+#   summary_all <- data.frame()
+# 
+#   if (length(fit_ice) == 1) {
+#     return(fit_ice[[1]]$summary)
+#   } else {
+# 
+#   for (i in 1:length(fit_ice)) {
+#     ifit <- fit_ice[[i]]
+#     summary_ice <- ifit$summary
+#     estimator_name <- ifit$estimator.type
+#     colnames(summary_ice)[2] <- "ICE Risk"
+#     summary_ice$Estimator <- estimator_name
+#     summary_ice$Intervention <- rownames(summary_ice)
+#     rownames(summary_ice) <- NULL
+# 
+#     summary_ice <- summary_ice[, c("Intervention", "Estimator", head(colnames(summary_ice), -2))]
+# 
+#     summary_all <- rbind(summary_all, summary_ice)
+#   }
+# 
+#   return(summary_all)
+#   }
+# }
 
 #' Create the name of transformed variable name
 #'
 #' @param icovar the name of covariate to be transformed
 #'
 #' @return the name of the transformed variable name
-#' @internal
+#' @noRd
 get_column_name_covar <- function(icovar) {
   
   if (str_detect(icovar, "I()")) {
@@ -643,7 +592,7 @@ get_column_name_covar <- function(icovar) {
 #' The vector of intervened values should be the same length as the number of rows in the data frame \code{data}.
 #' @param strategy_after a function or vector of intervened values that specifies the strategy followed before \code{condition} is met.
 #' The vector of intervened values should be the same length as the number of rows in the data frame \code{data}.
-#' @param absorb a logical value indicating whether the strategy specified in \code{strategy_after} becomes absorbing upon the first time when \code{condition} is met.
+#' @param absorb a logical value indicating whether the strategy specified in \code{strategy_after} becomes absorbing (always treat with the specified strategy) upon the first time when \code{condition} is met.
 #' @param id a string specifying the ID variable name in \code{data}.
 #' @param time a string specifying the time variable name in \code{data}.
 #' @param data a data frame containing the observed data.
@@ -699,7 +648,7 @@ dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE,
 #' @param data a data frame containing the observed data.
 #'
 #' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
-#' @internal
+#' @noRd
 get_dynamic_interv_values <- function(condition, strategy_before_values, strategy_after_values, first, id, time, data) {
   
   unique_times <- unique(data[, time])
@@ -732,7 +681,7 @@ get_dynamic_interv_values <- function(condition, strategy_before_values, strateg
 #' @param n a numerical indicating the number of replicates.
 #'
 #' @return a list containing the replicates of the specified vector.
-#' @internal
+#' @noRd
 rep_list <- function(v, n) {
   
   out <- list()
@@ -751,7 +700,7 @@ rep_list <- function(v, n) {
 #' @param descript a character string specifying the description of the extracted models.
 #'
 #' @return a list containing the model information of the user-specified model name.
-#' @internal
+#' @noRd
 get_models <- function(this_fit, model_name, descript) {
   this_by_step <- this_fit[[model_name]]
   
@@ -779,7 +728,7 @@ get_models <- function(this_fit, model_name, descript) {
 #' @param model a logical indicating whether the error processed is related to model error or not. Default to be \code{FALSE}.
 #'
 #' @return None.
-#' @internal
+#' @noRd
 give_warning <- function(err, err_mssg, model = F) {
   
   if (model) {

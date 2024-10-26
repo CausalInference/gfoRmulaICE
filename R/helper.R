@@ -121,7 +121,6 @@ natural_course_ipweighted <- function(data, id, censor_varname,
 #' grace_period <- grace_period(type = "uniform", nperiod = 2, condition = "L1 == 0", data = data,
 #'                              id = "id", time_name = "t0", outcome_name = "Y")
 grace_period <- function(type, nperiod, condition,
-                         # condition = dynamic_cond, 
                          data = interv_data, id = idvar, time_name = time0var, 
                          outcome_name = outcomevar) {
   
@@ -316,7 +315,7 @@ uniform_sample <- function(r, duration) {
 #' @return A list with the first entry as a vector of the mean observed risk.
 #' Its second entry is a vector of mean observed survival. Its third entry is a vector of inverse probability weight.
 #' 
-#' 
+#' @noRd
 
 compute_weighted_hazard <- function(prob_censor, data, id, censor_varname,
                                     time_points, time_name, outcome_name,
@@ -744,4 +743,46 @@ give_warning <- function(err, err_mssg, model = F) {
                    "\n", paste0(err_mssg, collapse = "")))
   }
 }
+
+#' Get the intervened values on bootstrap sample
+#'
+#' @param interv a list containing the intervened values corresponding to each intervention.
+#' @param idx a vector of indices to be selected for bootstrap sample.
+#'
+#' @return a list containing the intervened values for bootstrap sample.
+#'
+#' @noRd
+interv_boot <- function(interv, idx) {
+  interv_it <- c()
+  for (itreat in 1:length(interv[[1]])) {
+    interv_treat <- as.vector(unlist(interv[[1]][[itreat]]))[idx]
+    interv_it <- c(interv_it, list(interv_treat))
+  }
+  
+  return(list(interv_it))
+}
+
+#' Extract bootstrap model information from each replicate
+#'
+#' @param name a character string specifying the name of the model to be extracted.
+#' @param boot_result a list containing all the bootstrap results.
+#'
+#' @return a list containing the model information for each bootstrap replicate.
+#' @noRd
+get_boot_models <- function(name, boot_result) {
+  
+  all_res <- boot_result[names(boot_result) == name]
+  l <- length(all_res)
+  
+  out <- list()
+  
+  for (i in 1:l) {
+    
+    out <- c(out, all_res[i][[name]])
+  }
+  
+  return(out)
+  
+}
+
 

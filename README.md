@@ -1,5 +1,7 @@
 # gfoRmulaICE: Parametric Iterative Conditional Expectation G-Formula
 
+(to verify each of the example works)
+
 ## How to install 
 
 Installation from CRAN:
@@ -20,9 +22,9 @@ Please see the following for a few examples.
 ### Example 1: Dynamic Intervention
 
 In this example, we illustrate how to specify dynamic intervention. We consider the following interventions, which are applied to all time points.
-Intervention 1 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
-Intervention 2 on A2: never treat upon until L1 = 0, after which follows always treat.
-Intervention 3 on A2: never treat upon until L1 = 0, after which follows natural course.
+* Intervention 1 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
+* Intervention 2 on A2: never treat upon until L1 = 0, after which follows always treat.
+* Intervention 3 on A2: never treat upon until L1 = 0, after which follows natural course.
 
 We use classical pooled ICE estimator and natural course as the reference intervention. We estimate variance using bootstrap with 1000 replicates, normal quantile, and parallel computing. 
 
@@ -57,10 +59,10 @@ plot(ice_fit1)
 ### Example 2: Built-in Interventions
 
 In this example, we illustrate the available intervention functions within the package. We consider the following interventions and apply to all time points.
-Intervention 1 on A1: always treat with value 3.
-Intervention 1 on A2: always treat with value 1.
-Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, set its value to -3. Otherwise, do not intervene.
-Intervention 3 on A2: dynamic intervention (treat when L1 = 0) with uniform grace period of 2 periods.
+* Intervention 1 on A1: always treat with value 3.
+* Intervention 1 on A2: always treat with value 1.
+* Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, set its value to -3. Otherwise, do not intervene.
+* Intervention 3 on A2: dynamic intervention (treat when L1 = 0) with uniform grace period of 2 periods.
 
 We use classical pooled ICE estimator and natural course as the reference intervention. We estimate variance using bootstrap with 1000 replicates, normal quantile, and parallel computing.
 
@@ -96,7 +98,7 @@ plot(ice_fit2)
 ### Example 3: User-defined Intervention
 
 In this example, we illustrate how to specify user-defined intervention. We consider the following interventions and apply to all time points.
-Intervention 1 on A1: at time t, if L2 < 0, then assign 1; if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
+* Intervention 1 on A1: at time t, if L2 < 0, then assign 1; if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
 
 We use classical pooled ICE estimator and natural course as the reference intervention. We estimate variance using bootstrap with 1000 replicates and percentile quantile.
 
@@ -115,6 +117,8 @@ ice_fit3 <- ice(data = gfoRmulaICE::compData,
                 compevent_name = "D",
                 comp_effect = 0,
                 outcome_model = Y ~ L1 + L2 + A1 + A2, 
+                censor_model = C ~ L1 + L2 + A1 + A2,
+                competing_model = D ~ L1 + L2 + A1 + A2,
                 ref_idx = 0,
                 estimator = pool(hazard = F),
                 nsamples = 1000, 
@@ -134,10 +138,10 @@ plot(ice_fit3)
 ### Example 4: Different ICE Estimators
 
 In this example, we illustrate all available ICE estimators in the package. We consider the following interventions and apply to all time points.
-Intervention 1 on A1: always treat with value 3.
-Intervention 1 on A2: always treat with value 1.
-Intervention 2 on A1: at time t, if L2 < 0, then assign 1; if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
-Intervention 2 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
+* Intervention 1 on A1: always treat with value 3.
+* Intervention 1 on A2: always treat with value 1.
+* Intervention 2 on A1: at time t, if L2 < 0, then assign 1; if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
+* Intervention 2 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
 
 We use natural course as the reference intervention and estimate variance using bootstrap with 1000 replicates and percentile quantile.
 
@@ -329,16 +333,6 @@ ice_fit4e <- ice(data = gfoRmulaICE::compData,
 summary(ice_fit4e)
 
 plot(ice_fit4e)
-
-```
-
-To compare fits from different ICE estimators, we could
-
-``` r
-
-summary(ice_fit4a, ice_fit4b, ice_fit4c, ice_fit4d, ice_fit4e)
-
-plot(ice_fit4a, ice_fit4b, ice_fit4c, ice_fit4d, ice_fit4e)
 
 ```
 

@@ -58,7 +58,7 @@
 #'
 #' @export
 #' @import doParallel parallel foreach
-#'
+#' @noRd
 bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_description,
                           ref_intervention_varnames, total_effect,
                           ref_intervention,

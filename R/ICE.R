@@ -231,7 +231,9 @@
 #' intervention3.A2 = list(dynamic("L1 == 0", static(0), natural_course()))
 #' )
 #' 
-#' plot_risk(ice_fit1)
+#' summary(ice_fit1)
+#' 
+#' plot(ice_fit1)
 #' 
 #' # Example 2: Built-in Interventions
 #' 
@@ -268,7 +270,9 @@
 #' intervention3.A2 = list(grace_period("uniform", 2, "L1 == 0"))
 #' )
 #' 
-#' plot_risk(ice_fit2)
+#' summary(ice_fit2)
+#' 
+#' plot(ice_fit2)
 #' 
 #' # Example 3: User-defined Intervention
 #' 
@@ -306,7 +310,9 @@
 #' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 #' )
 #' 
-#' plot_risk(ice_fit3)
+#' summary(ice_fit3)
+#' 
+#' plot(ice_fit3)
 #' 
 #' # Example 4: Different ICE Estimators
 #' 
@@ -334,7 +340,9 @@
 #' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 #' )
 #' 
-#' plot_risk(ice_fit4a)
+#' summary(ice_fit4a)
+#' 
+#' plot(ice_fit4a)
 #' 
 #' # b. hazard-based pooled ICE: 
 #' # hazard model is time-specific and uses Y ~ L1 + L2
@@ -359,7 +367,9 @@
 #' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 #' )
 #' 
-#' plot_risk(ice_fit4b)
+#' summary(ice_fit4b)
+#' 
+#' plot(ice_fit4b)
 #' 
 #' # c. hazard-based pooled ICE: 
 #' # hazard model is pooled-over-time and includes flexible terms of time variable
@@ -387,7 +397,9 @@
 #' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 #' )
 #' 
-#' plot_risk(ice_fit4c)
+#' summary(ice_fit4c)
+#' 
+#' plot(ice_fit4c)
 #' 
 #' # d. classical stratified ICE:
 #' 
@@ -409,7 +421,9 @@
 #' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 #' )
 #' 
-#' plot_risk(ice_fit4d)
+#' summary(ice_fit4d)
+#' 
+#' plot(ice_fit4d)
 #' 
 #' # e. hazard-based stratified ICE:
 #' # hazard model is time-specific and uses Y ~ L1 
@@ -436,7 +450,9 @@
 #' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 #' )
 #' 
-#' plot_risk(ice_fit4e)
+#' summary(ice_fit4e)
+#' 
+#' plot(ice_fit4e)
 #' 
 #' 
 #' # f. doubly robust ICE:
@@ -460,7 +476,9 @@
 #' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 #' )
 #' 
-#' plot_risk(ice_fit4f)
+#' summary(ice_fit4f)
+#' 
+#' plot(ice_fit4f)
 #' 
 #' 
 #' # g. hazard-based stratified ICE with intervention-specific models:
@@ -495,8 +513,8 @@
 #' )
 #'
 #' # Compare with the ICE estimates in Example 4e:
-#' plot_risk(ice_fit4e, ice_fit4g)
-#' summary_table(ice_fit4e, ice_fit4g)
+#' plot(ice_fit4e, ice_fit4g)
+#' summary(ice_fit4e, ice_fit4g)
 #' 
 #' # Example 5: Flexible Model Specification
 #' 
@@ -522,7 +540,9 @@
 #' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 #' )
 #' 
-#' plot_risk(ice_fit5a)
+#' summary(ice_fit5a)
+#' 
+#' plot(ice_fit5a)
 #' 
 #' # b. Using static intervention as reference:
 #' # We use the same interventions and ICE estimator in Example 3, 
@@ -546,7 +566,9 @@
 #' intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
 #' )
 #' 
-#' plot_risk(ice_fit5b)
+#' summary(ice_fit5b)
+#' 
+#' plot(ice_fit5b)
 #' 
 #' 
 #' @import tidyverse rlang dplyr stringr data.table reshape2 nnet speedglm tuple

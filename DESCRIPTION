@@ -38,7 +38,10 @@ Imports:
     rlang,
     reshape2,
     speedglm,
-    tuple
+    tuple,
+    Hmisc,
+    methods,
+    splines
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

@@ -48,23 +48,15 @@
 #' 
 #' The following are the built-in intervention functions in the package:
 #' \itemize{
-#' \item{Static Intervention:} {\code{static(value)} specifies a constant intervention with \code{value}.}
-#' \item{Dynamic Intervention:} {\cr \code{dynamic(condition, strategy_before, strategy_after, absorb)} 
-#' specifies a dynamic intervention where the strategy in \code{strategy_before} is followed until \code{condition} is met. 
-#' Upon \code{condition} is met, the strategy in \code{strategy_after} is followed. If absorb is \code{TRUE}, the intervention becomes absorbing once \code{condition} is met.}
-#' \item{Threshold Intervention:} {\code{threshold(lower_bound, upper_bound)} specifies a threshold intervention. 
-#' If the treatment value is between \code{lower_bound} and \code{upper_bound} inclusively, follow the natural value of the treatment. 
-#' Otherwise, set to \code{lower_bound} or \code{upper_bound}, if the treatment value is below \code{lower_bound} or above \code{upper_bound}, correspondingly.}
-#' \item{Grace Period:} {\code{grace_period(type, nperiod, condition)} specifies a dynamic intervention with grace period. 
-#' Once \code{condition} is met, the intervention is initiated within \code{nperiod} time units. 
-#' During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.}
-#' }
+#' \item Static Intervention: \code{static(value)} specifies a constant intervention with \code{value}.
+#' \item Dynamic Intervention: \code{dynamic(condition, strategy_before, strategy_after, absorb)} specifies a dynamic intervention where the strategy in \code{strategy_before} is followed until \code{condition} is met. Upon \code{condition} is met, the strategy in \code{strategy_after} is followed. If absorb is \code{TRUE}, the intervention becomes absorbing (always treat with the specified strategy) once \code{condition} is met.
+#' \item Threshold Intervention: \code{threshold(lower_bound, upper_bound)} specifies a threshold intervention. If the treatment value is between \code{lower_bound} and \code{upper_bound} inclusively, follow the natural value of the treatment. Otherwise, set to \code{lower_bound} or \code{upper_bound}, if the treatment value is below \code{lower_bound} or above \code{upper_bound}, correspondingly.
+#' \item Grace Period: \code{grace_period(type, nperiod, condition)} specifies a dynamic intervention with grace period. Once \code{condition} is met, the intervention is initiated within \code{nperiod} time units. During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.}
 #' 
 #' The following is the user-defined intervention:
 #' 
 #' \itemize{
-#' \item{User-defined Interventions:} {The output of the user-defined intervention should contain the intervened value for each individual at each time point, and should be of the same size as the number of rows in \code{data}.}
-#' }
+#' \item User-defined Interventions: The output of the user-defined intervention should contain the intervened value for each individual at each time point, and should be of the same size as the number of rows in \code{data}.}
 #' 
 #' Please see examples in the "Examples" section.
 #'
@@ -104,16 +96,7 @@
 #' @param ref_idx a number indicating which intervention to be used as the reference to calculate the risk ratio and risk difference. Default is 0.
 #' 0 refers to the natural course as the reference intervention.
 #' Any other numbers refer to the corresponding intervention that users specify in the keyword arguments.
-#' @param estimator a function specifying which ICE estimator to use for the estimation. Possible inputs are:
-#' \itemize{
-#' \item{Classical pooling over treatment history ICE estimator (classical pooled ICE): }{ \code{pool(hazard = F)}}
-#' \item{Hazard-Based pooling over treatment history ICE estimator (hazard-based pooled ICE): }{ \code{pool(hazard = T)}}
-#' \item{Classical stratifying on treatment history ICE estimator (classical stratified ICE): }{ \code{strat(hazard = F)}}
-#' \item{Hazard-Based stratifying on treatment history ICE estimator (hazard-based stratified ICE): }{ \code{strat(hazard = T)}}
-#' \item{Doubly robust weighted ICE estimator (doubly robust ICE): }{\cr
-#' \code{weight(treat_model)}
-#' where \code{treat_model} is a list specifying the treatment model.}
-#' }
+#' @param estimator a function specifying which ICE estimator to use for the estimation. Please see Details for all available specifications.
 #' @param int_descript a vector of strings containing descriptions for each specified intervention.
 #' @param ci_method a string specifying the method for calculating the confidence interval, if \code{nsamples} is larger than 0.
 #' Possible values are "percentile" and "normal." Default is "percentile."
@@ -129,8 +112,8 @@
 #' \itemize{
 #' \item{Each intervention is specified using the keyword argument name with \emph{intervention} prefix.}
 #' \item{Use \emph{i} after \emph{intervention} prefix in keyword argument name to represent the ith strategy.}
-#' \item{Use \emph{.} followed with \emph{treatment variable name} after \emph{interventioni} in keyword argument name to represent the treatment name within the ith strategy.}
-#' }
+#' \item{Use \emph{.} followed with \emph{treatment variable name} after \emph{interventioni} in keyword argument name to represent the treatment name within the ith strategy.}}
+#' 
 #' Each input of intervention keyword arguments is a list consisting of a vector of intervened values and an optional vector of time points on which the intervention is applied. 
 #' If the intervention time points are not specified, the intervention is applied to all time points. For example, 
 #' an input considers a simultaneous intervention with always treat on A1 and never treat on A2 at all time points looks like: \cr 
@@ -149,8 +132,7 @@
 #' \itemize{
 #' \item{Each outcome model is specified using keyword argument name starting with \emph{outcomeModel} or \emph{compModel} prefix for outcome model or competing model correspondingly.}
 #' \item{Use \emph{.n} after \emph{outcomeModel} or \emph{compModel} prefix in keyword argument name to specify which intervention being applied to,
-#' where \emph{n} represents the \emph{n}th intervention.}
-#' }
+#' where \emph{n} represents the \emph{n}th intervention.}}
 #' 
 #' The input to each outcome or competing model keyword argument is a model statement formula. 
 #' If no outcome model and competing model keyword argument is specified, the models specified in \code{outcome_model} and \code{comp_model} are used.
@@ -201,29 +183,38 @@
 #' 
 #' # Example 1: Dynamic Intervention
 #' 
-#' # We consider the following interventions and intervened at all time points.
+#' # We consider the following interventions. 
+#' # We intervene at all time points.
 #' # Intervention 1 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
 #' # Intervention 2 on A2: never treat upon until L1 = 0, after which follows always treat.
 #' # Intervention 3 on A2: never treat upon until L1 = 0, after which follows natural course.
 #' 
 #' # We use classical pooled ICE estimator, 
-#' # natural course as the reference intervention, and the following models:
+#' # natural course as the reference intervention, 
+#' # and the following models:
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
-#' # We estimate variance using bootstrap with 1000 replicates, normal quantile, and parallel computing.
+#' # We estimate variance using bootstrap with 1000 replicates, 
+#' # normal quantile, and parallel computing.
 #' 
-#' ice_fit1 <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit1 <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
-#' estimator = pool(hazard = F),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' estimator = pool(hazard = FALSE),
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Dynamic Intervention 1", "Dynamic Intervention 2", 
 #' "Dynamic Intervention 3"),
 #' intervention1.A2 = list(dynamic("L1 == 0", static(0), static(1))),
@@ -237,31 +228,41 @@
 #' 
 #' # Example 2: Built-in Interventions
 #' 
-#' # We consider the following interventions and intervene at all time points.
+#' # We consider the following interventions. 
+#' # We intervene at all time points.
 #' # Intervention 1 on A1: always treat with value 3.
 #' # Intervention 1 on A2: always treat with value 1.
-#' # Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, set its value to -3. 
-#' # Otherwise, do not intervene.
-#' # Intervention 3 on A2: dynamic intervention (treat when L1 = 0) with uniform grace period of 2 periods
+#' # Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, 
+#' # set its value to -3. Otherwise, do not intervene.
+#' # Intervention 3 on A2: dynamic intervention (treat when L1 = 0) 
+#' # with uniform grace period of 2 periods
 #' 
 #' # We use classical pooled ICE estimator, 
-#' # natural course as the reference intervention, and the following models:
+#' # natural course as the reference intervention, 
+#' # and the following models:
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
-#' # We estimate variance using bootstrap with 1000 replicates, normal quantile, and parallel computing.
+#' # We estimate variance using bootstrap with 1000 replicates, 
+#' # normal quantile, and parallel computing.
 #' 
-#' ice_fit2 <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit2 <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
-#' estimator = pool(hazard = F),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' estimator = pool(hazard = FALSE),
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention", "Threshold Intervention", 
 #' "Dynamic Intervention with Grace Period"),
 #' intervention1.A1 = list(static(3)),
@@ -276,33 +277,44 @@
 #' 
 #' # Example 3: User-defined Intervention
 #' 
-#' # We consider the following interventions and intervene at all time points.
+#' # We consider the following interventions. 
+#' # We intervene at all time points.
 #' # Intervention 1 on A1: always treat with value 3.
 #' # Intervention 1 on A2: always treat with value 1.
-#' # Intervention 2 on A1: at time t, if L2 < 0, then assign 1; if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
-#' # Intervention 2 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
+#' # Intervention 2 on A1: at time t, if L2 < 0, then assign 1; 
+#' # if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
+#' # Intervention 2 on A2: at time t, if L1 = 0, then treat; 
+#' # otherwise, not treat. 
 #' 
 #' # We use classical pooled ICE estimator, 
-#' # natural course as the reference intervention, and the following models:
+#' # natural course as the reference intervention, 
+#' # and the following models:
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
-#' # We estimate variance using bootstrap with 1000 replicates and percentile quantile.
+#' # We estimate variance using bootstrap 
+#' # with 1000 replicates and percentile quantile.
 #' 
 #' dynamic_cat <- case_when(data$L2 < 0 ~ 1,
 #' data$L2 >= 0 & data$L2 < 2 ~ 2, T ~ 3)
 #' 
-#' ice_fit3 <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit3 <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
-#' estimator = pool(hazard = F),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' estimator = pool(hazard = FALSE),
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -319,20 +331,27 @@
 #' # We use the interventions in Example 3 and implement each ICE estimator.
 #' 
 #' # a. hazard-based pooled ICE:
-#' # hazard model is time-specific and shares the same model statement as the outcome model
+#' # hazard model is time-specific 
+#' # and shares the same model statement as the outcome model
 #' 
-#' ice_fit4a <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit4a <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' competing_model = D ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
-#' estimator = pool(hazard = T),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' estimator = pool(hazard = TRUE),
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -347,9 +366,13 @@
 #' # b. hazard-based pooled ICE: 
 #' # hazard model is time-specific and uses Y ~ L1 + L2
 #' 
-#' ice_fit4b <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit4b <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
@@ -357,9 +380,11 @@
 #' competing_model = D ~ L1 + L2 + A1 + A2,
 #' hazard_model = Y ~ L1 + L2,
 #' ref_idx = 0,
-#' estimator = pool(hazard = T),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' estimator = pool(hazard = TRUE),
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -372,24 +397,31 @@
 #' plot(ice_fit4b)
 #' 
 #' # c. hazard-based pooled ICE: 
-#' # hazard model is pooled-over-time and includes flexible terms of time variable
+#' # hazard model is pooled-over-time and 
+#' # includes flexible terms of time variable
 #' 
 #' library(splines)
 #' 
-#' ice_fit4c <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit4c <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' competing_model = D ~ L1 + L2 + A1 + A2,
 #' hazard_model = Y ~ L1 + L2 + A1 + A2 + ns(t0, df = 2),
-#' global_hazard = T,
+#' global_hazard = TRUE,
 #' ref_idx = 0,
-#' estimator = pool(hazard = T),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' estimator = pool(hazard = TRUE),
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = T, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -403,17 +435,23 @@
 #' 
 #' # d. classical stratified ICE:
 #' 
-#' ice_fit4d <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit4d <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2, 
 #' censor_model = C ~ L1 + L2,
 #' ref_idx = 0,
-#' estimator = strat(hazard = F),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' estimator = strat(hazard = FALSE),
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -429,9 +467,13 @@
 #' # hazard model is time-specific and uses Y ~ L1 
 #' # (Note: a pooled-over-time hazard model is not valid for stratified ICE.)
 #' 
-#' ice_fit4e <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit4e <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2, 
@@ -439,9 +481,11 @@
 #' competing_model = D ~ L1 + L2,
 #' hazard_model = Y ~ L1,
 #' ref_idx = 0,
-#' estimator = strat(hazard = T),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' estimator = strat(hazard = TRUE),
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention: Model 1", 
 #' "Dynamic Intervention: Model 1"),
 #' intervention1.A1 = list(static(3)),
@@ -457,17 +501,23 @@
 #' 
 #' # f. doubly robust ICE:
 #' 
-#' ice_fit4f <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit4f <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ L1 + L2, 
 #' censor_model = C ~ L1 + L2,
 #' ref_idx = 0,
 #' estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention", 
 #' "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
@@ -491,17 +541,24 @@
 #' # competing model for intervention 1: D ~ L1 + L2,
 #' # competing model for intervention 2: D ~ L1
 #' 
-#' ice_fit4g <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit4g <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
-#' outcome_model = Y ~ L1, censor_model = C ~ L1,
+#' outcome_model = Y ~ L1, 
+#' censor_model = C ~ L1,
 #' competing_model = D ~ L1,
 #' comp_effect = 1,
 #' ref_idx = 0,
-#' estimator = strat(hazard = T),
-#' nsamples = 1000, ci_method = "normal",
-#' parallel = T, ncores = 5,
+#' estimator = strat(hazard = TRUE),
+#' nsamples = 1000, 
+#' ci_method = "normal",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention: Model 2",
 #' "Dynamic Intervention: Model 2"),
 #' intervention1.A1 = list(static(3)),
@@ -522,17 +579,25 @@
 #' # We use the same interventions and ICE estimator in Example 3, 
 #' # and include polynomial, spline, and lagged terms in models.
 #' 
-#' ice_fit5a <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' library(Hmisc)
+#' 
+#' ice_fit5a <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ I(L1^2) + rcspline.eval(lag1_L2, knots = 1:3) + A1 + A2,
 #' censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
 #' ref_idx = 0,
-#' estimator = pool(hazard = F),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' estimator = pool(hazard = FALSE),
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -548,17 +613,23 @@
 #' # We use the same interventions and ICE estimator in Example 3, 
 #' # but use static intervention as the reference intervention.
 #' 
-#' ice_fit5b <- ice(data = data, time_points = 4, 
-#' id = "id", time_name = "t0",
-#' censor_name = "C", outcome_name = "Y",
+#' ice_fit5b <- ice(
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
+#' time_name = "t0",
+#' censor_name = "C", 
+#' outcome_name = "Y",
 #' compevent_name = "D",
 #' comp_effect = 0,
 #' outcome_model = Y ~ I(L1^2) + rcspline.eval(lag1_L2, knots = 1:3) + A1 + A2,
 #' censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
 #' ref_idx = 1,
-#' estimator = pool(hazard = F),
-#' nsamples = 1000, ci_method = "percentile",
-#' parallel = T, ncores = 5,
+#' estimator = pool(hazard = FALSE),
+#' nsamples = 1000, 
+#' ci_method = "percentile",
+#' parallel = TRUE, 
+#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -571,7 +642,7 @@
 #' plot(ice_fit5b)
 #' 
 #' 
-#' @import tidyverse rlang dplyr stringr data.table reshape2 nnet speedglm tuple
+#' @import tidyverse rlang dplyr stringr data.table reshape2 nnet speedglm tuple stats Hmisc methods splines
 #' @export
 
 ice <- function(data, time_points, id, time_name,
@@ -588,15 +659,16 @@ ice <- function(data, time_points, id, time_name,
                 verbose = TRUE,
                 ...) {
   
-  interv_data <<- as.data.frame(data)
-  idvar <<- id
-  time0var <<- time_name
-  outcomevar <<- outcome_name
+  # assign.global(as.data.frame(data), "interv_data")
+  # assign.global(id, "idvar")
+  # assign.global(id, "id_var")
+  # assign.global(time_name, "time0var")
+  # assign.global(outcome_name, "outcomevar")
   
   ## check if argument names are specified correctly
   input_args <- as.list(environment())
   input_arg_names <- names(input_args)
-  named_args <- formalArgs(ice)
+  named_args <- methods::formalArgs(ice)
   
   for (i in 1:length(input_arg_names)) {
     
@@ -652,16 +724,7 @@ ice <- function(data, time_points, id, time_name,
     stop("Please enter a number of total time points below the maximum time units in the data.")
   }
 
-  map_time_column <- function(time_name, data, total_times) {
-    data[, paste0("new_", time_name)] <- NA
-    for (t in 0:(length(total_times)-1)) {
-      map_idx <- which(data[, time_name] == total_times[t+1])
-      data[map_idx, paste0("new_", time_name)] <- t
-    }
-    return(data)
-  }
-
-  if (class(data[, time_name]) != "integer") {
+  if (!inherits(data[, time_name], "integer")) {
     data <- map_time_column(time_name, data, unique_time_names)
     
     # replace the time variable in the global hazard model with the new time name if any
@@ -669,7 +732,7 @@ ice <- function(data, time_points, id, time_name,
 
       global_hazard_model_str <- as.character(hazard_model)
       global_hazard_model_str[3] <- str_replace_all(global_hazard_model_str[3], time_name, paste0("new_", time_name))
-      hazard_model <- as.formula(paste0(global_hazard_model_str[c(2, 1, 3)], collapse = ""))
+      hazard_model <- stats::as.formula(paste0(global_hazard_model_str[c(2, 1, 3)], collapse = ""))
     }
     
     time_name <- paste0("new_", time_name)
@@ -691,54 +754,113 @@ ice <- function(data, time_points, id, time_name,
     }
   }
   
-  
-  ## preprocess threshold intervention
+  ## preprocess all interventions
 
   sub_kwarg <- substitute(list(...))
   clean_kwarg_str <- paste0(str_remove_all(as.character(deparse(sub_kwarg)), " "), collapse = "")
   kwarg_list <- as.list(sub_kwarg)
   kwarg_name_list <- names(kwarg_list)
   threshold_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "threshold")
-  
-  ## preprocess natural course - need to add treatment variable into the argument
-  
+  static_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "static")
+  dynamic_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "dynamic")
+  grace_period_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "grace_period")
   nc_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "natural_course")
   
-  if (length(nc_idx) > 0) {
-    nc_kwarg <- kwarg_name_list[nc_idx]
-    nc_interv_list_split <- str_split(nc_kwarg, "[.]")
-    nc_interv_list <- lapply(nc_interv_list_split, function(x) {x[1]})
-    nc_interv_list_all_names <- lapply(nc_interv_list_split, function(x) {x[2]})
+  ## preprocess static intervention
+  
+  preprocess_static <- preprocess_intervention(clean_kwarg_str = clean_kwarg_str, 
+                                             kwarg_name_list = kwarg_name_list, 
+                                             kwarg_list = kwarg_list, 
+                                             interv_idx = static_idx, 
+                                             interv_func = "static")
+  
+  clean_kwarg_str <- preprocess_static$clean_kwarg_str
+  kwarg_list <- preprocess_static$kwarg_list
+  
+  # if (length(static_idx) > 0) {
+  #   static_kwarg <- kwarg_name_list[static_idx]
+  #   static_interv_list_split <- str_split(static_kwarg, "[.]")
+  #   static_interv_list <- lapply(static_interv_list_split, function(x) {x[1]})
+  #   static_interv_list_all_names <- lapply(static_interv_list_split, function(x) {x[2]})
+  #   
+  #   for (i in 1:length(static_idx)) {
+  #     ikwarg <- static_kwarg[i]
+  #     ivar <- as.character(static_interv_list_all_names[i])
+  #     raw_list <- str_remove_all(as.character(kwarg_list[ikwarg]), " ")
+  #     ikwarg_start_idx <- str_locate(pattern = paste0(ikwarg, "="), clean_kwarg_str)[1, 2]
+  #     ikwarg_end_idx <- ikwarg_start_idx + nchar(raw_list) + 1
+  #     static_arg_idx <- str_locate_all(pattern = "static[\\(][\\)]", raw_list)[[1]]
+  #     raw_list <- paste0(str_split(raw_list, "\\)")[[1]][1], ", data = data))")
+  #     
+  #     clean_kwarg_str <- paste0(substr(clean_kwarg_str, 1, ikwarg_start_idx), raw_list, 
+  #                               substr(clean_kwarg_str, ikwarg_end_idx, nchar(clean_kwarg_str)))
+  #   }
+  # }
+  
+  ## preprocess grace period intervention
+  
+  preprocess_gp <- preprocess_intervention(clean_kwarg_str = clean_kwarg_str, 
+                                             kwarg_name_list = kwarg_name_list, 
+                                             kwarg_list = kwarg_list, 
+                                             interv_idx = grace_period_idx, 
+                                             interv_func = "grace_period", 
+                                             id = id, 
+                                             time_name = time_name,
+                                             outcome_name = outcome_name)
+  
+  clean_kwarg_str <- preprocess_gp$clean_kwarg_str
+  kwarg_list <- preprocess_gp$kwarg_list
+  
+  ## preprocess natural course intervention
+  
+  preprocess_nc <- preprocess_intervention(clean_kwarg_str = clean_kwarg_str, 
+                                             kwarg_name_list = kwarg_name_list, 
+                                             kwarg_list = kwarg_list, 
+                                             interv_idx = nc_idx, 
+                                             interv_func = "natural_course")
+  
+  clean_kwarg_str <- preprocess_nc$clean_kwarg_str
+  kwarg_list <- preprocess_nc$kwarg_list
+  
+  # nc_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "natural_course")
+  # 
+  # if (length(nc_idx) > 0) {
+  #   nc_kwarg <- kwarg_name_list[nc_idx]
+  #   nc_interv_list_split <- str_split(nc_kwarg, "[.]")
+  #   nc_interv_list <- lapply(nc_interv_list_split, function(x) {x[1]})
+  #   nc_interv_list_all_names <- lapply(nc_interv_list_split, function(x) {x[2]})
+  # 
+  #   for (i in 1:length(nc_idx)) {
+  #     ikwarg <- nc_kwarg[i]
+  #     ivar <- as.character(nc_interv_list_all_names[i])
+  #     raw_list <- str_remove_all(as.character(kwarg_list[ikwarg]), " ")
+  #     ikwarg_start_idx <- str_locate(pattern = paste0(ikwarg, "="), clean_kwarg_str)[1, 2]
+  #     ikwarg_end_idx <- ikwarg_start_idx + nchar(raw_list) + 1
+  #     nc_arg_idx <- str_locate_all(pattern = "natural_course[\\(][\\)]", raw_list)[[1]]
+  #     num_nc <- nrow(nc_arg_idx)
+  #     add_string <- paste0("treat_var=\"", ivar, "\"")
+  #     
+  #     ## add the treatment variable in each call of natural course
+  #     
+  #     if (num_nc > 0) {
+  #     for (j in 1:num_nc) {
+  #       if (j == 1) {
+  #       idx_replace <- nc_arg_idx[j, 2] - 1
+  #       } else {
+  #         idx_replace <- str_locate_all(pattern = "natural_course[\\(][\\)]", raw_list)[[1]][1, 2] - 1
+  #       }
+  #       
+  #       raw_list <- paste0(substr(raw_list, 1, idx_replace), add_string, substr(raw_list, idx_replace + 1, nchar(raw_list)))
+  #     }
+  #     } 
+  #     
+  #     clean_kwarg_str <- paste0(substr(clean_kwarg_str, 1, ikwarg_start_idx), raw_list, 
+  #                               substr(clean_kwarg_str, ikwarg_end_idx, nchar(clean_kwarg_str)))
+  #   }
+  # }
 
-    for (i in 1:length(nc_idx)) {
-      ikwarg <- nc_kwarg[i]
-      ivar <- as.character(nc_interv_list_all_names[i])
-      raw_list <- str_remove_all(as.character(kwarg_list[ikwarg]), " ")
-      ikwarg_start_idx <- str_locate(pattern = paste0(ikwarg, "="), clean_kwarg_str)[1, 2]
-      ikwarg_end_idx <- ikwarg_start_idx + nchar(raw_list) + 1
-      nc_arg_idx <- str_locate_all(pattern = "natural_course[\\(][\\)]", raw_list)[[1]]
-      num_nc <- nrow(nc_arg_idx)
-      add_string <- paste0("treat_var=\"", ivar, "\"")
-      
-      ## add the treatment variable in each call of natural course
-      
-      if (num_nc > 0) {
-      for (j in 1:num_nc) {
-        if (j == 1) {
-        idx_replace <- nc_arg_idx[j, 2] - 1
-        } else {
-          idx_replace <- str_locate_all(pattern = "natural_course[\\(][\\)]", raw_list)[[1]][1, 2] - 1
-        }
-        
-        raw_list <- paste0(substr(raw_list, 1, idx_replace), add_string, substr(raw_list, idx_replace + 1, nchar(raw_list)))
-      }
-      } 
-      
-      clean_kwarg_str <- paste0(substr(clean_kwarg_str, 1, ikwarg_start_idx), raw_list, 
-                                substr(clean_kwarg_str, ikwarg_end_idx, nchar(clean_kwarg_str)))
-    }
-  }
-
+  ## preprocess threshold intervention
+  
   if (length(threshold_idx) > 0) {
   threshold_kwarg <- kwarg_name_list[threshold_idx]
   threshold_interv_list_split <- str_split(threshold_kwarg, "[.]")
@@ -757,8 +879,8 @@ ice <- function(data, time_points, id, time_name,
     start_idx <- as.vector(str_locate(clean_kwarg_str, ikwarg))[1]
     end_idx <- start_idx + nchar(search_str) - 1
     keep_str <- str_split(origin_list, "")[[1]][c(1:nchar(threshold_str_keep))]
-    keep_str <- paste0(tail(keep_str, -5), collapse = "")
-    add_str <- paste0(", var=\"", ivar, "\")")
+    keep_str <- paste0(utils::tail(keep_str, -5), collapse = "")
+    add_str <- paste0(", var=\"", ivar, "\",", "data=data)")
     call_str <- paste0(keep_str, add_str)
     replace_str <- paste0(ikwarg, "=list(", call_str, ")")
     clean_arg_split <- str_split(clean_kwarg_str, "")[[1]]
@@ -770,7 +892,20 @@ ice <- function(data, time_points, id, time_name,
   }
 
   }
-
+  
+  ## preprocess dynamic intervention
+  preprocess_dynamic <- preprocess_intervention(clean_kwarg_str = clean_kwarg_str, 
+                                                kwarg_name_list = kwarg_name_list, 
+                                                kwarg_list = kwarg_list, 
+                                                interv_idx = dynamic_idx, 
+                                                interv_func = "dynamic", 
+                                                id = id,
+                                                time_name = time_name)
+  
+  clean_kwarg_str <- preprocess_dynamic$clean_kwarg_str
+  kwarg_list <- preprocess_dynamic$kwarg_list
+  
+  # print(clean_kwarg_str)
   ## get argument list
   args <- c(as.list(environment()), eval(parse(text = clean_kwarg_str)))
   kwargs_len <- length(eval(parse(text = clean_kwarg_str)))
@@ -1346,12 +1481,8 @@ ice <- function(data, time_points, id, time_name,
                           rd_se = 0, 
                           ice_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
                           ice_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
-                          # ice_cv_upper = tail(ref_first_boot$ref_cv_all_upper, 1), 
-                          # ice_cv_lower = tail(ref_first_boot$ref_cv_all_lower, 1), 
                           ref_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
                           ref_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
-                          # ref_cv_upper = tail(ref_first_boot$ref_cv_all_upper, 1), 
-                          # ref_cv_lower = tail(ref_first_boot$ref_cv_all_lower, 1), 
                           ref_ipw_se = ref_first_boot$ref_ipw_se, 
                           ref_ipw_cv_all_upper = ref_first_boot$ref_ipw_cv_all_upper,
                           ref_ipw_cv_all_lower = ref_first_boot$ref_ipw_cv_all_lower,
@@ -1391,12 +1522,12 @@ ice <- function(data, time_points, id, time_name,
         
       } 
 
-      this_se <- tail(this_boot$ice_se, 1)
+      this_se <- utils::tail(this_boot$ice_se, 1)
       this_rr_se <- this_boot$rr_se
       this_rd_se <- this_boot$rd_se
 
-      this_cv_upper <- tail(this_boot$ice_cv_all_upper, 1)
-      this_cv_lower <- tail(this_boot$ice_cv_all_lower, 1)
+      this_cv_upper <- utils::tail(this_boot$ice_cv_all_upper, 1)
+      this_cv_lower <- utils::tail(this_boot$ice_cv_all_lower, 1)
       
       this_rr_cv_upper <- this_boot$rr_cv_upper
       this_rr_cv_lower <- this_boot$rr_cv_lower
@@ -1499,8 +1630,8 @@ ice <- function(data, time_points, id, time_name,
         summary[ref_idx + 1, 5] <- this_boot$ref_se[K+1]
 
         if (ref_idx == 0) {
-          ice_critical_value[1, 1] <- tail(this_boot$ref_cv_all_lower, 1)
-          ice_critical_value[2, 1] <- tail(this_boot$ref_cv_all_upper, 1)
+          ice_critical_value[1, 1] <- utils::tail(this_boot$ref_cv_all_lower, 1)
+          ice_critical_value[2, 1] <- utils::tail(this_boot$ref_cv_all_upper, 1)
         }
       }
 
@@ -1867,12 +1998,8 @@ ice <- function(data, time_points, id, time_name,
                             rd_se = 0, 
                             ice_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
                             ice_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
-                            # ice_cv_upper = tail(ref_first_boot$ref_cv_all_upper, 1), 
-                            # ice_cv_lower = tail(ref_first_boot$ref_cv_all_lower, 1), 
                             ref_cv_all_upper = ref_first_boot$ref_cv_all_upper, 
                             ref_cv_all_lower = ref_first_boot$ref_cv_all_lower, 
-                            # ref_cv_upper = tail(ref_first_boot$ref_cv_all_upper, 1), 
-                            # ref_cv_lower = tail(ref_first_boot$ref_cv_all_lower, 1), 
                             ref_ipw_se = ref_first_boot$ref_ipw_se, 
                             ref_ipw_cv_all_upper = ref_first_boot$ref_ipw_cv_all_upper,
                             ref_ipw_cv_all_lower = ref_first_boot$ref_ipw_cv_all_lower,
@@ -1914,12 +2041,12 @@ ice <- function(data, time_points, id, time_name,
         
         
 
-        this_se <- tail(this_boot$ice_se, 1)
+        this_se <- utils::tail(this_boot$ice_se, 1)
         this_rr_se <- this_boot$rr_se
         this_rd_se <- this_boot$rd_se
 
-        this_cv_upper <- tail(this_boot$ice_cv_all_upper, 1)
-        this_cv_lower <- tail(this_boot$ice_cv_all_lower, 1)
+        this_cv_upper <- utils::tail(this_boot$ice_cv_all_upper, 1)
+        this_cv_lower <- utils::tail(this_boot$ice_cv_all_lower, 1)
         this_rr_cv_upper <- this_boot$rr_cv_upper
         this_rr_cv_lower <- this_boot$rr_cv_lower
         this_rd_cv_upper <- this_boot$rd_cv_upper
@@ -2017,8 +2144,8 @@ ice <- function(data, time_points, id, time_name,
         summary[ref_idx + 1, 5] <- this_boot$ref_se[K+1]
 
         if (ref_idx == 0) {
-          ice_critical_value[1, 1] <- tail(this_boot$ref_cv_all_lower, 1)
-          ice_critical_value[2, 1] <- tail(this_boot$ref_cv_all_upper, 1)
+          ice_critical_value[1, 1] <- utils::tail(this_boot$ref_cv_all_lower, 1)
+          ice_critical_value[2, 1] <- utils::tail(this_boot$ref_cv_all_upper, 1)
         }
       }
 
@@ -2051,7 +2178,7 @@ ice <- function(data, time_points, id, time_name,
   if (bootstrap) {
 
     if (normal_quantile) {
-      ice_critical_value_lower <- rr_critical_value_lower <- rd_critical_value_lower <- ice_critical_value_upper <- rr_critical_value_upper <- rd_critical_value_upper <- qnorm(1 - significance_level/2)
+      ice_critical_value_lower <- rr_critical_value_lower <- rd_critical_value_lower <- ice_critical_value_upper <- rr_critical_value_upper <- rd_critical_value_upper <- stats::qnorm(1 - significance_level/2)
     } else {
       
       ice_critical_value_lower <- as.vector(ice_critical_value[1, ])
@@ -2128,6 +2255,49 @@ ice <- function(data, time_points, id, time_name,
               boot.hazard.models.by.step = hazard_by_step_boot)
   
   class(out) <- c("ICE")
+  
+  # remove all global objects
+  
+  if (exists("treatment_varname")) {
+    rm("treatment_varname", envir = globalenv())
+  }
+  
+  if (exists("threshold_treatment")) {
+    rm("threshold_treatment", envir = globalenv())
+  }
+  
+  if (exists("treat")) {
+    rm("treat", envir = globalenv())
+  }
+  
+  if (exists("id_var")) {
+    rm("id_var", envir = globalenv())
+  }
+  
+  if (exists("gp_indicator")) {
+    rm("gp_indicator", envir = globalenv())
+  }
+  
+  if (exists("gp_interv_type")) {
+    rm("gp_interv_type", envir = globalenv())
+  }
+  
+  if (exists("gp_treatment_var")) {
+    rm("gp_treatment_var", envir = globalenv())
+  }
+  
+  if (exists("ngrace_period")) {
+    rm("ngrace_period", envir = globalenv())
+  }
+  
+  if (exists("grace_period_var")) {
+    rm("grace_period_var", envir = globalenv())
+  }
+  
+  if (exists("treatment_varname_gp")) {
+    rm("treatment_varname_gp", envir = globalenv())
+  }
+  
   return(out)
 
 }

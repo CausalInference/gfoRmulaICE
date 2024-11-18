@@ -56,8 +56,7 @@
 #' \item{ref_model_err_mssg}{A list of strings for error messages of any model error from each bootstrap replicate for the reference intervention.}
 #' \item{ref_data_err_mssg}{A list of strings for error messages of any data error from each bootstrap replicate for the reference intervention.}
 #'
-#' @export
-#' @import doParallel parallel foreach
+#' @import doParallel parallel foreach stats
 #' @noRd
 bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_description,
                           ref_intervention_varnames, total_effect,
@@ -97,149 +96,9 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     result <- matrix(NA, ncol = 4, nrow = nboot)
     result <- as.data.frame(result)
     
-    # boot_result <- mclapply(1:nboot, function(i) {
-    #   
-    #   unique_idx <- unique(data[, id])
-    #   
-    #   select_index <- sample(1:length(unique_idx), replace = T)
-    #   boot_index <- unique_idx[select_index]
-    #   nindx <- length(boot_index)
-    #   
-    #   row_idx <- lapply(1:nindx, function(i) {
-    #     select_idx <- which(data[, id] %in% boot_index[i])
-    #     return(select_idx)
-    #   }
-    #   )
-    #   
-    #   row_idx <- unlist(row_idx)
-    #   
-    #   boot_data <- lapply(1:nindx, function(i) {
-    #     select_data <- data[which(data[, id] %in% boot_index[i]), ] 
-    #     select_data[, paste0("original_", id)] <- select_data[, id]
-    #     select_data[, id] <- i
-    #     return(select_data)
-    #   }
-    #   )
-    #   
-    #   boot_data <- dplyr::bind_rows(boot_data)
-    #   
-    #   # row_idx <- which(data[, id] %in% boot_index)
-    #   
-    #   # boot_data <- data[which(data[, id] %in% boot_index), ]
-    #   
-    #   
-    #   ice <- try(
-    #     f(data = boot_data, total_effect = total_effect, id = id, K = K,
-    #       interventions = interv_boot(interventions, row_idx), intervention_names = intervention_varnames,
-    #       intervention_description = intervention_description, intervention_times = intervention_times, ...),
-    #     silent = T
-    #   )
-    #   
-    #   
-    #   ref <- f(data = boot_data, total_effect = ref_total_effect, id = id, K = K,
-    #            interventions = interv_boot(ref_intervention, row_idx), intervention_names = list(ref_intervention_varname),
-    #            intervention_description = ref_description, intervention_times = ref_intervention_times, ...)
-    #   
-    #   if (class(ice) == "try-error") {
-    #     
-    #     if (str_detect(ice[1], "Argument mu must be a nonempty numeric vector")) {
-    #       data_issue_err <- i
-    #       data_issue_mssg <- ice[1]
-    #       
-    #       model_issue_err <- NA
-    #       model_issue_mssg <- NA
-    #     } else {
-    #       data_issue_err <- NA
-    #       data_issue_mssg <- NA
-    #       
-    #       model_issue_err <- i
-    #       model_issue_mssg <- ice[1]
-    #     }
-    #     
-    #     ice_value <- this_model <- this_stderr <- this_vcov <- this_rmse <- this_summary <- NA
-    #     ice_all <- rep(NA, K+1)
-    #     rr <- NA
-    #     rd <- NA
-    #     
-    #     ref_all <- ref$gformula_risk
-    #     ref_ipw_all <- c(0, ref$weight_h$risk)
-    #     ref_value <- ref$gformula_risk_last_time
-    #     
-    #   } else {
-    #     
-    #     data_issue_err <- model_issue_err <- data_issue_mssg <- model_issue_mssg <- NA
-    #     
-    #     ice_value <- ice$gformula_risk_last_time
-    #     ice_all <- ice$gformula_risk
-    #     
-    #     this_outcome_init <- list(ice$outcome_init)
-    #     this_comp_init <- list(ice$comp_init)
-    #     this_np_model <- list(ice$np_model)
-    #     
-    #     names(this_outcome_init) <- names(this_np_model) <- names(this_comp_init) <- paste0("Bootstrap Replicate ", i)
-    #     
-    #     this_outcome_by_step <- get_models(ice, "outcome_by_step", paste0("Bootstrap Replicate ", i))
-    #     this_hazard_by_step <- get_models(ice, "hazard_by_step", paste0("Bootstrap Replicate ", i))
-    #     this_comp_by_step <- get_models(ice, "comp_by_step", paste0("Bootstrap Replicate ", i))
-    #     
-    #     # this_model <- list(ice$fit_models)
-    #     # this_summary <- list(ice$model_summary)
-    #     # this_stderr <- list(ice$model_stderr)
-    #     # this_vcov <- list(ice$model_vcov)
-    #     # this_rmse <- list(ice$model_rmse)
-    #     
-    #     ref_all <- ref$gformula_risk
-    #     ref_ipw_all <- c(0, ref$weight_h$risk)
-    #     ref_value <- ref$gformula_risk_last_time
-    #     rr <- ice_value / ref_value
-    #     rd <- ice_value - ref_value
-    #     
-    #   }
-    #   
-    #   numerical_out <- rbind(c(ice_value, ref_value, rr, rd, ice_all, ref_all, ref_ipw_all))
-    #   
-    #   output <- list(boot_out = numerical_out, data = boot_data, data_issue = data_issue_err, 
-    #                  model_issue = model_issue_err,
-    #                  data_issue_mssg = data_issue_mssg, model_issue_mssg = model_issue_mssg, 
-    #                  outcome_init_boot = this_outcome_init, comp_init_boot = this_comp_init, 
-    #                  np_model_boot = this_np_model, 
-    #                  outcome_by_step_boot = this_outcome_by_step, hazard_by_step_boot = this_hazard_by_step,
-    #                  comp_by_step_boot = this_comp_by_step)
-    #   
-    # }, mc.cores = ncores)
-    # 
-    
 
     boot_result <- foreach(i = 1:nboot, .combine = "c", .packages = c("tidyverse", "nnet", "stringr", "base"),
                            .errorhandling='pass') %do% {
-
-      # unique_idx <- unique(data[, id])
-      # 
-      # select_index <- sample(1:length(unique_idx), replace = T)
-      # boot_index <- unique_idx[select_index]
-      # nindx <- length(boot_index)
-      # 
-      # row_idx <- lapply(1:nindx, function(i) {
-      #   select_idx <- which(data[, id] %in% boot_index[i])
-      #   return(select_idx)
-      # }
-      # )
-      # 
-      # row_idx <- unlist(row_idx)
-      # 
-      # boot_data <- lapply(1:nindx, function(i) {
-      #   select_data <- data[which(data[, id] %in% boot_index[i]), ]
-      #   select_data[, paste0("original_", id)] <- select_data[, id]
-      #   select_data[, id] <- i
-      #   return(select_data)
-      # }
-      # )
-      # 
-      # boot_data <- dplyr::bind_rows(boot_data)
-
-      # row_idx <- which(data[, id] %in% boot_index)
-
-      # boot_data <- data[which(data[, id] %in% boot_index), ]
                              
      unique_idx <- unique(data[, id])
      nidx <- length(unique_idx)
@@ -271,7 +130,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         silent = T
       )
 
-      if (class(ice) == "try-error") {
+      if (inherits(ice, "try-error")) {
         if (str_detect(ice[1], "Argument mu must be a nonempty numeric vector")) {
           data_issue_err <- i
           data_issue_mssg <- ice[1]
@@ -332,7 +191,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         rd <- ice_value - ref_value
       }
       
-      if (class(ref) == "try-error") {
+      if (inherits(ref, "try-error")) {
         
         if (str_detect(ref[1], "Argument mu must be a nonempty numeric vector")) {
           ref_data_issue_err <- i
@@ -393,21 +252,21 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     cat(paste0(" Bootstrap Progress: ", intervention_description, "\n"))
 
     
-    data_err <- na.omit(unlist(boot_result[names(boot_result) == "data_issue"]))
-    model_err <- na.omit(unlist(boot_result[names(boot_result) == "model_issue"]))
+    data_err <- stats::na.omit(unlist(boot_result[names(boot_result) == "data_issue"]))
+    model_err <- stats::na.omit(unlist(boot_result[names(boot_result) == "model_issue"]))
     
     data_err_mssg <- unlist(boot_result[names(boot_result) == "data_issue_mssg"])
     model_err_mssg <- unlist(boot_result[names(boot_result) == "model_issue_mssg"])
     
-    ref_data_err <- na.omit(unlist(boot_result[names(boot_result) == "ref_data_issue"]))
-    ref_model_err <- na.omit(unlist(boot_result[names(boot_result) == "ref_model_issue"]))
+    ref_data_err <- stats::na.omit(unlist(boot_result[names(boot_result) == "ref_data_issue"]))
+    ref_model_err <- stats::na.omit(unlist(boot_result[names(boot_result) == "ref_model_issue"]))
     
     ref_data_err_mssg <- unlist(boot_result[names(boot_result) == "ref_data_issue_mssg"])
     ref_model_err_mssg <- unlist(boot_result[names(boot_result) == "ref_model_issue_mssg"])
     
     ## construct error message
-    data_err_mssg <- na.omit(data_err_mssg)
-    model_err_mssg <- na.omit(model_err_mssg)
+    data_err_mssg <- stats::na.omit(data_err_mssg)
+    model_err_mssg <- stats::na.omit(model_err_mssg)
 
     data_err_mssg_combine <- paste0("The error message in bootstrap sample ", data_err)
     data_err_mssg_combine <- paste0(data_err_mssg_combine, ": ", data_err_mssg, "\n")
@@ -425,8 +284,8 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
                      with a more parsimonious model.", "\n", paste0(model_err_mssg_combine, collapse = "")))
     }
     
-    ref_data_err_mssg <- na.omit(ref_data_err_mssg)
-    ref_model_err_mssg <- na.omit(ref_model_err_mssg)
+    ref_data_err_mssg <- stats::na.omit(ref_data_err_mssg)
+    ref_model_err_mssg <- stats::na.omit(ref_model_err_mssg)
     
     ref_data_err_mssg_combine <- paste0("The error message in bootstrap sample ", ref_data_err)
     ref_data_err_mssg_combine <- paste0(ref_data_err_mssg_combine, ": ", ref_data_err_mssg, "\n")
@@ -457,7 +316,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     
     result <- matrix(unlist(boot_result[names(boot_result) == "boot_out"]), byrow = T, nrow = nboot)
 
-    agg_result <- apply(result, 2, sd, na.rm = T)
+    agg_result <- apply(result, 2, stats::sd, na.rm = T)
     ice_se <- agg_result[1]
     ref_se <- agg_result[2]
     rr_se <- agg_result[3]
@@ -467,7 +326,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     ref_ipw_se_all <- agg_result[(7+2*K):(length(agg_result))]
 
 
-    quantile_result_upper <- apply(result, 2, quantile, probs = (100 - sig_level/2)/100, na.rm = T)
+    quantile_result_upper <- apply(result, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = T)
     ice_cv_upper <- quantile_result_upper[1]
     ref_cv_upper <- quantile_result_upper[2]
     rr_cv_upper <- quantile_result_upper[3]
@@ -476,7 +335,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     ref_cv_all_upper <- quantile_result_upper[(6+K):(6+2*K)]
     ref_ipw_cv_all_upper <- quantile_result_upper[(7+2*K):(length(quantile_result_upper))]
     
-    quantile_result_lower <- apply(result, 2, quantile, probs = (sig_level/2)/100, na.rm = T)
+    quantile_result_lower <- apply(result, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = T)
     ice_cv_lower <- quantile_result_lower[1]
     ref_cv_lower <- quantile_result_lower[2]
     rr_cv_lower <- quantile_result_lower[3]
@@ -587,7 +446,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         silent = T
       )
       
-        if (class(ice) == "try-error") {
+        if (inherits(ice, "try-error")) {
           if (str_detect(ice[1], "Argument mu must be a nonempty numeric vector")) {
             data_issue_err <- i
             data_issue_mssg <- ice[1]
@@ -647,7 +506,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
           rd <- ice_value - ref_value
         }
         
-        if (class(ref) == "try-error") {
+        if (inherits(ref, "try-error")) {
           
           if (str_detect(ref[1], "Argument mu must be a nonempty numeric vector")) {
             ref_data_issue_err <- i
@@ -732,41 +591,41 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
 
     }
     
-    ice_se <- sd(unlist(ice_boot), na.rm = T)
-    ice_cv_upper <- quantile(unlist(ice_boot), probs = (100 - sig_level/2)/100, na.rm = T)
-    ice_cv_lower <- quantile(unlist(ice_boot), probs = (sig_level/2)/100, na.rm = T)
-    ref_se <- sd(unlist(ref_boot), na.rm = T)
-    ref_cv_upper <- quantile(unlist(ref_boot), probs = (100 - sig_level/2)/100, na.rm = T)
-    ref_cv_lower <- quantile(unlist(ref_boot), probs = (sig_level/2)/100, na.rm = T)
-    rr_se <- sd(unlist(rr_boot), na.rm = T)
-    rr_cv_upper <- quantile(unlist(rr_boot), probs = (100 - sig_level/2)/100, na.rm = T)
-    rr_cv_lower <- quantile(unlist(rr_boot), probs = (sig_level/2)/100, na.rm = T)
-    rd_se <- sd(unlist(rd_boot), na.rm = T)
-    rd_cv_upper <- quantile(unlist(rd_boot), probs = (100 - sig_level/2)/100, na.rm = T)
-    rd_cv_lower <- quantile(unlist(rd_boot), probs = (sig_level/2)/100, na.rm = T)
-    ice_se_all <- apply(ice_boot_all, 2, sd, na.rm = T)
-    ref_se_all <- apply(ref_boot_all, 2, sd, na.rm = T)
-    ref_ipw_se_all <- apply(ref_ipw_boot_all, 2, sd, na.rm = T)
+    ice_se <- stats::sd(unlist(ice_boot), na.rm = T)
+    ice_cv_upper <- stats::quantile(unlist(ice_boot), probs = (100 - sig_level/2)/100, na.rm = T)
+    ice_cv_lower <- stats::quantile(unlist(ice_boot), probs = (sig_level/2)/100, na.rm = T)
+    ref_se <- stats::sd(unlist(ref_boot), na.rm = T)
+    ref_cv_upper <- stats::quantile(unlist(ref_boot), probs = (100 - sig_level/2)/100, na.rm = T)
+    ref_cv_lower <- stats::quantile(unlist(ref_boot), probs = (sig_level/2)/100, na.rm = T)
+    rr_se <- stats::sd(unlist(rr_boot), na.rm = T)
+    rr_cv_upper <- stats::quantile(unlist(rr_boot), probs = (100 - sig_level/2)/100, na.rm = T)
+    rr_cv_lower <- stats::quantile(unlist(rr_boot), probs = (sig_level/2)/100, na.rm = T)
+    rd_se <- stats::sd(unlist(rd_boot), na.rm = T)
+    rd_cv_upper <- stats::quantile(unlist(rd_boot), probs = (100 - sig_level/2)/100, na.rm = T)
+    rd_cv_lower <- stats::quantile(unlist(rd_boot), probs = (sig_level/2)/100, na.rm = T)
+    ice_se_all <- apply(ice_boot_all, 2, stats::sd, na.rm = T)
+    ref_se_all <- apply(ref_boot_all, 2, stats::sd, na.rm = T)
+    ref_ipw_se_all <- apply(ref_ipw_boot_all, 2, stats::sd, na.rm = T)
     
-    ice_cv_all_upper <- apply(ice_boot_all, 2, quantile, probs = (100 - sig_level/2)/100, na.rm = T)
-    ref_cv_all_upper <- apply(ref_boot_all, 2, quantile, probs = (100 - sig_level/2)/100, na.rm = T)
-    ref_ipw_cv_all_upper <- apply(ref_ipw_boot_all, 2, quantile, probs = (100 - sig_level/2)/100, na.rm = T)
+    ice_cv_all_upper <- apply(ice_boot_all, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = T)
+    ref_cv_all_upper <- apply(ref_boot_all, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = T)
+    ref_ipw_cv_all_upper <- apply(ref_ipw_boot_all, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = T)
     
-    ice_cv_all_lower <- apply(ice_boot_all, 2, quantile, probs = (sig_level/2)/100, na.rm = T)
-    ref_cv_all_lower <- apply(ref_boot_all, 2, quantile, probs = (sig_level/2)/100, na.rm = T)
-    ref_ipw_cv_all_lower <- apply(ref_ipw_boot_all, 2, quantile, probs = (sig_level/2)/100, na.rm = T)
+    ice_cv_all_lower <- apply(ice_boot_all, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = T)
+    ref_cv_all_lower <- apply(ref_boot_all, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = T)
+    ref_ipw_cv_all_lower <- apply(ref_ipw_boot_all, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = T)
     
-    data_err <- na.omit(data_err)
-    model_err <- na.omit(model_err)
+    data_err <- stats::na.omit(data_err)
+    model_err <- stats::na.omit(model_err)
     
-    data_err_mssg <- na.omit(data_err_mssg)
-    model_err_mssg <- na.omit(model_err_mssg)
+    data_err_mssg <- stats::na.omit(data_err_mssg)
+    model_err_mssg <- stats::na.omit(model_err_mssg)
     
-    ref_data_err <- na.omit(ref_data_err)
-    ref_model_err <- na.omit(ref_model_err)
+    ref_data_err <- stats::na.omit(ref_data_err)
+    ref_model_err <- stats::na.omit(ref_model_err)
     
-    ref_data_err_mssg <- na.omit(ref_data_err_mssg)
-    ref_model_err_mssg <- na.omit(ref_model_err_mssg)
+    ref_data_err_mssg <- stats::na.omit(ref_data_err_mssg)
+    ref_model_err_mssg <- stats::na.omit(ref_model_err_mssg)
     
     ## construct error message
     data_err_mssg_combine <- paste0("The error message in bootstrap sample ", data_err)

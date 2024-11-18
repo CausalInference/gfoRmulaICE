@@ -80,7 +80,7 @@ summary.ICE <- function(...) {
       summary_ice$Intervention <- rownames(summary_ice)
       rownames(summary_ice) <- NULL
       
-      summary_ice <- summary_ice[, c("Intervention", "Estimator", head(colnames(summary_ice), -2))]
+      summary_ice <- summary_ice[, c("Intervention", "Estimator", utils::head(colnames(summary_ice), -2))]
       
       summary_all <- rbind(summary_all, summary_ice)
     }
@@ -151,6 +151,8 @@ summary.ICE <- function(...) {
 plot.ICE <- function(..., plot_obs = T, label = 0) {
   
   plot_np <- plot_obs
+  Intervention <- Risk <- Critical_Value_Lower <- SE <- Critical_Value_Upper <- Time <- NULL
+  lower <- upper <- NULL
   
   fit_ice <- list(...)
   

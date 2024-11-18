@@ -1,3 +1,7 @@
+get_data <- function(data) {
+  return(data)
+}
+
 #' Static
 #'
 #' This function specifies the static intervention, either treat with a constant value or never treat, 
@@ -13,7 +17,22 @@
 #' @examples
 #' data <- gfoRmulaICE::compData
 #' always_treat <- static(value = 1, data = data)
-static <- function(value, data = interv_data) {
+static <- function(value, data) {
+  
+  # if (exists("interv_data")) {
+  #   data <- interv_data
+  # }
+  
+  # if (is.null(data)) {
+  # data_try <- try(
+  #   get_data(interv_data),
+  #   silent = T
+  # )
+  # 
+  # if (!inherits(data, "try-error")) {
+  #   data <- data_try
+  # }
+  # }
 
   interv_it <- rep(value, nrow(data))
 
@@ -34,7 +53,8 @@ static <- function(value, data = interv_data) {
 #' data <- gfoRmulaICE::compData
 #' natural_course <- natural_course(data = data, treat_var = "A")
 #' 
-natural_course <- function(data = interv_data, treat_var = treatment_varname) {
+natural_course <- function(data, treat_var) {
+  
   interv_it <- data[, treat_var]
 
   return(interv_it)
@@ -68,16 +88,16 @@ natural_course_ipweighted <- function(data, id, censor_varname,
   logit_censor <- NULL
 
     if (!is.null(censor_varname)) {
-      censor_formula <- as.formula(paste0(censor_varname, "~",paste0(c(covar), collapse = "+")))
-      logit_censor <- glm(censor_formula, data = data, family = binomial)
-      prob_censor <- predict(logit_censor, newdata = data, type = "response")
+      censor_formula <- stats::as.formula(paste0(censor_varname, "~",paste0(c(covar), collapse = "+")))
+      logit_censor <- stats::glm(censor_formula, data = data, family = stats::binomial())
+      prob_censor <- stats::predict(logit_censor, newdata = data, type = "response")
       risk_weighted <- compute_weighted_hazard(prob_censor, data, id, censor_varname,
                                                K, time0, outcome_varname,
                                                competing_varname, competing_fit,
                                                total_effect)
     } else {
       if (!is.null(competing_varname) & total_effect == F) {
-        prob_censor <- predict(competing_fit, newdata = data, type = "response")
+        prob_censor <- stats::predict(competing_fit, newdata = data, type = "response")
         risk_weighted <- compute_weighted_hazard(prob_censor, data, id, competing_varname,
                                                  K, time0, outcome_varname,
                                                  NULL, NULL,
@@ -115,14 +135,11 @@ natural_course_ipweighted <- function(data, id, censor_varname,
 #'
 #' @return a vector containing the intervened value of the same size as the number of rows in \code{data}.
 #' @export
+#' @import stats
 #'
-#' @examples
-#' data <- gfoRmulaICE::compData
-#' grace_period <- grace_period(type = "uniform", nperiod = 2, condition = "L1 == 0", data = data,
-#'                              id = "id", time_name = "t0", outcome_name = "Y")
 grace_period <- function(type, nperiod, condition,
-                         data = interv_data, id = idvar, time_name = time0var, 
-                         outcome_name = outcomevar) {
+                         data, id, time_name, 
+                         outcome_name) {
   
   
   ## separate var and logical from condition
@@ -147,14 +164,29 @@ grace_period <- function(type, nperiod, condition,
   
   
   my.arrayofA <- 0
-  gp_indicator <<- T
-  gp_interv_type <<- type
-  gp_treatment_var <<- var
-  # gp_threshold_value <<- value
-  ngrace_period <<- nperiod
+  
+  assign.global(T, "gp_indicator")
+  
+  # if (exists("gp_interv_type")) {
+  assign.global(type, "gp_interv_type")
+  # }
+  
+  # if (exists("gp_treatment_var")) {
+    assign.global(var, "gp_treatment_var")
+  # }
+  
+  # if (exists("ngrace_period")) {
+    assign.global(nperiod, "ngrace_period")
+  # }
 
-  grace_period_var <<- gp_treatment_var
-  treatment_varname_gp <<- paste0("interv_it_", gp_treatment_var)
+  # if (exists("grace_period_var")) {
+    assign.global(gp_treatment_var, "grace_period_var")
+  # }
+  
+  # if (exists("gp_treatment_var")) {
+    assign.global(paste0("interv_it_", gp_treatment_var), "treatment_varname_gp")
+  # }
+  
   abar <- 0
 
   data$id_var <- data[, id]
@@ -292,7 +324,7 @@ uniform_sample <- function(r, duration) {
     warning("Uniform sampling probabilities not between 0 and 1 in uniform grace period.")
   } 
   
-  treat <- suppressWarnings(rbinom(length(p), 1, p))
+  treat <- suppressWarnings(stats::rbinom(length(p), 1, p))
   return(treat)
 
 }
@@ -359,7 +391,7 @@ compute_weighted_hazard <- function(prob_censor, data, id, censor_varname,
         compevent_risk_temp[i + 1] <- h_k2[i + 1] * prod((1 - h_k[1:i]) * (1 - h_k2[1:i]))
       }
     } else {
-      h_k[i + 1] <- weighted.mean(x = data[[outcome_name]][cur_time_ind], w = w_cur, na.rm = TRUE)
+      h_k[i + 1] <- stats::weighted.mean(x = data[[outcome_name]][cur_time_ind], w = w_cur, na.rm = TRUE)
       if (i == 0){
         obs_risk_temp[i + 1] <- h_k[i + 1]
       } else {
@@ -474,7 +506,8 @@ weight <- function(treat_model = list()) {
 #' @examples
 #' data <- gfoRmulaICE::compData
 #' threshold_treat <- threshold(lower_bound = 0, upper_bound = 2, var = "A", data = data)
-threshold <- function(lower_bound, upper_bound, var = threshold_treatment, data = interv_data){
+threshold <- function(lower_bound, upper_bound, var, data){
+  
   interv_it <- case_when(data[, var] >= lower_bound & data[, var] <= upper_bound ~ data[, var],
                          data[, var] > upper_bound ~ upper_bound,
                          data[, var] < lower_bound ~ lower_bound)
@@ -490,7 +523,7 @@ threshold <- function(lower_bound, upper_bound, var = threshold_treatment, data 
 #'
 #' @noRd
 get_stderr <- function(fit) {
-  return(sqrt(diag(vcov(fit))))
+  return(sqrt(diag(stats::vcov(fit))))
 }
 
 #' Get Variance-Covariance Matrix from Model Object
@@ -502,7 +535,7 @@ get_stderr <- function(fit) {
 #' @noRd
 #'
 get_vcov <- function(fit) {
-  return(vcov(fit))
+  return(stats::vcov(fit))
 }
 
 #' Get Summary Table from Model Object
@@ -528,34 +561,6 @@ get_summary <- function(fit) {
 get_rmse <- function(fit) {
   return(sqrt(mean(fit$residuals^2)))
 }
-
-
-# summary_table <- function(...) {
-#   fit_ice <- list(...)
-# 
-#   summary_all <- data.frame()
-# 
-#   if (length(fit_ice) == 1) {
-#     return(fit_ice[[1]]$summary)
-#   } else {
-# 
-#   for (i in 1:length(fit_ice)) {
-#     ifit <- fit_ice[[i]]
-#     summary_ice <- ifit$summary
-#     estimator_name <- ifit$estimator.type
-#     colnames(summary_ice)[2] <- "ICE Risk"
-#     summary_ice$Estimator <- estimator_name
-#     summary_ice$Intervention <- rownames(summary_ice)
-#     rownames(summary_ice) <- NULL
-# 
-#     summary_ice <- summary_ice[, c("Intervention", "Estimator", head(colnames(summary_ice), -2))]
-# 
-#     summary_all <- rbind(summary_all, summary_ice)
-#   }
-# 
-#   return(summary_all)
-#   }
-# }
 
 #' Create the name of transformed variable name
 #'
@@ -601,37 +606,65 @@ get_column_name_covar <- function(icovar) {
 #'
 #' @examples
 #' data <- gfoRmulaICE::compData
-#' # Dynamic intervention example 1: treat when L1 = 0, and not treat otherwise.
-#' dynamic1 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
-#' absorb = FALSE, id = "id", time_name = "t0", data = data)
+#' # Dynamic intervention example 1: 
+#' # treat when L1 = 0, and not treat otherwise.
+#' dynamic1 <- dynamic(
+#' condition = "L1 == 0", 
+#' strategy_before = static(0, data), 
+#' strategy_after = static(1, data), 
+#' absorb = FALSE, 
+#' id = "id", 
+#' time = "t0", 
+#' data = data
+#' )
 #' 
-#' # Dynamic intervention example 2: never treat upon until L1 = 0, after which follows always treat.
-#' dynamic2 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
-#' absorb = TRUE, id = "id", time_name = "t0", data = data)
+#' # Dynamic intervention example 2: 
+#' # never treat upon until L1 = 0, after which follows always treat.
+#' dynamic2 <- dynamic(
+#' condition = "L1 == 0", 
+#' strategy_before = static(0, data), 
+#' strategy_after = static(1, data), 
+#' absorb = TRUE, 
+#' id = "id", 
+#' time = "t0", 
+#' data = data
+#' )
 #' 
-#' # Dynamic intervention example 3: never treat upon until L1 = 0, after which follows natural course.
-#' dynamic3 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = natural_course(), 
-#' absorb = FALSE, id = "id", time_name = "t0", data = data)
+#' # Dynamic intervention example 3: 
+#' # never treat upon until L1 = 0, after which follows natural course.
+#' dynamic3 <- dynamic(
+#' condition = "L1 == 0", 
+#' strategy_before = static(0, data), 
+#' strategy_after = natural_course(data, "A1"), 
+#' absorb = FALSE, 
+#' id = "id", 
+#' time = "t0", 
+#' data = data
+#' )
 dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE, 
-                    id = id_var, time = time0var, data = interv_data) {
+                    id, time, data) {
+  
+  # if (exists("interv_data")) {
+  #   data <- interv_data
+  # }
+  # 
+  # if (exists("id_var")) {
+  #   id <- id_var
+  # }
+  # 
+  # if (exists("time0var")) {
+  #   time <- time0var
+  # }
+  
   
   first <- absorb
   
-  # if (any(str_detect(as.character(substitute(strategy_after)), "grace_period"))) {
-  #   
-  #   dynamic_cond <<- condition
-  #   interv_values <- strategy_after
-  #   
-  # } else {
     
     strategy_before_values <- strategy_before
     strategy_after_values <- strategy_after
     
     interv_values <- get_dynamic_interv_values(condition, strategy_before_values, 
                                                strategy_after_values, first, id, time, data)
-    
-  # }
-  
   
   return(interv_values)
 }
@@ -667,8 +700,7 @@ get_dynamic_interv_values <- function(condition, strategy_before_values, strateg
   init_info[, "strategy_before"] <- strategy_before_values
   init_info[, "strategy_after"] <- strategy_after_values
   
-  init_info <- init_info %>% 
-    mutate(interv_values = ifelse(is_init, strategy_after_values, strategy_before_values))
+  init_info[, "interv_values"] <- ifelse(init_info$is_init, strategy_after_values, strategy_before_values)
   
   return(init_info[, "interv_values"]) 
   
@@ -785,4 +817,127 @@ get_boot_models <- function(name, boot_result) {
   
 }
 
+#' Function to assign an object to the global environment
+#'
+#' @param obj the object to assign
+#' @param name the name of the object to assign in the global environment
+#' @param pos defualts to 1, which assigns to the global environment
+#'
+#' @noRd
+assign.global <- function(obj, name, pos = 1) {
+  assign(name, obj, envir = as.environment(pos))
+}
+
+
+#' Map the time column to a standardized i
+#'
+#' @param time_name the name of the time column
+#' @param data the observed data
+#' @param total_times the total number of times
+#'
+#' @noRd
+map_time_column <- function(time_name, data, total_times) {
+  data[, paste0("new_", time_name)] <- NA
+  for (t in 0:(length(total_times)-1)) {
+    map_idx <- which(data[, time_name] == total_times[t+1])
+    data[map_idx, paste0("new_", time_name)] <- t
+  }
+  return(data)
+}
+
+preprocess_intervention <- function(clean_kwarg_str, kwarg_name_list, kwarg_list, interv_idx, interv_func,
+                                    id = NULL, time_name = NULL, outcome_name = NULL) {
+
+  if (length(interv_idx) > 0) {
+    interv_kwarg <- kwarg_name_list[interv_idx]
+    interv_interv_list_split <- str_split(interv_kwarg, "[.]")
+    interv_interv_list <- lapply(interv_interv_list_split, function(x) {x[1]})
+    interv_interv_list_all_names <- lapply(interv_interv_list_split, function(x) {x[2]})
+    
+    for (i in 1:length(interv_idx)) {
+      ikwarg <- interv_kwarg[i]
+      ivar <- as.character(interv_interv_list_all_names[i])
+      raw_list <- str_remove_all(as.character(kwarg_list[ikwarg]), " ")
+      ikwarg_start_idx <- str_locate(pattern = paste0(ikwarg, "="), clean_kwarg_str)[1, 2]
+      ikwarg_end_idx <- ikwarg_start_idx + nchar(raw_list) + 1
+      
+      if (interv_func == "static") {
+        interv_pattern <- "static[\\(][a-z0-9A-Z][\\)]"
+      } else if (interv_func == "natural_course") {
+        interv_pattern <- paste0(interv_func, "[\\(][\\)]")
+      } else if (interv_func == "dynamic") {
+        interv_pattern <- "dynamic[\\(].*[\\)]"
+      } else if (interv_func == "grace_period") {
+        interv_pattern <- "grace_period[\\(].*[\\)]"
+      }
+      interv_arg_idx <- str_locate_all(pattern = interv_pattern, raw_list)[[1]]
+      num_interv <- nrow(interv_arg_idx)
+      
+      # if (interv_func == "static") {
+      #   add_string <- paste0(", data = data))")
+      # } else if (interv_func == "natural course") {
+      #   add_string <- paste0("data = data, treat_var = ", ivar, "))")
+      # } else if (interv_func == "dynamic") {
+      #   add_string <- paste0(", id = \"", id, "\", time = \"", time_name, "\", data = data))")
+      # } else if (interv_func == "grace_period") {
+      #   add_string <- paste0(", data = data, id = \"", id, "\", time_name = \"", time_name, "\", outcome_name =\"", outcome_name, "\"))")
+      # }
+      
+      if (num_interv > 0) {
+            for (j in 1:num_interv) {
+              
+              if (j == 1) {
+                
+                if (str_detect(substr(raw_list, interv_arg_idx[j, 1], interv_arg_idx[j, 2]), ",")) {
+                  split_by_paren <- str_split(substr(raw_list, interv_arg_idx[j, 1], interv_arg_idx[j, 2]), "\\(")[[1]]
+                  last_arg <- tail(split_by_paren, 1)
+                  if (length(split_by_paren) == 2) {
+                  nparenthesis <- nrow(str_locate_all(pattern = "\\)", last_arg)[[1]])
+                  } else {
+                    nparenthesis <- nrow(str_locate_all(pattern = "\\)", last_arg)[[1]]) - 1
+                  }
+                } else {
+                nparenthesis <- nrow(str_locate_all(pattern = "\\)", substr(raw_list, interv_arg_idx[j, 1], interv_arg_idx[j, 2]))[[1]])
+                }
+                idx_start_replace <- interv_arg_idx[j, 2] - nparenthesis
+      
+              } else {
+                nparenthesis <- nrow(str_locate_all(pattern = "\\)", substr(raw_list, str_locate_all(pattern = interv_pattern, raw_list)[[1]][1, 1], str_locate_all(pattern = interv_pattern, raw_list)[[1]][1, 2]))[[1]])
+                idx_start_replace <- str_locate_all(pattern = interv_pattern, raw_list)[[1]][1, 2] - nparenthesis
+              }
+              
+              # print(substr(raw_list, idx_start_replace + 1, nchar(raw_list)))
+              
+              if (interv_func == "static") {
+                add_string <- paste0(",data=data")
+              } else if (interv_func == "natural_course") {
+                add_string <- paste0("data=data,treat_var=\"", ivar, "\"")
+              } else if (interv_func == "dynamic") {
+                add_string <- paste0(",id=\"", id, "\", time=\"", time_name, "\",data=data")
+              } else if (interv_func == "grace_period") {
+                add_string <- paste0(",data=data,id=\"", id, "\", time_name=\"", time_name, "\",outcome_name=\"", outcome_name, "\"")
+              }
+              
+              # if (j == 1) {
+              # idx_replace <- interv_arg_idx[j, 2] - 1
+              # } else {
+              #   idx_replace <- str_locate_all(pattern = interv_pattern, raw_list)[[1]][1, 2] - 1
+              # }
+
+              raw_list <- paste0(substr(raw_list, 1, idx_start_replace), add_string, substr(raw_list, idx_start_replace + 1, nchar(raw_list)))
+            }
+            }
+
+      clean_kwarg_str <- paste0(substr(clean_kwarg_str, 1, ikwarg_start_idx), raw_list, 
+                                substr(clean_kwarg_str, ikwarg_end_idx, nchar(clean_kwarg_str)))
+      
+      kwarg_list[ikwarg] <- raw_list
+      
+    }
+  }
+  
+  return(list(clean_kwarg_str = clean_kwarg_str, 
+              kwarg_list = kwarg_list))
+  
+}
 

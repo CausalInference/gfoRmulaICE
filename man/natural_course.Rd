@@ -4,7 +4,7 @@
 \alias{natural_course}
 \title{Natural Course}
 \usage{
-natural_course(data = interv_data, treat_var = treatment_varname)
+natural_course(data, treat_var)
 }
 \arguments{
 \item{data}{a data frame containing the observed data.}

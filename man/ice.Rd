@@ -65,16 +65,7 @@ If \code{TRUE}, use pooled-over-time hazard model. If \code{FALSE}, use time-spe
 0 refers to the natural course as the reference intervention.
 Any other numbers refer to the corresponding intervention that users specify in the keyword arguments.}
 
-\item{estimator}{a function specifying which ICE estimator to use for the estimation. Possible inputs are:
-\itemize{
-\item{Classical pooling over treatment history ICE estimator (classical pooled ICE): }{ \code{pool(hazard = F)}}
-\item{Hazard-Based pooling over treatment history ICE estimator (hazard-based pooled ICE): }{ \code{pool(hazard = T)}}
-\item{Classical stratifying on treatment history ICE estimator (classical stratified ICE): }{ \code{strat(hazard = F)}}
-\item{Hazard-Based stratifying on treatment history ICE estimator (hazard-based stratified ICE): }{ \code{strat(hazard = T)}}
-\item{Doubly robust weighted ICE estimator (doubly robust ICE): }{\cr
-\code{weight(treat_model)}
-where \code{treat_model} is a list specifying the treatment model.}
-}}
+\item{estimator}{a function specifying which ICE estimator to use for the estimation. Please see Details for all available specifications.}
 
 \item{int_descript}{a vector of strings containing descriptions for each specified intervention.}
 
@@ -99,8 +90,8 @@ To specify interventions, please follow the input convention below:
 \itemize{
 \item{Each intervention is specified using the keyword argument name with \emph{intervention} prefix.}
 \item{Use \emph{i} after \emph{intervention} prefix in keyword argument name to represent the ith strategy.}
-\item{Use \emph{.} followed with \emph{treatment variable name} after \emph{interventioni} in keyword argument name to represent the treatment name within the ith strategy.}
-}
+\item{Use \emph{.} followed with \emph{treatment variable name} after \emph{interventioni} in keyword argument name to represent the treatment name within the ith strategy.}}
+
 Each input of intervention keyword arguments is a list consisting of a vector of intervened values and an optional vector of time points on which the intervention is applied. 
 If the intervention time points are not specified, the intervention is applied to all time points. For example, 
 an input considers a simultaneous intervention with always treat on A1 and never treat on A2 at all time points looks like: \cr 
@@ -119,8 +110,7 @@ To specify different outcome model and/or competing model for different interven
 \itemize{
 \item{Each outcome model is specified using keyword argument name starting with \emph{outcomeModel} or \emph{compModel} prefix for outcome model or competing model correspondingly.}
 \item{Use \emph{.n} after \emph{outcomeModel} or \emph{compModel} prefix in keyword argument name to specify which intervention being applied to,
-where \emph{n} represents the \emph{n}th intervention.}
-}
+where \emph{n} represents the \emph{n}th intervention.}}
 
 The input to each outcome or competing model keyword argument is a model statement formula. 
 If no outcome model and competing model keyword argument is specified, the models specified in \code{outcome_model} and \code{comp_model} are used.
@@ -203,23 +193,15 @@ Both built-in interventions and user-defined interventions are available.
 
 The following are the built-in intervention functions in the package:
 \itemize{
-\item{Static Intervention:} {\code{static(value)} specifies a constant intervention with \code{value}.}
-\item{Dynamic Intervention:} {\cr \code{dynamic(condition, strategy_before, strategy_after, absorb)} 
-specifies a dynamic intervention where the strategy in \code{strategy_before} is followed until \code{condition} is met. 
-Upon \code{condition} is met, the strategy in \code{strategy_after} is followed. If absorb is \code{TRUE}, the intervention becomes absorbing once \code{condition} is met.}
-\item{Threshold Intervention:} {\code{threshold(lower_bound, upper_bound)} specifies a threshold intervention. 
-If the treatment value is between \code{lower_bound} and \code{upper_bound} inclusively, follow the natural value of the treatment. 
-Otherwise, set to \code{lower_bound} or \code{upper_bound}, if the treatment value is below \code{lower_bound} or above \code{upper_bound}, correspondingly.}
-\item{Grace Period:} {\code{grace_period(type, nperiod, condition)} specifies a dynamic intervention with grace period. 
-Once \code{condition} is met, the intervention is initiated within \code{nperiod} time units. 
-During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.}
-}
+\item Static Intervention: \code{static(value)} specifies a constant intervention with \code{value}.
+\item Dynamic Intervention: \code{dynamic(condition, strategy_before, strategy_after, absorb)} specifies a dynamic intervention where the strategy in \code{strategy_before} is followed until \code{condition} is met. Upon \code{condition} is met, the strategy in \code{strategy_after} is followed. If absorb is \code{TRUE}, the intervention becomes absorbing (always treat with the specified strategy) once \code{condition} is met.
+\item Threshold Intervention: \code{threshold(lower_bound, upper_bound)} specifies a threshold intervention. If the treatment value is between \code{lower_bound} and \code{upper_bound} inclusively, follow the natural value of the treatment. Otherwise, set to \code{lower_bound} or \code{upper_bound}, if the treatment value is below \code{lower_bound} or above \code{upper_bound}, correspondingly.
+\item Grace Period: \code{grace_period(type, nperiod, condition)} specifies a dynamic intervention with grace period. Once \code{condition} is met, the intervention is initiated within \code{nperiod} time units. During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.}
 
 The following is the user-defined intervention:
 
 \itemize{
-\item{User-defined Interventions:} {The output of the user-defined intervention should contain the intervened value for each individual at each time point, and should be of the same size as the number of rows in \code{data}.}
-}
+\item User-defined Interventions: The output of the user-defined intervention should contain the intervened value for each individual at each time point, and should be of the same size as the number of rows in \code{data}.}
 
 Please see examples in the "Examples" section.
 
@@ -244,29 +226,38 @@ data <- gfoRmulaICE::compData
 
 # Example 1: Dynamic Intervention
 
-# We consider the following interventions and intervened at all time points.
+# We consider the following interventions. 
+# We intervene at all time points.
 # Intervention 1 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
 # Intervention 2 on A2: never treat upon until L1 = 0, after which follows always treat.
 # Intervention 3 on A2: never treat upon until L1 = 0, after which follows natural course.
 
 # We use classical pooled ICE estimator, 
-# natural course as the reference intervention, and the following models:
+# natural course as the reference intervention, 
+# and the following models:
 # a. outcome model: Y ~ L1 + L2 + A1 + A2
 # b. censor model: C ~ L1 + L2 + A1 + A2
 # c. competing model: D ~ L1 + L2 + A1 + A2.
-# We estimate variance using bootstrap with 1000 replicates, normal quantile, and parallel computing.
+# We estimate variance using bootstrap with 1000 replicates, 
+# normal quantile, and parallel computing.
 
-ice_fit1 <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit1 <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ L1 + L2 + A1 + A2, 
 censor_model = C ~ L1 + L2 + A1 + A2,
 ref_idx = 0,
-estimator = pool(hazard = F),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+estimator = pool(hazard = FALSE),
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Dynamic Intervention 1", "Dynamic Intervention 2", 
 "Dynamic Intervention 3"),
 intervention1.A2 = list(dynamic("L1 == 0", static(0), static(1))),
@@ -280,31 +271,41 @@ plot(ice_fit1)
 
 # Example 2: Built-in Interventions
 
-# We consider the following interventions and intervene at all time points.
+# We consider the following interventions. 
+# We intervene at all time points.
 # Intervention 1 on A1: always treat with value 3.
 # Intervention 1 on A2: always treat with value 1.
-# Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, set its value to -3. 
-# Otherwise, do not intervene.
-# Intervention 3 on A2: dynamic intervention (treat when L1 = 0) with uniform grace period of 2 periods
+# Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, 
+# set its value to -3. Otherwise, do not intervene.
+# Intervention 3 on A2: dynamic intervention (treat when L1 = 0) 
+# with uniform grace period of 2 periods
 
 # We use classical pooled ICE estimator, 
-# natural course as the reference intervention, and the following models:
+# natural course as the reference intervention, 
+# and the following models:
 # a. outcome model: Y ~ L1 + L2 + A1 + A2
 # b. censor model: C ~ L1 + L2 + A1 + A2
 # c. competing model: D ~ L1 + L2 + A1 + A2.
-# We estimate variance using bootstrap with 1000 replicates, normal quantile, and parallel computing.
+# We estimate variance using bootstrap with 1000 replicates, 
+# normal quantile, and parallel computing.
 
-ice_fit2 <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit2 <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ L1 + L2 + A1 + A2, 
 censor_model = C ~ L1 + L2 + A1 + A2,
 ref_idx = 0,
-estimator = pool(hazard = F),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+estimator = pool(hazard = FALSE),
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Static Intervention", "Threshold Intervention", 
 "Dynamic Intervention with Grace Period"),
 intervention1.A1 = list(static(3)),
@@ -319,33 +320,44 @@ plot(ice_fit2)
 
 # Example 3: User-defined Intervention
 
-# We consider the following interventions and intervene at all time points.
+# We consider the following interventions. 
+# We intervene at all time points.
 # Intervention 1 on A1: always treat with value 3.
 # Intervention 1 on A2: always treat with value 1.
-# Intervention 2 on A1: at time t, if L2 < 0, then assign 1; if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
-# Intervention 2 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
+# Intervention 2 on A1: at time t, if L2 < 0, then assign 1; 
+# if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
+# Intervention 2 on A2: at time t, if L1 = 0, then treat; 
+# otherwise, not treat. 
 
 # We use classical pooled ICE estimator, 
-# natural course as the reference intervention, and the following models:
+# natural course as the reference intervention, 
+# and the following models:
 # a. outcome model: Y ~ L1 + L2 + A1 + A2
 # b. censor model: C ~ L1 + L2 + A1 + A2
 # c. competing model: D ~ L1 + L2 + A1 + A2.
-# We estimate variance using bootstrap with 1000 replicates and percentile quantile.
+# We estimate variance using bootstrap 
+# with 1000 replicates and percentile quantile.
 
 dynamic_cat <- case_when(data$L2 < 0 ~ 1,
 data$L2 >= 0 & data$L2 < 2 ~ 2, T ~ 3)
 
-ice_fit3 <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit3 <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ L1 + L2 + A1 + A2, 
 censor_model = C ~ L1 + L2 + A1 + A2,
 ref_idx = 0,
-estimator = pool(hazard = F),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+estimator = pool(hazard = FALSE),
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Static Intervention", "Dynamic Intervention"),
 intervention1.A1 = list(static(3)),
 intervention1.A2 = list(static(1)),
@@ -362,20 +374,27 @@ plot(ice_fit3)
 # We use the interventions in Example 3 and implement each ICE estimator.
 
 # a. hazard-based pooled ICE:
-# hazard model is time-specific and shares the same model statement as the outcome model
+# hazard model is time-specific 
+# and shares the same model statement as the outcome model
 
-ice_fit4a <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit4a <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ L1 + L2 + A1 + A2, 
 censor_model = C ~ L1 + L2 + A1 + A2,
 competing_model = D ~ L1 + L2 + A1 + A2,
 ref_idx = 0,
-estimator = pool(hazard = T),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+estimator = pool(hazard = TRUE),
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Static Intervention", "Dynamic Intervention"),
 intervention1.A1 = list(static(3)),
 intervention1.A2 = list(static(1)),
@@ -390,9 +409,13 @@ plot(ice_fit4a)
 # b. hazard-based pooled ICE: 
 # hazard model is time-specific and uses Y ~ L1 + L2
 
-ice_fit4b <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit4b <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ L1 + L2 + A1 + A2, 
@@ -400,9 +423,11 @@ censor_model = C ~ L1 + L2 + A1 + A2,
 competing_model = D ~ L1 + L2 + A1 + A2,
 hazard_model = Y ~ L1 + L2,
 ref_idx = 0,
-estimator = pool(hazard = T),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+estimator = pool(hazard = TRUE),
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Static Intervention", "Dynamic Intervention"),
 intervention1.A1 = list(static(3)),
 intervention1.A2 = list(static(1)),
@@ -415,24 +440,31 @@ summary(ice_fit4b)
 plot(ice_fit4b)
 
 # c. hazard-based pooled ICE: 
-# hazard model is pooled-over-time and includes flexible terms of time variable
+# hazard model is pooled-over-time and 
+# includes flexible terms of time variable
 
 library(splines)
 
-ice_fit4c <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit4c <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ L1 + L2 + A1 + A2, 
 censor_model = C ~ L1 + L2 + A1 + A2,
 competing_model = D ~ L1 + L2 + A1 + A2,
 hazard_model = Y ~ L1 + L2 + A1 + A2 + ns(t0, df = 2),
-global_hazard = T,
+global_hazard = TRUE,
 ref_idx = 0,
-estimator = pool(hazard = T),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+estimator = pool(hazard = TRUE),
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = T, 
+ncores = 5,
 int_descript = c("Static Intervention", "Dynamic Intervention"),
 intervention1.A1 = list(static(3)),
 intervention1.A2 = list(static(1)),
@@ -446,17 +478,23 @@ plot(ice_fit4c)
 
 # d. classical stratified ICE:
 
-ice_fit4d <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit4d <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ L1 + L2, 
 censor_model = C ~ L1 + L2,
 ref_idx = 0,
-estimator = strat(hazard = F),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+estimator = strat(hazard = FALSE),
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Static Intervention", "Dynamic Intervention"),
 intervention1.A1 = list(static(3)),
 intervention1.A2 = list(static(1)),
@@ -472,9 +510,13 @@ plot(ice_fit4d)
 # hazard model is time-specific and uses Y ~ L1 
 # (Note: a pooled-over-time hazard model is not valid for stratified ICE.)
 
-ice_fit4e <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit4e <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ L1 + L2, 
@@ -482,9 +524,11 @@ censor_model = C ~ L1 + L2,
 competing_model = D ~ L1 + L2,
 hazard_model = Y ~ L1,
 ref_idx = 0,
-estimator = strat(hazard = T),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+estimator = strat(hazard = TRUE),
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Static Intervention: Model 1", 
 "Dynamic Intervention: Model 1"),
 intervention1.A1 = list(static(3)),
@@ -500,17 +544,23 @@ plot(ice_fit4e)
 
 # f. doubly robust ICE:
 
-ice_fit4f <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit4f <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ L1 + L2, 
 censor_model = C ~ L1 + L2,
 ref_idx = 0,
 estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Static Intervention", 
 "Dynamic Intervention"),
 intervention1.A1 = list(static(3)),
@@ -534,17 +584,24 @@ plot(ice_fit4f)
 # competing model for intervention 1: D ~ L1 + L2,
 # competing model for intervention 2: D ~ L1
 
-ice_fit4g <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit4g <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
-outcome_model = Y ~ L1, censor_model = C ~ L1,
+outcome_model = Y ~ L1, 
+censor_model = C ~ L1,
 competing_model = D ~ L1,
 comp_effect = 1,
 ref_idx = 0,
-estimator = strat(hazard = T),
-nsamples = 1000, ci_method = "normal",
-parallel = T, ncores = 5,
+estimator = strat(hazard = TRUE),
+nsamples = 1000, 
+ci_method = "normal",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Static Intervention: Model 2",
 "Dynamic Intervention: Model 2"),
 intervention1.A1 = list(static(3)),
@@ -565,17 +622,25 @@ summary(ice_fit4e, ice_fit4g)
 # We use the same interventions and ICE estimator in Example 3, 
 # and include polynomial, spline, and lagged terms in models.
 
-ice_fit5a <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+library(Hmisc)
+
+ice_fit5a <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ I(L1^2) + rcspline.eval(lag1_L2, knots = 1:3) + A1 + A2,
 censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
 ref_idx = 0,
-estimator = pool(hazard = F),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+estimator = pool(hazard = FALSE),
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Static Intervention", "Dynamic Intervention"),
 intervention1.A1 = list(static(3)),
 intervention1.A2 = list(static(1)),
@@ -591,17 +656,23 @@ plot(ice_fit5a)
 # We use the same interventions and ICE estimator in Example 3, 
 # but use static intervention as the reference intervention.
 
-ice_fit5b <- ice(data = data, time_points = 4, 
-id = "id", time_name = "t0",
-censor_name = "C", outcome_name = "Y",
+ice_fit5b <- ice(
+data = data, 
+time_points = 4, 
+id = "id", 
+time_name = "t0",
+censor_name = "C", 
+outcome_name = "Y",
 compevent_name = "D",
 comp_effect = 0,
 outcome_model = Y ~ I(L1^2) + rcspline.eval(lag1_L2, knots = 1:3) + A1 + A2,
 censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
 ref_idx = 1,
-estimator = pool(hazard = F),
-nsamples = 1000, ci_method = "percentile",
-parallel = T, ncores = 5,
+estimator = pool(hazard = FALSE),
+nsamples = 1000, 
+ci_method = "percentile",
+parallel = TRUE, 
+ncores = 5,
 int_descript = c("Static Intervention", "Dynamic Intervention"),
 intervention1.A1 = list(static(3)),
 intervention1.A2 = list(static(1)),

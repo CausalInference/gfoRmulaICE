@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/reference/test_package.html#special-files
 
 library(testthat)
-library(ICE)
+library(gfoRmulaICE)
 
-test_check("ICE")
+test_check("gfoRmulaICE")

@@ -1,9 +1,5 @@
-# load(file = "../../data/comp_and_censor_data.rda")
-# library(tidyverse)
-# library(stringr)
-# library(nnet)
-# library(doRNG)
 data <- gfoRmulaICE::compData
+set.seed(1)
 
 test_that(
   "check pooled ICE inputs",

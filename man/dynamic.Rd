@@ -9,9 +9,9 @@ dynamic(
   strategy_before,
   strategy_after,
   absorb = FALSE,
-  id = id_var,
-  time = time0var,
-  data = interv_data
+  id,
+  time,
+  data
 )
 }
 \arguments{
@@ -40,15 +40,39 @@ This function follows the treatment strategy specified in \code{strategy_before}
 }
 \examples{
 data <- gfoRmulaICE::compData
-# Dynamic intervention example 1: treat when L1 = 0, and not treat otherwise.
-dynamic1 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
-absorb = FALSE, id = "id", time_name = "t0", data = data)
+# Dynamic intervention example 1: 
+# treat when L1 = 0, and not treat otherwise.
+dynamic1 <- dynamic(
+condition = "L1 == 0", 
+strategy_before = static(0, data), 
+strategy_after = static(1, data), 
+absorb = FALSE, 
+id = "id", 
+time = "t0", 
+data = data
+)
 
-# Dynamic intervention example 2: never treat upon until L1 = 0, after which follows always treat.
-dynamic2 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = static(1), 
-absorb = TRUE, id = "id", time_name = "t0", data = data)
+# Dynamic intervention example 2: 
+# never treat upon until L1 = 0, after which follows always treat.
+dynamic2 <- dynamic(
+condition = "L1 == 0", 
+strategy_before = static(0, data), 
+strategy_after = static(1, data), 
+absorb = TRUE, 
+id = "id", 
+time = "t0", 
+data = data
+)
 
-# Dynamic intervention example 3: never treat upon until L1 = 0, after which follows natural course.
-dynamic3 <- dynamic(condition = "L1 == 0", strategy_before = static(0), strategy_after = natural_course(), 
-absorb = FALSE, id = "id", time_name = "t0", data = data)
+# Dynamic intervention example 3: 
+# never treat upon until L1 = 0, after which follows natural course.
+dynamic3 <- dynamic(
+condition = "L1 == 0", 
+strategy_before = static(0, data), 
+strategy_after = natural_course(data, "A1"), 
+absorb = FALSE, 
+id = "id", 
+time = "t0", 
+data = data
+)
 }

@@ -60,7 +60,6 @@
 #' \item{comp_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the competing model of each subsequent iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{competing_name} is \code{NULL}.}
 #' \item{hazard_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the hazard model of each iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{hazard_based} is FALSE.}
 #' @import reshape2 tidyverse
-#' @export
 #'
 #' @references Wen L, Young JG, Robins JM, Hernán MA. Parametric g-formula implementations for causal survival analyses. Biometrics. 2021;77(2):740-753.
 #' @references McGrath S, Lin V, Zhang Z, Petito LC, Logan RW, Hernán MA, and JG Young. gfoRmula: An R package for estimating the effects of sustained treatment strategies via the parametric g-formula. Patterns. 2020;1:100008.
@@ -447,8 +446,6 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         this_np_vcov <- list(get_vcov(competing_fit))
         this_np_rmse <- list(get_rmse(competing_fit))
 
-        # names(this_np_fit) <- names(this_np_summary) <- names(this_np_stderr) <- names(this_np_vcov) <- names(this_np_rmse) <- "NP Risk"
-
         fit_np <- c(fit_np, this_np_fit)
         fit_np_summary <- c(fit_np_summary, this_np_summary)
         fit_np_stderr <- c(fit_np_stderr, this_np_stderr)
@@ -460,12 +457,6 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
                          stderr = fit_np_stderr, 
                          vcov = fit_np_stderr, 
                          rmse = fit_np_rmse)
-
-        # fit_all <- c(fit_all, list(fit_np))
-        # fit_summary <- c(fit_summary, list(fit_np_summary))
-        # fit_stderr <- c(fit_summary, list(fit_np_stderr))
-        # fit_vcov <- c(fit_vcov, list(fit_np_vcov))
-        # fit_rmse <- c(fit_rmse, list(fit_np_rmse))
       }
     }
 
@@ -489,19 +480,20 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   abar_all <- list()
   data <- as.data.frame(data)
 
-  gp_indicator <<- F
+  assign.global(F, "gp_indicator")
 
-  interv_data <<- data
+  assign.global(data, "interv_data")
   
   all_treat_lags <- c()
   treat_lag_abar <- list()
 
   for (i in 1:length(intervention_varnames[[1]])) {
 
-    treat <<- i
-    id_var <<- id
+    assign.global(i, "treat")
 
-    treatment_varname <<- intervention_varnames[[1]][[treat]]
+    assign.global(intervention_varnames[[1]][[treat]], "treatment_varname")
+    
+    # preprocess the interventions to add the observed data and treatment variable name
     intervention_f <- interventions[[1]][[treat]]
     interv_it <- intervention_f
     interv_data[, paste0("interv_it_", treatment_varname, "_", treat)] <- interv_it

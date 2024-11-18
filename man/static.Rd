@@ -4,7 +4,7 @@
 \alias{static}
 \title{Static}
 \usage{
-static(value, data = interv_data)
+static(value, data)
 }
 \arguments{
 \item{value}{a number specifying the intervention value. 0 for never treat.}

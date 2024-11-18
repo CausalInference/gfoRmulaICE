@@ -17,13 +17,13 @@ test_that(
                     estimator = pool(hazard = F),
                     int_descript = c("Dynamic Intervention 1", "Dynamic Intervention 2",
                                      "Dynamic Intervention 3"),
-                    nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                    nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                     intervention1.A2 = list(dynamic("L1 == 0", static(0), static(1))),
                     intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1), absorb = T)),
                     intervention3.A2 = list(dynamic("L1 == 0", static(0), natural_course()))
     )
 
-    plot1 <- plot_risk(ice_fit1)
+    plot1 <- plot(ice_fit1)
     expect_equal(class(plot1), c("gg", "ggplot"))
     })
 
@@ -39,7 +39,7 @@ test_that(
                     censor_model = C ~ L1 + L2 + A1 + A2,
                     ref_idx = 0,
                     estimator = pool(hazard = F),
-                    nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                    nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                     int_descript = c("Static Intervention", "Threshold Intervention",
                                      "Dynamic Intervention with Grace Period"),
                     intervention1.A1 = list(static(3)),
@@ -48,7 +48,7 @@ test_that(
                     intervention3.A2 = list(grace_period("uniform", 2, "L1 == 0"))
     )
     
-    plot2 <- plot_risk(ice_fit2)
+    plot2 <- plot(ice_fit2)
     expect_equal(class(plot2), c("gg", "ggplot"))
     })
 
@@ -64,7 +64,7 @@ test_that(
                     censor_model = C ~ L1 + L2 + A1 + A2,
                     ref_idx = 0,
                     estimator = pool(hazard = F),
-                    nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                    nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                     int_descript = c("Static Intervention", "Dynamic Intervention"),
                     intervention1.A1 = list(static(3)),
                     intervention1.A2 = list(static(1)),
@@ -73,7 +73,7 @@ test_that(
                     intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
     )
     
-    plot3 <- plot_risk(ice_fit3)
+    plot3 <- plot(ice_fit3)
     expect_equal(class(plot3), c("gg", "ggplot"))
     })
 
@@ -91,7 +91,7 @@ test_that(
                      competing_model = D ~ L1 + L2 + A1 + A2,
                      ref_idx = 0,
                      estimator = pool(hazard = T),
-                     nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                     nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                      int_descript = c("Static Intervention", "Dynamic Intervention"),
                      intervention1.A1 = list(static(3)),
                      intervention1.A2 = list(static(1)),
@@ -100,7 +100,7 @@ test_that(
                      intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
     )
     
-    plot4a <- plot_risk(ice_fit4a)
+    plot4a <- plot(ice_fit4a)
     expect_equal(class(plot4a), c("gg", "ggplot"))
     })
 
@@ -119,7 +119,7 @@ test_that(
                      hazard_model = Y ~ L1 + L2,
                      ref_idx = 0,
                      estimator = pool(hazard = T),
-                     nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                     nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                      int_descript = c("Static Intervention", "Dynamic Intervention"),
                      intervention1.A1 = list(static(3)),
                      intervention1.A2 = list(static(1)),
@@ -128,7 +128,7 @@ test_that(
                      intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
     )
     
-    plot4b <- plot_risk(ice_fit4b)
+    plot4b <- plot(ice_fit4b)
     expect_equal(class(plot4b), c("gg", "ggplot"))
     })
 
@@ -148,7 +148,7 @@ test_that(
                      global_hazard = T,
                      ref_idx = 0,
                      estimator = pool(hazard = T),
-                     nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                     nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                      int_descript = c("Static Intervention", "Dynamic Intervention"),
                      intervention1.A1 = list(static(3)),
                      intervention1.A2 = list(static(1)),
@@ -157,7 +157,7 @@ test_that(
                      intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
     )
     
-    plot4c <- plot_risk(ice_fit4c)
+    plot4c <- plot(ice_fit4c)
     expect_equal(class(plot4c), c("gg", "ggplot"))
     })
 
@@ -174,7 +174,7 @@ test_that(
                      censor_model = C ~ L1 + L2,
                      ref_idx = 0,
                      estimator = strat(hazard = F),
-                     nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                     nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                      int_descript = c("Static Intervention", "Dynamic Intervention"),
                      intervention1.A1 = list(static(3)),
                      intervention1.A2 = list(static(1)),
@@ -183,7 +183,7 @@ test_that(
                      intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
     )
     
-    plot4d <- plot_risk(ice_fit4d)
+    plot4d <- plot(ice_fit4d)
     expect_equal(class(plot4d), c("gg", "ggplot"))
     })
 
@@ -202,7 +202,7 @@ test_that(
                      hazard_model = Y ~ L1,
                      ref_idx = 0,
                      estimator = strat(hazard = T),
-                     nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                     nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                      int_descript = c("Static Intervention", "Dynamic Intervention"),
                      intervention1.A1 = list(static(3)),
                      intervention1.A2 = list(static(1)),
@@ -211,7 +211,7 @@ test_that(
                      intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
     )
     
-    plot4e <- plot_risk(ice_fit4e)
+    plot4e <- plot(ice_fit4e)
     expect_equal(class(plot4e), c("gg", "ggplot"))
     })
 
@@ -228,7 +228,7 @@ test_that(
                      censor_model = C ~ L1 + L2,
                      ref_idx = 0,
                      estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
-                     nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                     nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                      int_descript = c("Static Intervention", "Dynamic Intervention"),
                      intervention1.A1 = list(static(3)),
                      intervention1.A2 = list(static(1)),
@@ -237,7 +237,7 @@ test_that(
                      intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
     )
     
-    plot4f <- plot_risk(ice_fit4f)
+    plot4f <- plot(ice_fit4f)
     expect_equal(class(plot4f), c("gg", "ggplot"))
     })
 
@@ -254,7 +254,7 @@ test_that(
                      comp_effect = 1,
                      ref_idx = 0,
                      estimator = strat(hazard = T),
-                     nsamples = 10, ci_method = "normal", parallel = T, ncores = 5,
+                     nsamples = 5, ci_method = "normal", parallel = F, ncores = 5,
                      int_descript = c("Static Intervention",
                                       "Dynamic Intervention"),
                      intervention1.A1 = list(static(3)),
@@ -266,14 +266,14 @@ test_that(
                      compModel.2 = D ~ L1 + L2
     )
     
-    plot4h <- plot_risk(ice_fit4h)
+    plot4h <- plot(ice_fit4h)
     expect_equal(class(plot4h), c("gg", "ggplot"))
     })
 
 test_that(
   "plot flexible model specification - complicated terms",
   {
-    
+    library(Hmisc)
     ice_fit5a <- ice(data = data, time_points = 4,
                      id = "id", time_name = "t0",
                      censor_name = "C", outcome_name = "Y",
@@ -283,7 +283,7 @@ test_that(
                      censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
                      ref_idx = 0,
                      estimator = pool(hazard = F),
-                     nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                     nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                      int_descript = c("Static Intervention", "Dynamic Intervention"),
                      intervention1.A1 = list(static(3)),
                      intervention1.A2 = list(static(1)),
@@ -292,14 +292,14 @@ test_that(
                      intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
     )
     
-    plot5a <- plot_risk(ice_fit5a)
+    plot5a <- plot(ice_fit5a)
     expect_equal(class(plot5a), c("gg", "ggplot"))
     })
 
 test_that(
   "plot flexible model specification - using static intervention as reference",
   {
-    
+    library(Hmisc)
     ice_fit5b <- ice(data = data, time_points = 4,
                      id = "id", time_name = "t0",
                      censor_name = "C", outcome_name = "Y",
@@ -309,7 +309,7 @@ test_that(
                      censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
                      ref_idx = 1,
                      estimator = pool(hazard = F),
-                     nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                     nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                      int_descript = c("Static Intervention", "Dynamic Intervention"),
                      intervention1.A1 = list(static(3)),
                      intervention1.A2 = list(static(1)),
@@ -318,7 +318,7 @@ test_that(
                      intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
     )
     
-    plot5b <- plot_risk(ice_fit5b)
+    plot5b <- plot(ice_fit5b)
     expect_equal(class(plot5b), c("gg", "ggplot"))
     })
 
@@ -338,7 +338,7 @@ test_that(
                      global_hazard = T,
                      ref_idx = 0,
                      estimator = pool(hazard = T),
-                     nsamples = 10, ci_method = "percentile", parallel = T, ncores = 5,
+                     nsamples = 5, ci_method = "percentile", parallel = F, ncores = 5,
                      int_descript = c("Static Intervention", "Dynamic Intervention"),
                      intervention1.A1 = list(static(3)),
                      intervention1.A2 = list(static(1)),
@@ -347,7 +347,7 @@ test_that(
                      intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
     )
     
-    plot6a <- plot_risk(ice_fit6a)
+    plot6a <- plot(ice_fit6a)
     expect_equal(class(plot6a), c("gg", "ggplot"))
     })
 
@@ -374,7 +374,7 @@ test_that(
                      compModel.2 = D ~ lag1_L1 + ns(L2, df = 2)
     )
     
-    plot6b <- plot_risk(ice_fit6b)
+    plot6b <- plot(ice_fit6b)
     expect_equal(class(plot6b), c("gg", "ggplot"))
     })
 
@@ -529,7 +529,7 @@ test_that(
                      compModel.2 = D ~ L1 + L2
     )
     
-    plots <- plot_risk(ice_fit7a, ice_fit7b, ice_fit7c, ice_fit7d, 
+    plots <- plot(ice_fit7a, ice_fit7b, ice_fit7c, ice_fit7d, 
                        ice_fit7e, ice_fit7f, ice_fit7g, ice_fit7h)
     expect_equal(class(plots), c("gg", "ggplot"))
  

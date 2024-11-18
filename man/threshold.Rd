@@ -4,12 +4,7 @@
 \alias{threshold}
 \title{Threshold}
 \usage{
-threshold(
-  lower_bound,
-  upper_bound,
-  var = threshold_treatment,
-  data = interv_data
-)
+threshold(lower_bound, upper_bound, var, data)
 }
 \arguments{
 \item{lower_bound}{a number indicating the lower bound of the threshold.}

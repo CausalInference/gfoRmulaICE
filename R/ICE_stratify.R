@@ -62,7 +62,6 @@
 #' \item{comp_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the competing model of each subsequent iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{competing_name} is \code{NULL}.}
 #' \item{hazard_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the hazard model of each iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{hazard_based} is FALSE.}
 #' @import tidyverse data.table reshape2 nnet
-#' @export
 #'
 #' @references Wen L, Young JG, Robins JM, Hernán MA. Parametric g-formula implementations for causal survival analyses. Biometrics. 2021;77(2):740-753.
 #' @references McGrath S, Lin V, Zhang Z, Petito LC, Logan RW, Hernán MA, and JG Young. gfoRmula: An R package for estimating the effects of sustained treatment strategies via the parametric g-formula. Patterns. 2020;1:100008.
@@ -444,11 +443,6 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
                        vcov = fit_np_stderr, 
                        rmse = fit_np_rmse)
 
-      # fit_all <- c(fit_all, list(fit_np))
-      # fit_summary <- c(fit_summary, list(fit_np_summary))
-      # fit_stderr <- c(fit_summary, list(fit_np_stderr))
-      # fit_vcov <- c(fit_vcov, list(fit_np_vcov))
-      # fit_rmse <- c(fit_rmse, list(fit_np_rmse))
       }
     }
 
@@ -476,17 +470,13 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   abar_all <- list()
   data <- as.data.frame(data)
 
-  interv_data <<- data
-  
-  # all_treat_lags <- c()
-  # treat_lag_abar <- list()
+  assign.global(data, "interv_data")
 
   for (i in 1:length(intervention_varnames[[1]])) {
 
-    treat <<- i
-    id_var <<- id
-
-    treatment_varname <<- intervention_varnames[[1]][[treat]]
+    assign.global(i, "treat")
+    
+    assign.global(intervention_varnames[[1]][[treat]], "treatment_varname")
     intervention_f <- interventions[[1]][[treat]]
 
     if (any(str_detect(as.character(substitute(interventions[[treat]])), "grace_period"))) {
@@ -1184,9 +1174,9 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           fitdata$w <- 1/fitdata[, paste0("pi", q)]
 
           if (q == t - 1) {
-            fit <- speedglm(temp_formula, family = quasibinomial(), weight = fitdata$w, data = fitdata)
+            fit <- speedglm(temp_formula, family = quasibinomial(), weights = fitdata$w, data = fitdata)
           } else {
-            fit <- speedglm(temp_formula, family = quasibinomial(), weight = fitdata$w, data = fitdata)
+            fit <- speedglm(temp_formula, family = quasibinomial(), weights = fitdata$w, data = fitdata)
           }
 
         } else {

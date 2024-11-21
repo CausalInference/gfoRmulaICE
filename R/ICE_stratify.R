@@ -61,7 +61,11 @@
 #' \item{outcome_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the outcome model of each subsequent iteration in the ICE algorithm.}
 #' \item{comp_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the competing model of each subsequent iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{competing_name} is \code{NULL}.}
 #' \item{hazard_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the hazard model of each iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{hazard_based} is FALSE.}
-#' @import tidyverse data.table reshape2 nnet
+#' @import tidyverse reshape2 nnet speedglm dplyr stringr
+#' @importFrom stats reshape
+#' @importFrom stats quasibinomial
+#' @importFrom stats fitted
+#' @importFrom data.table data.table
 #'
 #' @references Wen L, Young JG, Robins JM, Hernán MA. Parametric g-formula implementations for causal survival analyses. Biometrics. 2021;77(2):740-753.
 #' @references McGrath S, Lin V, Zhang Z, Petito LC, Logan RW, Hernán MA, and JG Young. gfoRmula: An R package for estimating the effects of sustained treatment strategies via the parametric g-formula. Patterns. 2020;1:100008.
@@ -215,14 +219,9 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   competing_covar_lags <- competing_covar[str_detect(competing_covar, "lag[0-9999]_")]
   hazard_covar_lags <- hazard_covar[str_detect(hazard_covar, "lag[0-9999]_")]
   
-  # all_lags <- as.set(unlist(union(outcome_covar_lags, censor_covar_lags)))
-  # all_lags <- unlist(union(all_lags, competing_covar_lags))
-  
   all_lags <- c(outcome_covar_lags, censor_covar_lags, competing_covar_lags, hazard_covar_lags)
   all_lags <- unique(all_lags)
   all_lags <- na.omit(all_lags)
-  
-  # detach("package:sets", unload = T)
   
   if (length(all_lags) > 0) {
   
@@ -242,10 +241,10 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
     lag_var <- lag_components[[1]][2]
     
     
-    group_dta <- data %>% group_by(factor_id)
+    group_dta <- group_by(data, "factor_id")
     group_dta[, "lag_var_new"] <- data[, lag_var]
     group_dta <- group_dta %>%
-      mutate(lagged_var = dplyr::lag(lag_var_new, n = lag_unit, default = 0))
+      mutate(lagged_var = dplyr::lag(group_dta$lag_var_new, n = lag_unit, default = 0))
     
     data[, ilag] <- group_dta$lagged_var
     
@@ -429,8 +428,6 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       this_np_vcov <- list(get_vcov(competing_fit))
       this_np_rmse <- list(get_rmse(competing_fit))
       
-      # names(this_np_fit) <- names(this_np_summary) <- names(this_np_stderr) <- names(this_np_vcov) <- names(this_np_rmse) <- "NP Risk"
-      
       fit_np <- c(fit_np, this_np_fit)
       fit_np_summary <- c(fit_np_summary, this_np_summary)
       fit_np_stderr <- c(fit_np_stderr, this_np_stderr)
@@ -473,14 +470,14 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   assign.global(data, "interv_data")
 
   for (i in 1:length(intervention_varnames[[1]])) {
-
-    assign.global(i, "treat")
     
-    assign.global(intervention_varnames[[1]][[treat]], "treatment_varname")
+    treat <- i
+    treatment_varname <- intervention_varnames[[1]][[treat]]
+
     intervention_f <- interventions[[1]][[treat]]
 
     if (any(str_detect(as.character(substitute(interventions[[treat]])), "grace_period"))) {
-      my.arrayofA <- paste0("interv_it_", gp_treatment_var)
+      my.arrayofA <- paste0("interv_it_", treatment_varname)
     } else {
       interv_it <- intervention_f
       interv_data[, paste0("interv_it_", treatment_varname, "_", treat)] <- interv_it
@@ -561,10 +558,10 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           lag_var <- lag_components[[1]][2]
           
           
-          group_dta <- data %>% group_by(factor_id)
+          group_dta <- group_by(data, "factor_id")
           group_dta[, "lag_var_new"] <- data[, lag_var]
           group_dta <- group_dta %>%
-            mutate(lagged_var = dplyr::lag(lag_var_new, n = lag_unit, default = 0))
+            mutate(lagged_var = dplyr::lag(group_dta$lag_var_new, n = lag_unit, default = 0))
           
           data[, ilag] <- group_dta$lagged_var
           
@@ -720,22 +717,12 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   paramtmp = (yfitog)$coef
 
   ## add in this outcome fit
-
-  # fit_outcome_init <- fit_outcome_summary_init <- fit_outcome_stderr_init <- fit_outcome_vcov_init <- fit_outcome_rmse_init <- c()
   
   this_outcome_fit <- yfitog
   this_outcome_summary <- get_summary(yfitog)
   this_outcome_stderr <- get_stderr(yfitog)
   this_outcome_vcov <- get_vcov(yfitog)
   this_outcome_rmse <- get_rmse(yfitog)
-  
-  # names(this_outcome_fit) <- names(this_outcome_summary) <- names(this_outcome_stderr) <- names(this_outcome_vcov) <- names(this_outcome_rmse) <- "initial.outcome.model"
-  
-  # fit_outcome_init <- c(fit_outcome, this_outcome_fit)
-  # fit_outcome_summary_init <- c(fit_outcome_summary, this_outcome_summary)
-  # fit_outcome_stderr_init <- c(fit_outcome_stderr, this_outcome_stderr)
-  # fit_outcome_vcov_init <- c(fit_outcome_vcov, this_outcome_vcov)
-  # fit_outcome_rmse_init <- c(fit_outcome_rmse, this_outcome_rmse)
   
   outcome_init <- list(fit = this_outcome_fit, 
                        summary = this_outcome_summary, 
@@ -908,11 +895,6 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
                             vcov = fit_haz_vcov, 
                             rmse = fit_haz_rmse)
     
-    # fit_all <- c(fit_all, list(fit_haz))
-    # fit_summary <- c(fit_summary, list(fit_haz_summary))
-    # fit_stderr <- c(fit_summary, list(fit_haz_stderr))
-    # fit_vcov <- c(fit_vcov, list(fit_haz_vcov))
-    # fit_rmse <- c(fit_rmse, list(fit_haz_rmse))
     if (!is.null(competing_varname) & total_effect == T) {
       comp_pred_times <- list()
       fit_comp <- fit_comp_summary <- fit_comp_stderr <- fit_comp_vcov <- fit_comp_rmse <- c()
@@ -1010,11 +992,6 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
                              vcov = fit_comp_vcov, 
                              rmse = fit_comp_rmse)
 
-      # fit_all <- c(fit_all, list(fit_comp))
-      # fit_summary <- c(fit_summary, list(fit_comp_summary))
-      # fit_stderr <- c(fit_summary, list(fit_comp_stderr))
-      # fit_vcov <- c(fit_vcov, list(fit_comp_vcov))
-      # fit_rmse <- c(fit_rmse, list(fit_comp_rmse))
     }
   }
 
@@ -1287,7 +1264,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
         if (weighted & hazard_based == F) {
           fitdata$w <- 1/fitdata[, paste0("pi", q)]
-          fitdata[, paste0("y", t, "pred")] = predict(fit, newdata = fitdata, type="response", weight = w)
+          fitdata[, paste0("y", t, "pred")] = predict(fit, newdata = fitdata, type="response", weight = fitdata$w)
 
         } else {
           fitdata[, paste0("y", t, "pred")] = predict(fit, newdata = fitdata, type="response")
@@ -1306,7 +1283,6 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         } else {
           if (q != 0) {
             if (!is.null(competing_varname) & total_effect == T) {
-              # if (q - 2 == -1) {
               fitdata[, paste0("y", t, "pred")] = case_when(fitdata[, paste0(competing_varname, "_", q-1)] == 1 ~ 0,
                                                             (fitdata[, paste0(outcome_varname, "_", q)] == 1) & (fitdata[, paste0(competing_varname, "_", q-1)] == 0) ~ 1,
                                                             (fitdata[, paste0(outcome_varname, "_", q)] == 0) & (fitdata[, paste0(competing_varname, "_", q-1)] == 0) ~ fitdata[, paste0("y", t, "pred")])

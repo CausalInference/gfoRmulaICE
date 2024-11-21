@@ -56,7 +56,13 @@
 #' \item{ref_model_err_mssg}{A list of strings for error messages of any model error from each bootstrap replicate for the reference intervention.}
 #' \item{ref_data_err_mssg}{A list of strings for error messages of any data error from each bootstrap replicate for the reference intervention.}
 #'
-#' @import doParallel parallel foreach stats
+#' @import doParallel parallel foreach tidyverse dplyr stringr
+#' @importFrom data.table SJ
+#' @importFrom data.table as.data.table
+#' @importFrom data.table setkey
+#' @importFrom stats na.omit
+#' @importFrom stats sd
+#' @importFrom stats quantile
 #' @noRd
 bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_description,
                           ref_intervention_varnames, total_effect,
@@ -108,11 +114,10 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
      boot_data <- data
      boot_data <- as.data.table(boot_data)
      setkey(boot_data, id)
-     boot_data <- boot_data[J(select_ids), allow.cartesian = T]
+     boot_data <- boot_data[SJ(select_ids), allow.cartesian = T]
      boot_data <- as.data.frame(boot_data)
      boot_data[, id] <- boot_data[, "new_id"]
-     
-     row_idx <- matchAll(as.vector(select_ids[, id]), data[, id])
+     row_idx <- match_ids(as.vector(select_ids[, id]), data[, id])
 
 
       ice <- try(
@@ -149,7 +154,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         
         this_outcome_init <- this_comp_init <- this_np_model <- this_outcome_by_step <- 
           this_hazard_by_step <- this_comp_by_step <- NA 
-        # ice_value <- this_model <- this_stderr <- this_vcov <- this_rmse <- this_summary <- NA
         fit_all <- rep(NA, K+1)
         rr <- NA
         rd <- NA
@@ -165,7 +169,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         
         this_ref_outcome_init <- list(ref$outcome_init)
         this_ref_comp_init <- list(ref$comp_init)
-        # this_ref_np_model <- list(ref$np_model)
         
         names(this_outcome_init) <- names(this_np_model) <- names(this_comp_init) <- paste0("Bootstrap Replicate ", i)
         names(this_ref_outcome_init) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
@@ -177,12 +180,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         this_ref_outcome_by_step <- get_models(ref, "outcome_by_step", paste0("Bootstrap Replicate ", i))
         this_ref_hazard_by_step <- get_models(ref, "hazard_by_step", paste0("Bootstrap Replicate ", i))
         this_ref_comp_by_step <- get_models(ref, "comp_by_step", paste0("Bootstrap Replicate ", i))
-        
-        # this_model <- list(ice$fit_models)
-        # this_summary <- list(ice$model_summary)
-        # this_stderr <- list(ice$model_stderr)
-        # this_vcov <- list(ice$model_vcov)
-        # this_rmse <- list(ice$model_rmse)
         
         ref_all <- ref$gformula_risk
         ref_ipw_all <- c(0, ref$weight_h$risk)
@@ -299,17 +296,9 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     outcome_by_step <- get_boot_models("outcome_by_step_boot", boot_result)
     comp_by_step <- get_boot_models("comp_by_step_boot", boot_result)
     hazard_by_step <- get_boot_models("hazard_by_step_boot", boot_result)
-    # outcome_init <- boot_result[names(boot_result) == "outcome_init_boot"]
-    
-    # comp_init <- boot_result[names(boot_result) == "comp_init_boot"]
-    # np_model <- boot_result[names(boot_result) == "np_model_boot"]
-    # outcome_by_step <- boot_result[names(boot_result) == "outcome_by_step_boot"]
-    # comp_by_step <- boot_result[names(boot_result) == "comp_by_step_boot"]
-    # hazard_by_step <- boot_result[names(boot_result) == "hazard_by_step_boot"]
     
     ref_outcome_init <- get_boot_models("ref_outcome_init_boot", boot_result)
     ref_comp_init <- get_boot_models("ref_comp_init_boot", boot_result)
-    # ref_np_model <- get_boot_models("ref_np_model_boot", boot_result)
     ref_outcome_by_step <- get_boot_models("ref_outcome_by_step_boot", boot_result)
     ref_comp_by_step <- get_boot_models("ref_comp_by_step_boot", boot_result)
     ref_hazard_by_step <- get_boot_models("ref_hazard_by_step_boot", boot_result)
@@ -345,11 +334,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     ref_ipw_cv_all_lower <- quantile_result_lower[(7+2*K):(length(quantile_result_lower))]
 
     boot_data_all <- boot_result[names(boot_result) == "data"]
-    # fit_all <- boot_result[names(boot_result) == "fit_all"]
-    # fit_summary <- boot_result[names(boot_result) == "fit_summary"]
-    # fit_stderr <- boot_result[names(boot_result) == "fit_stderr"]
-    # fit_vcov <- boot_result[names(boot_result) == "fit_vcov"]
-    # fit_rmse <- boot_result[names(boot_result) == "fit_rmse"]
     
     # stopCluster(cl)
 
@@ -357,23 +341,12 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     boot_data_all <- c()
     outcome_init <- comp_init <- np_model <- outcome_by_step <- comp_by_step <- hazard_by_step <- c()
     ref_outcome_init <- ref_comp_init <- ref_outcome_by_step <- ref_comp_by_step <- ref_hazard_by_step <- c()
-    # fit_all <- fit_summary <- fit_stderr <- fit_vcov <- fit_rmse <- c()
     data_err <- model_err <- c()
     data_err_mssg <- model_err_mssg <- c()
     
     ref_data_err <- ref_model_err <- c()
     ref_data_err_mssg <- ref_model_err_mssg <- c()
     for (i in 1:nboot) {
-      
-      # data_len <- length(unique(obs_data$newid))
-      # ids <- as.data.table(sample(1:data_len, data_len, replace = TRUE))
-      # ids[, 'bid' := 1:data_len]
-      # colnames(ids) <- c("newid", "bid")
-      # resample_data <- copy(obs_data)
-      # setkey(resample_data, "newid")
-      # resample_data <- resample_data[J(ids), allow.cartesian = TRUE]  # create the new data set names "sample"
-      # resample_data[, 'newid' := resample_data$bid]
-      # resample_data[, 'bid' := NULL]
 
       unique_idx <- unique(data[, id])
       nidx <- length(unique_idx)
@@ -383,52 +356,11 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
       boot_data <- data
       boot_data <- as.data.table(boot_data)
       setkey(boot_data, id)
-      boot_data <- boot_data[J(select_ids), allow.cartesian = T]
+      boot_data <- boot_data[SJ(select_ids), allow.cartesian = T]
       boot_data <- as.data.frame(boot_data)
       boot_data[, id] <- boot_data[, "new_id"]
       
-      row_idx <- matchAll(as.vector(select_ids[, id]), data[, id])
-      
-
-      # select_index <- sample(1:length(unique_idx), replace = T)
-      # boot_index <- unique_idx[select_index]
-      # nindx <- length(boot_index)
-      # 
-      # row_idx <- data[, id] %in% boot_index
-      # 
-      # 
-      # idx_info <- lapply(1:nindx, function(i) {
-      #   select_idx <- which(data[, id] %in% boot_index[i])
-      #   new_ids <- rep(i, length(select_idx))
-      #   return(new_ids)
-      # }
-      # )
-    # print(unlist(idx_info))
-      # idx_info <- unlist(idx_info)
-      # new_ids <- unlist(idx_info)
-      # row_idx <- as.vector(idx_info[str_detect(names(idx_info), "select_idx")])
-      # new_ids <- as.vector(idx_info[str_detect(names(idx_info), "new_ids")])
-      
-      # print(row_idx)
-      # print(which(data[, id] %in% boot_index))
-      # 
-      # boot_data <- lapply(1:nindx, function(i) {
-      #   select_data <- data[which(data[, id] %in% boot_index[i]), ] 
-      #   select_data[, paste0("original_", id)] <- select_data[, id]
-      #   select_data[, id] <- i
-      #   return(select_data)
-      # }
-      # )
-      # 
-      # boot_data <- dplyr::bind_rows(boot_data)
-      
-      # boot_data <- data[which(data[, id] %in% boot_index), ]
-      # boot_data <- data[row_idx, ]
-      # boot_data[, id] <- new_ids
-
-      # row_idx <- which(data[, id] %in% boot_index)
-      # 
-      # boot_data <- data[row_idx, ]
+      row_idx <- match_ids(as.vector(select_ids[, id]), data[, id])
 
       boot_data_all <- c(boot_data_all, list(boot_data))
 
@@ -465,7 +397,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
           
           this_outcome_init <- this_comp_init <- this_np_model <- this_outcome_by_step <- 
             this_hazard_by_step <- this_comp_by_step <- NA 
-          # ice_value <- this_model <- this_stderr <- this_vcov <- this_rmse <- this_summary <- NA
           fit_all <- rep(NA, K+1)
           rr <- NA
           rd <- NA
@@ -481,7 +412,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
           
           this_ref_outcome_init <- list(ref$outcome_init)
           this_ref_comp_init <- list(ref$comp_init)
-          # this_ref_np_model <- list(ref$np_model)
           
           names(this_outcome_init) <- names(this_np_model) <- names(this_comp_init) <- paste0("Bootstrap Replicate ", i)
           names(this_ref_outcome_init) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
@@ -494,11 +424,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
           this_ref_hazard_by_step <- get_models(ref, "hazard_by_step", paste0("Bootstrap Replicate ", i))
           this_ref_comp_by_step <- get_models(ref, "comp_by_step", paste0("Bootstrap Replicate ", i))
           
-          # this_model <- list(ice$fit_models)
-          # this_summary <- list(ice$model_summary)
-          # this_stderr <- list(ice$model_stderr)
-          # this_vcov <- list(ice$model_vcov)
-          # this_rmse <- list(ice$model_rmse)
           ref_all <- ref$gformula_risk
           ref_ipw_all <- c(0, ref$weight_h$risk)
           ref_value <- ref$gformula_risk_last_time
@@ -534,7 +459,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
           
         this_ref_outcome_init <- list(ref$outcome_init)
         this_ref_comp_init <- list(ref$comp_init)
-        # this_ref_np_model <- list(ref$np_model)
         
         names(this_ref_outcome_init) <- names(this_ref_comp_init) <- paste0("Bootstrap Replicate ", i)
         
@@ -547,13 +471,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         ref_value <- ref$gformula_risk_last_time
         }
       
-    
-
-      # fit_all <- c(fit_all, this_model)
-      # fit_summary <- c(fit_summary, this_summary)
-      # fit_stderr <- c(fit_stderr, this_stderr)
-      # fit_vcov <- c(fit_vcov, this_vcov)
-      # fit_rmse <- c(fit_rmse, this_rmse)
       
       outcome_by_step <- c(outcome_by_step, this_outcome_by_step)
       hazard_by_step <- c(hazard_by_step, this_hazard_by_step)
@@ -569,7 +486,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
       
       ref_outcome_init <- c(ref_outcome_init, this_ref_outcome_init)
       ref_comp_init <- c(ref_comp_init, this_ref_comp_init)
-      # ref_np_model <- c(ref_np_model, this_ref_np_model)
 
       ice_boot <- c(ice_boot, ice_value)
       ref_boot <- c(ref_boot, ref_value)
@@ -643,19 +559,6 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     
     ref_model_err_mssg_combine <- paste0("The error message in bootstrap sample ", ref_model_err)
     ref_model_err_mssg_combine <- paste0(ref_model_err_mssg_combine, ": ", ref_model_err_mssg, "\n")
-    
-    # give_warning(ref_data_err, ref_data_err_mssg_combine)
-    # give_warning(ref_model_err, ref_model_err_mssg_combine)
-
-    
-    # if (length(data_err) > 0) {
-    #   warning(paste0("NA value occurs in bootstrap replicate ", paste(data_err, collapse = ","), ". This is likely due to 
-    #                    no data satisfies the defined treatment strategy.", "\n", paste0(data_err_mssg_combine, collapse = "")))
-    # }
-    # 
-    # if (length(model_err) > 0) {
-    #   warning(paste0("NA value occurs in bootstrap replicate ", paste(model_err, collapse = ","), ". The analysis should likely be repeated
-    #                  with a more parsimonious model.", "\n", paste0(model_err_mssg_combine, collapse = "")))
     
 
   }

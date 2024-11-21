@@ -59,7 +59,10 @@
 #' \item{outcome_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the outcome model of each subsequent iteration in the ICE algorithm.}
 #' \item{comp_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the competing model of each subsequent iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{competing_name} is \code{NULL}.}
 #' \item{hazard_by_step}{A list containing the fitted models with the summary, standard errors of the coefficients, variance-covariance matrices of the parameters, and the root mean square error (RMSE) values for the hazard model of each iteration in the ICE algorithm (if applicable). Could be \code{NULL} if \code{hazard_based} is FALSE.}
-#' @import reshape2 tidyverse
+#' @import reshape2 tidyverse speedglm dplyr stringr
+#' @importFrom stats reshape
+#' @importFrom stats quasibinomial
+#' @importFrom stats plogis
 #'
 #' @references Wen L, Young JG, Robins JM, Hernán MA. Parametric g-formula implementations for causal survival analyses. Biometrics. 2021;77(2):740-753.
 #' @references McGrath S, Lin V, Zhang Z, Petito LC, Logan RW, Hernán MA, and JG Young. gfoRmula: An R package for estimating the effects of sustained treatment strategies via the parametric g-formula. Patterns. 2020;1:100008.
@@ -206,7 +209,6 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   outcome_covar <- str_remove_all(unlist(str_split(as.character(outcome_model)[3], "[+]")), " ")
   censor_covar <- str_remove_all(unlist(str_split(as.character(censor_model)[3], "[+]")), " ")
   competing_covar <- str_remove_all(unlist(str_split(as.character(competing_model)[3], "[+]")), " ")
-  # haz_global_covar <- str_remove_all(unlist(str_split(as.character(global_haz_model)[3], "[+]")), " ")
   haz_global_covar <- str_remove_all(unlist(str_split(as.character(hazard_model)[3], "[+]")), " ")
   
   ## first create lag terms
@@ -215,15 +217,10 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   censor_covar_lags <- censor_covar[str_detect(censor_covar, "lag[0-9999]_")]
   competing_covar_lags <- competing_covar[str_detect(competing_covar, "lag[0-9999]_")]
   haz_global_covar_lags <- haz_global_covar[str_detect(haz_global_covar, "lag[0-9999]_")]
-  
-  # all_lags <- as.set(unlist(union(outcome_covar_lags, censor_covar_lags)))
-  # all_lags <- unlist(union(all_lags, competing_covar_lags))
-  
+
   all_lags <- c(outcome_covar_lags, censor_covar_lags, competing_covar_lags, haz_global_covar_lags)
   all_lags <- unique(all_lags)
   all_lags <- na.omit(all_lags)
-  
-  # detach("package:sets", unload = T)
   
   if (length(all_lags) > 0) {
   
@@ -243,10 +240,10 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
     lag_var <- lag_components[[1]][2]
     
 
-    group_dta <- data %>% group_by(factor_id)
+    group_dta <- group_by(data, "factor_id")
     group_dta[, "lag_var_new"] <- data[, lag_var]
     group_dta <- group_dta %>%
-      mutate(lagged_var = dplyr::lag(lag_var_new, n = lag_unit, default = 0))
+      mutate(lagged_var = dplyr::lag(group_dta$lag_var_new, n = lag_unit, default = 0))
     
     data[, ilag] <- group_dta$lagged_var
     
@@ -481,19 +478,17 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   data <- as.data.frame(data)
 
   assign.global(F, "gp_indicator")
-
+  
   assign.global(data, "interv_data")
   
   all_treat_lags <- c()
   treat_lag_abar <- list()
 
   for (i in 1:length(intervention_varnames[[1]])) {
-
-    assign.global(i, "treat")
-
-    assign.global(intervention_varnames[[1]][[treat]], "treatment_varname")
     
-    # preprocess the interventions to add the observed data and treatment variable name
+    treat <- i
+    treatment_varname <- intervention_varnames[[1]][[treat]]
+  
     intervention_f <- interventions[[1]][[treat]]
     interv_it <- intervention_f
     interv_data[, paste0("interv_it_", treatment_varname, "_", treat)] <- interv_it
@@ -506,7 +501,6 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
     if (any(lag_treat_ind)) {
       
       lag_treat_names <- unique(c(outcome_covar, censor_covar, competing_covar))[lag_treat_ind]
-      # lag_treat_names_list <- list(treatment_varname = lag_treat_names)
       all_treat_lags <- c(all_treat_lags, lag_treat_names)
       
       lags <- sapply(str_split(lag_treat_names, "_"), function(x) {
@@ -554,7 +548,6 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   ## might need to change the newly created column names
   tmpdata = as.data.frame(dffullwide)
   formula_full <- as.formula(paste0(outcome_varname,"~", paste0(c(outcome_covar), collapse = "+")))
-  # formula_global <- as.formula(paste0(outcome_varname,"~", paste0(c(haz_global_covar), collapse = "+")))
   
   ## if outcome model and hazard model share the same input argument, how do you separate model fit here?
   ## this fit will be used for prediction of outcome in the first iteration and only for hazard estimation.
@@ -565,21 +558,11 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
 
   ## add in this outcome fit
 
-  # fit_outcome_init <- fit_outcome_summary_init <- fit_outcome_stderr_init <- fit_outcome_vcov_init <- fit_outcome_rmse_init <- c()
-
   this_outcome_fit <- yfitog
   this_outcome_summary <- get_summary(yfitog)
   this_outcome_stderr <- get_stderr(yfitog)
   this_outcome_vcov <- get_vcov(yfitog)
   this_outcome_rmse <- get_rmse(yfitog)
-
-  # names(this_outcome_fit) <- names(this_outcome_summary) <- names(this_outcome_stderr) <- names(this_outcome_vcov) <- names(this_outcome_rmse) <- "initial.outcome.model"
-
-  # fit_outcome_init <- c(fit_outcome, this_outcome_fit)
-  # fit_outcome_summary_init <- c(fit_outcome_summary, this_outcome_summary)
-  # fit_outcome_stderr_init <- c(fit_outcome_stderr, this_outcome_stderr)
-  # fit_outcome_vcov_init <- c(fit_outcome_vcov, this_outcome_vcov)
-  # fit_outcome_rmse_init <- c(fit_outcome_rmse, this_outcome_rmse)
   
   outcome_init <- list(fit = this_outcome_fit, 
                    summary = this_outcome_summary, 
@@ -595,22 +578,12 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
     paramcomp = (yfitog_comp)$coef
 
     ## add in this competing fit
-    
-    # fit_comp_init <- fit_comp_summary_init <- fit_comp_stderr_init <- fit_comp_vcov_init <- fit_comp_rmse_init <- c()
 
     this_comp_fit <- yfitog_comp
     this_comp_summary <- get_summary(yfitog_comp)
     this_comp_stderr <- get_stderr(yfitog_comp)
     this_comp_vcov <- get_vcov(yfitog_comp)
     this_comp_rmse <- get_rmse(yfitog_comp)
-
-    # names(this_comp_fit) <- names(this_comp_summary) <- names(this_comp_stderr) <- names(this_comp_vcov) <- names(this_comp_rmse) <- "initial.competing.model"
-
-    # fit_comp_init <- c(fit_comp, this_comp_fit)
-    # fit_comp_summary_init <- c(fit_comp_summary, this_comp_summary)
-    # fit_comp_stderr_init <- c(fit_comp_stderr, this_comp_stderr)
-    # fit_comp_vcov_init <- c(fit_comp_vcov, this_comp_vcov)
-    # fit_comp_rmse_init <- c(fit_comp_rmse, this_comp_rmse)
     
     comp_init <- list(fit = this_comp_fit, 
                      summary = this_comp_summary, 
@@ -618,11 +591,6 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
                      vcov = this_comp_vcov, 
                      rmse = this_comp_rmse)
 
-    # fit_all <- c(fit_all, list(fit_comp))
-    # fit_summary <- c(fit_summary, list(fit_comp_summary))
-    # fit_stderr <- c(fit_summary, list(fit_comp_stderr))
-    # fit_vcov <- c(fit_vcov, list(fit_comp_vcov))
-    # fit_rmse <- c(fit_rmse, list(fit_comp_rmse))
   }
   
   ## hazard model
@@ -675,12 +643,6 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
             no_interv_treat <- c(no_interv_treat, intervention_variable)
           }
         }
-        
-        # treat_as_covar <- all_treat_vars[!all_treat_vars %in% interv_treat]
-        
-        # outcome_covar_t <- c(outcome_covar)
-        
-        # haz_covar_t <- paste0(outcome_covar, "_", i-1)
         
         haz_covar_t <- paste0(haz_global_covar, "_", i-1)
         
@@ -925,10 +887,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
                       this_covar_iter <- paste0(haz_global_covar_tmp[i], sep = paste0("_", iter -1))
                       pred_data[, haz_global_covar_tmp[i]] <- data_fit[, this_covar_iter]
                     }
-                  
-                  # covar_mat <- cbind(rep(1, nrow(data_fit)),
-                  #                    data_fit[, haz_covar_iter])
-                  # predict_tmp <- plogis(as.matrix(covar_mat)  %*% matrix(paramhaz, nrow = length(paramtmp)))
+
                   predict_tmp <- predict(haz_fit_global, newdata = pred_data, type="response")
                 } else {
                   predict_tmp <- predict(haz_pred_times[[iter]], newdata = data_fit, type="response")

@@ -1,7 +1,3 @@
-get_data <- function(data) {
-  return(data)
-}
-
 #' Static
 #'
 #' This function specifies the static intervention, either treat with a constant value or never treat, 
@@ -18,21 +14,6 @@ get_data <- function(data) {
 #' data <- gfoRmulaICE::compData
 #' always_treat <- static(value = 1, data = data)
 static <- function(value, data) {
-  
-  # if (exists("interv_data")) {
-  #   data <- interv_data
-  # }
-  
-  # if (is.null(data)) {
-  # data_try <- try(
-  #   get_data(interv_data),
-  #   silent = T
-  # )
-  # 
-  # if (!inherits(data, "try-error")) {
-  #   data <- data_try
-  # }
-  # }
 
   interv_it <- rep(value, nrow(data))
 
@@ -51,7 +32,7 @@ static <- function(value, data) {
 #'
 #' @examples
 #' data <- gfoRmulaICE::compData
-#' natural_course <- natural_course(data = data, treat_var = "A")
+#' natural_course <- natural_course(data = data, treat_var = "A1")
 #' 
 natural_course <- function(data, treat_var) {
   
@@ -78,6 +59,10 @@ natural_course <- function(data, treat_var) {
 #'
 #' @return A list containing the inverse probability weighted estimates of the natural course risk and
 #' a model object for the probability of censoring used in the inverse probability weighted estimate of the natural course risk.
+#' @importFrom stats as.formula
+#' @importFrom stats glm
+#' @importFrom stats predict
+#' @importFrom stats binomial
 #' @noRd
 
 natural_course_ipweighted <- function(data, id, censor_varname,
@@ -135,8 +120,11 @@ natural_course_ipweighted <- function(data, id, censor_varname,
 #'
 #' @return a vector containing the intervened value of the same size as the number of rows in \code{data}.
 #' @export
-#' @import stats
-#'
+#' @importFrom stats reshape
+#' @examples 
+#' data <- gfoRmulaICE::compData
+#' grace_period <- grace_period(type = "uniform", nperiod = 2, condition = "L1 == 0", 
+#'                             data = data, id = "id", time_name = "t0", outcome_name = "Y")
 grace_period <- function(type, nperiod, condition,
                          data, id, time_name, 
                          outcome_name) {
@@ -166,26 +154,12 @@ grace_period <- function(type, nperiod, condition,
   my.arrayofA <- 0
   
   assign.global(T, "gp_indicator")
-  
-  # if (exists("gp_interv_type")) {
-  assign.global(type, "gp_interv_type")
-  # }
-  
-  # if (exists("gp_treatment_var")) {
-    assign.global(var, "gp_treatment_var")
-  # }
-  
-  # if (exists("ngrace_period")) {
-    assign.global(nperiod, "ngrace_period")
-  # }
 
-  # if (exists("grace_period_var")) {
-    assign.global(gp_treatment_var, "grace_period_var")
-  # }
-  
-  # if (exists("gp_treatment_var")) {
-    assign.global(paste0("interv_it_", gp_treatment_var), "treatment_varname_gp")
-  # }
+  gp_interv_type <- type
+  gp_treatment_var <- var
+  ngrace_period <- nperiod
+  grace_period_var <- gp_treatment_var
+  treatment_varname_gp <- paste0("interv_it_", gp_treatment_var)
   
   abar <- 0
 
@@ -309,6 +283,7 @@ grace_period <- function(type, nperiod, condition,
 #' @param duration a numeric specifying the duration of grace period.
 #'
 #' @return the randomly generated treatment.
+#' @importFrom stats rbinom
 #' @noRd
 
 uniform_sample <- function(r, duration) {
@@ -347,6 +322,8 @@ uniform_sample <- function(r, duration) {
 #' @return A list with the first entry as a vector of the mean observed risk.
 #' Its second entry is a vector of mean observed survival. Its third entry is a vector of inverse probability weight.
 #' 
+#' @importFrom stats predict
+#' @importFrom stats weighted.mean
 #' @noRd
 
 compute_weighted_hazard <- function(prob_censor, data, id, censor_varname,
@@ -505,7 +482,7 @@ weight <- function(treat_model = list()) {
 #'
 #' @examples
 #' data <- gfoRmulaICE::compData
-#' threshold_treat <- threshold(lower_bound = 0, upper_bound = 2, var = "A", data = data)
+#' threshold_treat <- threshold(lower_bound = 0, upper_bound = 2, var = "A1", data = data)
 threshold <- function(lower_bound, upper_bound, var, data){
   
   interv_it <- case_when(data[, var] >= lower_bound & data[, var] <= upper_bound ~ data[, var],
@@ -520,7 +497,7 @@ threshold <- function(lower_bound, upper_bound, var, data){
 #' @param fit a glm model object.
 #'
 #' @return the standard errors of the coefficients of the fitted model.
-#'
+#' @importFrom stats vcov
 #' @noRd
 get_stderr <- function(fit) {
   return(sqrt(diag(stats::vcov(fit))))
@@ -531,7 +508,7 @@ get_stderr <- function(fit) {
 #' @param fit a glm model object.
 #'
 #' @return the variance-covariance matrices of the parameters of the fitted model.
-#' 
+#' @importFrom stats vcov
 #' @noRd
 #'
 get_vcov <- function(fit) {
@@ -643,19 +620,6 @@ get_column_name_covar <- function(icovar) {
 #' )
 dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE, 
                     id, time, data) {
-  
-  # if (exists("interv_data")) {
-  #   data <- interv_data
-  # }
-  # 
-  # if (exists("id_var")) {
-  #   id <- id_var
-  # }
-  # 
-  # if (exists("time0var")) {
-  #   time <- time0var
-  # }
-  
   
   first <- absorb
   
@@ -845,6 +809,19 @@ map_time_column <- function(time_name, data, total_times) {
   return(data)
 }
 
+#' Preprocess intervention arguments
+#'
+#' @param clean_kwarg_str string containing all intervention arguments.
+#' @param kwarg_name_list list of keyword argument names.
+#' @param kwarg_list list of keyword arguments.
+#' @param interv_idx the index of the intervention being preprocessed.
+#' @param interv_func string specifying the intervention function.
+#' @param id string specifying the id column name of the observed data.
+#' @param time_name string specifying the time column name of the observed data.
+#' @param outcome_name string specifying the outcome column name of the observed data.
+#'
+#' @return the preprocessed intervention argument.
+#' @noRd
 preprocess_intervention <- function(clean_kwarg_str, kwarg_name_list, kwarg_list, interv_idx, interv_func,
                                     id = NULL, time_name = NULL, outcome_name = NULL) {
 
@@ -873,16 +850,6 @@ preprocess_intervention <- function(clean_kwarg_str, kwarg_name_list, kwarg_list
       interv_arg_idx <- str_locate_all(pattern = interv_pattern, raw_list)[[1]]
       num_interv <- nrow(interv_arg_idx)
       
-      # if (interv_func == "static") {
-      #   add_string <- paste0(", data = data))")
-      # } else if (interv_func == "natural course") {
-      #   add_string <- paste0("data = data, treat_var = ", ivar, "))")
-      # } else if (interv_func == "dynamic") {
-      #   add_string <- paste0(", id = \"", id, "\", time = \"", time_name, "\", data = data))")
-      # } else if (interv_func == "grace_period") {
-      #   add_string <- paste0(", data = data, id = \"", id, "\", time_name = \"", time_name, "\", outcome_name =\"", outcome_name, "\"))")
-      # }
-      
       if (num_interv > 0) {
             for (j in 1:num_interv) {
               
@@ -890,9 +857,13 @@ preprocess_intervention <- function(clean_kwarg_str, kwarg_name_list, kwarg_list
                 
                 if (str_detect(substr(raw_list, interv_arg_idx[j, 1], interv_arg_idx[j, 2]), ",")) {
                   split_by_paren <- str_split(substr(raw_list, interv_arg_idx[j, 1], interv_arg_idx[j, 2]), "\\(")[[1]]
-                  last_arg <- tail(split_by_paren, 1)
+                  last_arg <- utils::tail(split_by_paren, 1)
+                  split_by_comma <- str_split(last_arg, ",")[[1]]
+                  last_comma_arg_paren <- str_locate_all(pattern = "\\)", utils::tail(split_by_comma, 1))[[1]]
                   if (length(split_by_paren) == 2) {
                   nparenthesis <- nrow(str_locate_all(pattern = "\\)", last_arg)[[1]])
+                  } else if (length(split_by_comma) != 2 & nrow(last_comma_arg_paren) == 1) {
+                    nparenthesis <- nchar(utils::tail(split_by_comma, 1)) + 2
                   } else {
                     nparenthesis <- nrow(str_locate_all(pattern = "\\)", last_arg)[[1]]) - 1
                   }
@@ -906,8 +877,6 @@ preprocess_intervention <- function(clean_kwarg_str, kwarg_name_list, kwarg_list
                 idx_start_replace <- str_locate_all(pattern = interv_pattern, raw_list)[[1]][1, 2] - nparenthesis
               }
               
-              # print(substr(raw_list, idx_start_replace + 1, nchar(raw_list)))
-              
               if (interv_func == "static") {
                 add_string <- paste0(",data=data")
               } else if (interv_func == "natural_course") {
@@ -917,12 +886,6 @@ preprocess_intervention <- function(clean_kwarg_str, kwarg_name_list, kwarg_list
               } else if (interv_func == "grace_period") {
                 add_string <- paste0(",data=data,id=\"", id, "\", time_name=\"", time_name, "\",outcome_name=\"", outcome_name, "\"")
               }
-              
-              # if (j == 1) {
-              # idx_replace <- interv_arg_idx[j, 2] - 1
-              # } else {
-              #   idx_replace <- str_locate_all(pattern = interv_pattern, raw_list)[[1]][1, 2] - 1
-              # }
 
               raw_list <- paste0(substr(raw_list, 1, idx_start_replace), add_string, substr(raw_list, idx_start_replace + 1, nchar(raw_list)))
             }
@@ -939,5 +902,17 @@ preprocess_intervention <- function(clean_kwarg_str, kwarg_name_list, kwarg_list
   return(list(clean_kwarg_str = clean_kwarg_str, 
               kwarg_list = kwarg_list))
   
+}
+
+#' Match indices of the selected bootstrap samples
+#'
+#' @param select_ids vector containing the ids of the selected bootstrap sample.
+#' @param target_ids vector containing the ids of the original observed sample.
+#'
+#' @return the indices of the selected bootstrap sample.
+#' @noRd
+match_ids <- function(select_ids, target_ids) {
+  
+  return(unlist(lapply(select_ids, function(i){which(target_ids == i)})))
 }
 

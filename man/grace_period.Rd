@@ -28,3 +28,8 @@ a vector containing the intervened value of the same size as the number of rows 
 This function specifies an intervention in which treatment is initiated within the grace period of \code{nperiod} time units. 
 During the grace period, the treatment variable follows its natural value or initiate intervention with a uniform distribution at each time point.
 }
+\examples{
+data <- gfoRmulaICE::compData
+grace_period <- grace_period(type = "uniform", nperiod = 2, condition = "L1 == 0", 
+                            data = data, id = "id", time_name = "t0", outcome_name = "Y")
+}

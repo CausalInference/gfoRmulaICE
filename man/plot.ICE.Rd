@@ -4,7 +4,7 @@
 \alias{plot.ICE}
 \title{Plot method for ICE estimator objects}
 \usage{
-\method{plot}{ICE}(..., plot_obs = T, label = 0)
+\method{plot}{ICE}(..., plot_obs = TRUE, label = 0)
 }
 \arguments{
 \item{...}{ICE estimator objects.}
@@ -38,7 +38,7 @@ comp_effect = 0,
 outcome_model = Y ~ L1 + L2 + A1 + A2, 
 censor_model = C ~ L1 + L2 + A1 + A2,
 ref_idx = 0,
-estimator = pool(hazard = F),
+estimator = pool(hazard = FALSE),
 int_descript = "Static Intervention",
 intervention1.A1 = list(static(3)),
 intervention1.A2 = list(static(1))
@@ -57,7 +57,7 @@ outcome_model = Y ~ L1 + L2 + A1 + A2,
 censor_model = C ~ L1 + L2 + A1 + A2,
 competing_model = D ~ L1 + L2 + A1 + A2,
 ref_idx = 0,
-estimator = pool(hazard = T),
+estimator = pool(hazard = TRUE),
 int_descript = "Static Intervention",
 intervention1.A1 = list(static(3)),
 intervention1.A2 = list(static(1))

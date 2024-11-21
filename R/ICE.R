@@ -195,8 +195,6 @@
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
-#' # We estimate variance using bootstrap with 1000 replicates, 
-#' # normal quantile, and parallel computing.
 #' 
 #' ice_fit1 <- ice(
 #' data = data, 
@@ -211,10 +209,6 @@
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = FALSE),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Dynamic Intervention 1", "Dynamic Intervention 2", 
 #' "Dynamic Intervention 3"),
 #' intervention1.A2 = list(dynamic("L1 == 0", static(0), static(1))),
@@ -243,8 +237,6 @@
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
-#' # We estimate variance using bootstrap with 1000 replicates, 
-#' # normal quantile, and parallel computing.
 #' 
 #' ice_fit2 <- ice(
 #' data = data, 
@@ -259,10 +251,6 @@
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = FALSE),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention", "Threshold Intervention", 
 #' "Dynamic Intervention with Grace Period"),
 #' intervention1.A1 = list(static(3)),
@@ -292,11 +280,9 @@
 #' # a. outcome model: Y ~ L1 + L2 + A1 + A2
 #' # b. censor model: C ~ L1 + L2 + A1 + A2
 #' # c. competing model: D ~ L1 + L2 + A1 + A2.
-#' # We estimate variance using bootstrap 
-#' # with 1000 replicates and percentile quantile.
 #' 
-#' dynamic_cat <- case_when(data$L2 < 0 ~ 1,
-#' data$L2 >= 0 & data$L2 < 2 ~ 2, T ~ 3)
+#' dynamic_cat <- dplyr::case_when(data$L2 < 0 ~ 1,
+#' data$L2 >= 0 & data$L2 < 2 ~ 2, TRUE ~ 3)
 #' 
 #' ice_fit3 <- ice(
 #' data = data, 
@@ -311,10 +297,6 @@
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = FALSE),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -348,10 +330,6 @@
 #' competing_model = D ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = TRUE),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -381,10 +359,6 @@
 #' hazard_model = Y ~ L1 + L2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = TRUE),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -418,10 +392,6 @@
 #' global_hazard = TRUE,
 #' ref_idx = 0,
 #' estimator = pool(hazard = TRUE),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = T, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -448,10 +418,6 @@
 #' censor_model = C ~ L1 + L2,
 #' ref_idx = 0,
 #' estimator = strat(hazard = FALSE),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -482,10 +448,6 @@
 #' hazard_model = Y ~ L1,
 #' ref_idx = 0,
 #' estimator = strat(hazard = TRUE),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention: Model 1", 
 #' "Dynamic Intervention: Model 1"),
 #' intervention1.A1 = list(static(3)),
@@ -514,10 +476,6 @@
 #' censor_model = C ~ L1 + L2,
 #' ref_idx = 0,
 #' estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention", 
 #' "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
@@ -555,10 +513,6 @@
 #' comp_effect = 1,
 #' ref_idx = 0,
 #' estimator = strat(hazard = TRUE),
-#' nsamples = 1000, 
-#' ci_method = "normal",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention: Model 2",
 #' "Dynamic Intervention: Model 2"),
 #' intervention1.A1 = list(static(3)),
@@ -594,10 +548,6 @@
 #' censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
 #' ref_idx = 0,
 #' estimator = pool(hazard = FALSE),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -626,10 +576,6 @@
 #' censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
 #' ref_idx = 1,
 #' estimator = pool(hazard = FALSE),
-#' nsamples = 1000, 
-#' ci_method = "percentile",
-#' parallel = TRUE, 
-#' ncores = 5,
 #' int_descript = c("Static Intervention", "Dynamic Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1)),
@@ -642,7 +588,9 @@
 #' plot(ice_fit5b)
 #' 
 #' 
-#' @import tidyverse rlang dplyr stringr data.table reshape2 nnet speedglm tuple stats Hmisc methods splines
+#' @import tidyverse rlang methods dplyr stringr
+#' @importFrom Hmisc rcspline.eval
+#' @importFrom splines ns
 #' @export
 
 ice <- function(data, time_points, id, time_name,
@@ -1276,7 +1224,6 @@ ice <- function(data, time_points, id, time_name,
                     global_hazard = global_hazard, 
                     intervention_description = ref_description, 
                     verbose = verbose)
-                    #global_haz_model = global_hazard_model)
 
       if (bootstrap) {
         summary[ref_idx + 1, c(2:4, 6:7, 10:13)] <- c(ref$gformula_risk_last_time, 1, 0, 1, 0, 1, 1, 0, 0)
@@ -1310,12 +1257,6 @@ ice <- function(data, time_points, id, time_name,
     names(this_fit_all) <- ref_description
     
     outcome_by_step <- c(outcome_by_step, this_fit_all)
-
-    # fit_all <- c(fit_all, this_model)
-    # fit_summary <- c(fit_summary, this_summary)
-    # fit_stderr <- c(fit_stderr, this_stderr)
-    # fit_vcov <- c(fit_vcov, this_vcov)
-    # fit_rmse <- c(fit_rmse, this_rmse)
     outcome_init <- c(outcome_init, this_outcome_init)
     comp_init <- c(comp_init, this_comp_init)
     np_model <- c(np_model, this_np_model)
@@ -1398,7 +1339,6 @@ ice <- function(data, time_points, id, time_name,
                             hazard_based = hazard, intervention_description = this_descript, 
                            global_hazard = global_hazard, 
                            verbose = verbose) 
-                           # global_haz_model = global_hazard_model)
       
       this_outcome_init <- list(this_fit$outcome_init)
       this_comp_init <- list(this_fit$comp_init)
@@ -1423,27 +1363,6 @@ ice <- function(data, time_points, id, time_name,
       names(this_fit_all) <- this_descript
       
       outcome_by_step <- c(outcome_by_step, this_fit_all)
-      
-      # this_model <- list(this_fit_outcome$fit)
-      # names(this_model) <- this_descript
-      # 
-      # this_summary <- list(this_fit_outcome$summary)
-      # names(this_summary) <- this_descript
-      # 
-      # this_stderr <- list(this_fit_outcome$stderr)
-      # names(this_stderr) <- this_descript
-      # 
-      # this_vcov <- list(this_fit_outcome$vcov)
-      # names(this_vcov) <- this_descript
-      # 
-      # this_rmse <- list(this_fit_outcome$rmse)
-      # names(this_rmse) <- this_descript
-      # 
-      # fit_all <- c(fit_all, this_model)
-      # fit_summary <- c(fit_summary, this_summary)
-      # fit_stderr <- c(fit_stderr, this_stderr)
-      # fit_vcov <- c(fit_vcov, this_vcov)
-      # fit_rmse <- c(fit_rmse, this_rmse)
       outcome_init <- c(outcome_init, this_outcome_init)
       comp_init <- c(comp_init, this_comp_init)
       np_model <- c(np_model, this_np_model)
@@ -1551,30 +1470,9 @@ ice <- function(data, time_points, id, time_name,
       comp_by_step_boot <- c(comp_by_step_boot, this_comp_by_step_boot)
       hazard_by_step_boot <- c(hazard_by_step_boot, this_hazard_by_step_boot)
 
-
-      # this_model_boot <- list(this_boot$boot_models)
-      # names(this_model_boot) <- this_descript
-      # 
-      # this_summary_boot <- list(this_boot$boot_summary)
-      # names(this_summary_boot) <- this_descript
-      # 
-      # this_stderr_boot <- list(this_boot$boot_stderr)
-      # names(this_stderr_boot) <- this_descript
-      # 
-      # this_vcov_boot <- list(this_boot$boot_vcov)
-      # names(this_vcov_boot) <- this_descript
-      # 
-      # this_rmse_boot <- list(this_boot$boot_rmse)
-      # names(this_rmse_boot) <- this_descript
-      # 
       this_data_boot <- list(this_boot$boot_data)
       names(this_data_boot) <- this_descript
-      # 
-      # fit_all_boot <- c(fit_all_boot, this_model_boot)
-      # fit_summary_boot <- c(fit_summary_boot, this_summary_boot)
-      # fit_stderr_boot <- c(fit_stderr_boot, this_stderr_boot)
-      # fit_vcov_boot <- c(fit_vcov_boot, this_vcov_boot)
-      # fit_rmse_boot <- c(fit_rmse_boot, this_rmse_boot)
+
       data_boot_all <- c(data_boot_all, this_data_boot)
       
       critical_value_all_upper <- append_list(this_boot, str_to_title(this_descript), critical_value_all_upper, "ice_cv_all_upper")
@@ -1655,12 +1553,6 @@ ice <- function(data, time_points, id, time_name,
 
 
     comp_by_step <- hazard_by_step <- c()
-    
-    # outcome_by_step <- list(fit = fit_all, 
-    #                            summary = fit_summary, 
-    #                            stderr = fit_stderr, 
-    #                            vcov = fit_vcov, 
-    #                            rmse = fit_rmse)
     
     
 
@@ -1791,7 +1683,6 @@ ice <- function(data, time_points, id, time_name,
     }
     
     this_outcome_init <- list(ref$outcome_init)
-    # this_comp_init <- list(ref$comp_init)
     this_np_model <- list(ref$np_model)
     
     names(this_outcome_init) <- names(this_np_model) <- ref_description
@@ -1805,29 +1696,7 @@ ice <- function(data, time_points, id, time_name,
     comp_by_step <- c(comp_by_step, this_comp_by_step)
     
     outcome_init <- c(outcome_init, this_outcome_init)
-    # comp_init <- c(comp_init, this_comp_init)
     np_model <- c(np_model, this_np_model)
-
-    # this_model <- list(ref$fit_models)
-    # names(this_model) <- ref_description
-    # 
-    # this_summary <- list(ref$model_summary)
-    # names(this_summary) <- ref_description
-    # 
-    # this_stderr <- list(ref$model_stderr)
-    # names(this_stderr) <- ref_description
-    # 
-    # this_vcov <- list(ref$model_vcov)
-    # names(this_vcov) <- ref_description
-    # 
-    # this_rmse <- list(ref$model_rmse)
-    # names(this_rmse) <- ref_description
-    # 
-    # fit_all <- c(fit_all, this_model)
-    # fit_summary <- c(fit_summary, this_summary)
-    # fit_stderr <- c(fit_stderr, this_stderr)
-    # fit_vcov <- c(fit_vcov, this_vcov)
-    # fit_rmse <- c(fit_rmse, this_rmse)
 
     risk_descript <- c(risk_descript, c(rep(str_to_title(ref_description), K+1), rep("Natural Course (nonparametric)", K+1)))
     risk_interv <- c(risk_interv, c(ref$gformula_risk[1, ], c(0, ref$weight_h$risk)))
@@ -1922,7 +1791,6 @@ ice <- function(data, time_points, id, time_name,
                             verbose = verbose)
       
       this_outcome_init <- list(this_fit$outcome_init)
-      # this_comp_init <- list(this_fit$comp_init)
       this_np_model <- list(this_fit$np_model)
       
       names(this_outcome_init) <- names(this_np_model) <- this_descript
@@ -1936,38 +1804,8 @@ ice <- function(data, time_points, id, time_name,
       comp_by_step <- c(comp_by_step, this_comp_by_step)
       
       outcome_init <- c(outcome_init, this_outcome_init)
-      # comp_init <- c(comp_init, this_comp_init)
       np_model <- c(np_model, this_np_model)
       
-      # fit_all <- c(fit_all, this_model)
-      # fit_summary <- c(fit_summary, this_summary)
-      # fit_stderr <- c(fit_stderr, this_stderr)
-      # fit_vcov <- c(fit_vcov, this_vcov)
-      # fit_rmse <- c(fit_rmse, this_rmse)
-      # outcome_init <- c(outcome_init, this_outcome_init)
-      # comp_init <- c(comp_init, this_comp_init)
-      # 
-      # this_model <- list(this_fit$fit_models)
-      # names(this_model) <- this_descript
-      # 
-      # this_summary <- list(this_fit$model_summary)
-      # names(this_summary) <- this_descript
-      # 
-      # this_stderr <- list(this_fit$model_stderr)
-      # names(this_stderr) <- this_descript
-      # 
-      # this_vcov <- list(this_fit$model_vcov)
-      # names(this_vcov) <- this_descript
-      # 
-      # this_rmse <- list(this_fit$model_rmse)
-      # names(this_rmse) <- this_descript
-      # 
-      # fit_all <- c(fit_all, this_model)
-      # fit_summary <- c(fit_summary, this_summary)
-      # fit_stderr <- c(fit_stderr, this_stderr)
-      # fit_vcov <- c(fit_vcov, this_vcov)
-      # fit_rmse <- c(fit_rmse, this_rmse)
-
       if (this_descript != "Natural Course") {
 
       summary[int+1, 2] <- this_fit$gformula_risk_last_time
@@ -2069,29 +1907,9 @@ ice <- function(data, time_points, id, time_name,
         comp_by_step_boot <- c(comp_by_step_boot, this_comp_by_step_boot)
         hazard_by_step_boot <- c(hazard_by_step_boot, this_hazard_by_step_boot)
 
-        # this_model_boot <- list(this_boot$boot_models)
-        # names(this_model_boot) <- this_descript
-        # 
-        # this_summary_boot <- list(this_boot$boot_summary)
-        # names(this_summary_boot) <- this_descript
-        # 
-        # this_stderr_boot <- list(this_boot$boot_stderr)
-        # names(this_stderr_boot) <- this_descript
-        # 
-        # this_vcov_boot <- list(this_boot$boot_vcov)
-        # names(this_vcov_boot) <- this_descript
-        # 
-        # this_rmse_boot <- list(this_boot$boot_rmse)
-        # names(this_rmse_boot) <- this_descript
-
         this_data_boot <- list(this_boot$boot_data)
         names(this_data_boot) <- this_descript
 
-        # fit_all_boot <- c(fit_all_boot, this_model_boot)
-        # fit_summary_boot <- c(fit_summary_boot, this_summary_boot)
-        # fit_stderr_boot <- c(fit_stderr_boot, this_stderr_boot)
-        # fit_vcov_boot <- c(fit_vcov_boot, this_vcov_boot)
-        # fit_rmse_boot <- c(fit_rmse_boot, this_rmse_boot)
         data_boot_all <- c(data_boot_all, this_data_boot)
         
         critical_value_all_upper <- append_list(this_boot, str_to_title(this_descript), critical_value_all_upper, "ice_cv_all_upper")
@@ -2256,48 +2074,6 @@ ice <- function(data, time_points, id, time_name,
   
   class(out) <- c("ICE")
   
-  # remove all global objects
-  
-  if (exists("treatment_varname")) {
-    rm("treatment_varname", envir = globalenv())
-  }
-  
-  if (exists("threshold_treatment")) {
-    rm("threshold_treatment", envir = globalenv())
-  }
-  
-  if (exists("treat")) {
-    rm("treat", envir = globalenv())
-  }
-  
-  if (exists("id_var")) {
-    rm("id_var", envir = globalenv())
-  }
-  
-  if (exists("gp_indicator")) {
-    rm("gp_indicator", envir = globalenv())
-  }
-  
-  if (exists("gp_interv_type")) {
-    rm("gp_interv_type", envir = globalenv())
-  }
-  
-  if (exists("gp_treatment_var")) {
-    rm("gp_treatment_var", envir = globalenv())
-  }
-  
-  if (exists("ngrace_period")) {
-    rm("ngrace_period", envir = globalenv())
-  }
-  
-  if (exists("grace_period_var")) {
-    rm("grace_period_var", envir = globalenv())
-  }
-  
-  if (exists("treatment_varname_gp")) {
-    rm("treatment_varname_gp", envir = globalenv())
-  }
-  
   return(out)
 
 }
@@ -2397,7 +2173,6 @@ match_boot_values <- function(risk_df, cv_df, col) {
   names <- colnames(cv_df)
   for (icv in 1:ncol(cv_df)) {
     cv_name <- names[icv]
-    # cv_name <- str_replace_all(cv_name, "[.]", " ")
     risk_df[risk_df$Intervention == cv_name, col] <- as.vector(cv_df[, names[icv]])
   }
   

@@ -12,37 +12,37 @@
 #' data <- gfoRmulaICE::compData
 #'
 #' fit_classical_pool <- ice(
-#' data = data,
-#' K = 4,
-#' id = "id",
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
 #' time_name = "t0",
+#' censor_name = "C", 
 #' outcome_name = "Y",
-#' censor_name = "C",
-#' competing_name = "D",
-#' estimator = pool(hazard = F),
+#' compevent_name = "D",
 #' comp_effect = 0,
-#' outcome_model = Y ~ L1 + L2 + A1 + A2,
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
+#' estimator = pool(hazard = FALSE),
 #' int_descript = c("Static Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1))
 #' )
 #'
 #' fit_hazard_pool <- ice(
-#' data = data,
-#' K = 4,
-#' id = "id",
+#' data = data, 
+#' time_points = 4, 
+#' id = "id", 
 #' time_name = "t0",
+#' censor_name = "C", 
 #' outcome_name = "Y",
-#' censor_name = "C",
-#' competing_name = "D",
-#' estimator = pool(hazard = T),
+#' compevent_name = "D",
 #' comp_effect = 0,
-#' outcome_model = Y ~ L1 + L2 + A1 + A2,
+#' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' competing_model = D ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
+#' estimator = pool(hazard = TRUE),
 #' int_descript = c("Static Intervention"),
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1))
@@ -121,7 +121,7 @@ summary.ICE <- function(...) {
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
-#' estimator = pool(hazard = F),
+#' estimator = pool(hazard = FALSE),
 #' int_descript = "Static Intervention",
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1))
@@ -140,7 +140,7 @@ summary.ICE <- function(...) {
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' competing_model = D ~ L1 + L2 + A1 + A2,
 #' ref_idx = 0,
-#' estimator = pool(hazard = T),
+#' estimator = pool(hazard = TRUE),
 #' int_descript = "Static Intervention",
 #' intervention1.A1 = list(static(3)),
 #' intervention1.A2 = list(static(1))
@@ -148,7 +148,7 @@ summary.ICE <- function(...) {
 #'
 #' plot(ice_fit1, ice_fit2)
 #'
-plot.ICE <- function(..., plot_obs = T, label = 0) {
+plot.ICE <- function(..., plot_obs = TRUE, label = 0) {
   
   plot_np <- plot_obs
   Intervention <- Risk <- Critical_Value_Lower <- SE <- Critical_Value_Upper <- Time <- NULL

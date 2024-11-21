@@ -19,6 +19,6 @@ This function specifies the natural course intervention on the treatment variabl
 }
 \examples{
 data <- gfoRmulaICE::compData
-natural_course <- natural_course(data = data, treat_var = "A")
+natural_course <- natural_course(data = data, treat_var = "A1")
 
 }

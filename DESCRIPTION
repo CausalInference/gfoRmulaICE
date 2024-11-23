@@ -1,0 +1,49 @@
+Package: gfoRmulaICE
+Type: Package
+Title: Parametric Iterative Conditional Expectation G-Formula
+Version: 0.1.0
+Authors@R: c(person("Zhaoxi", "Cheng", role = c("aut", "cre"), 
+                     email = "zcheng@hsph.harvard.edu"),
+              person("Jing", "Li", role = c("aut"), 
+                      email = "jing_li@hsph.harvard.edu"),
+              person("Sophia", "Rein", role = c("aut"), 
+                      email = "srein@hsph.harvard.edu"),
+              person("Ryan", "O'Dea", role = c("aut"), 
+                      email = "ryanodea@hsph.harvard.edu"),
+              person("Sean", "McGrath", role = c("aut"),
+                      email = "sean_mcgrath@g.harvard.edu"),
+              person("Lan", "Wen", role = c("aut"),
+                      email = "lan.wen@uwaterloo.ca"),
+              person("Miguel A.", "Hernán", role = c("aut"),
+                      email = "mhernan@hsph.harvard.edu"),
+              person("2024 The President and Fellows of Harvard College", 
+                      role = c("cph")))
+Description: Implements iterative conditional expectation (ICE) estimators of the plug-in g-formula. 
+    Both singly robust and doubly robust ICE estimators based on parametric models are available. 
+    The package can be used to estimate survival curves under sustained treatment strategies (interventions) using longitudinal data with time-varying treatments, time-varying confounders, censoring, and competing events.
+    The interventions can be static or dynamic, and deterministic or stochastic (including threshold interventions). Both prespecified and user-defined interventions are available.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    data.table,
+    ggplot2,
+    nnet,
+    doParallel,
+    parallel,
+    foreach,
+    stringr,
+    tidyverse,
+    dplyr,
+    rlang,
+    reshape2,
+    speedglm,
+    methods,
+    Hmisc,
+    splines
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+RoxygenNote: 7.3.2
+Depends: 
+    R (>= 2.10)

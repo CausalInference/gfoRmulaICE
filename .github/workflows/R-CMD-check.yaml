@@ -52,9 +52,9 @@ jobs:
       - name: Manual qpdf installation (fallback)
         if: matrix.config.os == 'macos-latest'
         run: |
-          curl -LO https://github.com/qpdf/qpdf/releases/download/release-qpdf-11.2.0/qpdf-11.2.0-macosx.tar.gz
-          tar -xzf qpdf-11.2.0-macosx.tar.gz
-          sudo cp qpdf-11.2.0-macosx/bin/* /usr/local/bin
+          curl -LO https://github.com/qpdf/qpdf/releases/download/v11.9.1/qpdf-11.9.1.tar.gz
+          tar -xzf qpdf-11.9.1.tar.gz
+          sudo cp qpdf-11.9.1.tar.gz/bin/* /usr/local/bin
 
       - uses: r-lib/actions/setup-pandoc@v2
 

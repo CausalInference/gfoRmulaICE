@@ -33,20 +33,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system dependencies on macOS
+      - name: Update Homebrew
         if: matrix.config.os == 'macos-latest'
         run: |
-          echo "Updating Homebrew..."
-          brew update || echo "Homebrew update failed; continuing..."
-          echo "Installing Ghostscript and qpdf..."
-          brew install gs qpdf || echo "Failed to install Ghostscript or qpdf"
+          brew update-reset && brew update
 
-      - name: Verify system dependencies on macOS
+      - name: Install Xcode command line tools
         if: matrix.config.os == 'macos-latest'
         run: |
-          echo "Checking installed utilities..."
-          which gs || echo "Ghostscript not found"
-          which qpdf || echo "qpdf not found"
+          xcode-select --install || echo "Xcode Command Line Tools already installed"
+
+      - name: Install Ghostscript and qpdf
+        if: matrix.config.os == 'macos-latest'
+        run: |
+          brew install gs || echo "Failed to install Ghostscript; continuing..."
+          brew install qpdf || echo "Failed to install qpdf; continuing..."
+
+      - name: Manual qpdf installation (fallback)
+        if: matrix.config.os == 'macos-latest'
+        run: |
+          curl -LO https://github.com/qpdf/qpdf/releases/download/release-qpdf-11.2.0/qpdf-11.2.0-macosx.tar.gz
+          tar -xzf qpdf-11.2.0-macosx.tar.gz
+          sudo cp qpdf-11.2.0-macosx/bin/* /usr/local/bin
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -59,7 +67,6 @@ jobs:
 
       - name: Install R dependencies
         run: |
-          echo "Installing required R packages..."
           Rscript -e 'install.packages(c("data.table", "ggplot2", "nnet", "doParallel", "parallel", "foreach", "stringr", "tidyverse", "dplyr", "rlang", "reshape2", "speedglm", "methods", "Hmisc", "splines"), repos = "https://cran.rstudio.com")'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
@@ -71,4 +78,5 @@ jobs:
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+
 

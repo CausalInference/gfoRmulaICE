@@ -1,12 +1,14 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 on:
   push:
     branches: [main, master]
   pull_request:
     branches: [main, master]
 
-name: R-CMD-check.yaml
+name: R-CMD-check
 
 permissions: read-all
 
@@ -20,11 +22,10 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: macos-latest,   r: 'release'}
+          - {os: macos-13,   r: 'release'}
           - {os: windows-latest, r: 'release'}
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'release'}
-          - {os: ubuntu-latest,   r: 'oldrel-1'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -32,44 +33,29 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Update Homebrew
-        if: matrix.config.os == 'macos-latest'
-        run: |
-          brew update-reset && brew update
-
-      - name: Install Xcode command line tools
-        if: matrix.config.os == 'macos-latest'
-        run: |
-          xcode-select --install || echo "Xcode Command Line Tools already installed"
-
-      - name: Install Ghostscript and qpdf
-        if: matrix.config.os == 'macos-latest'
-        run: |
-          brew install gs || echo "Failed to install Ghostscript"
-          brew install qpdf || echo "Failed to install qpdf"
+        with:
+          working-directory: SEQuential
 
       - uses: r-lib/actions/setup-pandoc@v2
+        with:
+          working-directory: SEQuential
 
       - uses: r-lib/actions/setup-r@v2
         with:
+          working-directory: SEQuential
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
-          use-cloud: true
-
-      - name: Install R dependencies
-        run: |
-          Rscript -e 'install.packages(c("data.table", "ggplot2", "nnet", "doParallel", "parallel", "foreach", "stringr", "tidyverse", "dplyr", "rlang", "reshape2", "speedglm", "methods", "Hmisc", "splines"), repos = "https://cran.rstudio.com")'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          working-directory: SEQuential
           extra-packages: any::rcmdcheck
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
         with:
+          working-directory: SEQuential
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
-
 

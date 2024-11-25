@@ -588,9 +588,10 @@
 #' plot(ice_fit5b)
 #' 
 #' 
-#' @import tidyverse rlang methods dplyr stringr
+#' @import magrittr methods dplyr stringr
 #' @importFrom Hmisc rcspline.eval
 #' @importFrom splines ns
+#' @importFrom rlang is_formula
 #' @export
 
 ice <- function(data, time_points, id, time_name,

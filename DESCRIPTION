@@ -33,7 +33,7 @@ Imports:
     parallel,
     foreach,
     stringr,
-    tidyverse,
+    magrittr,
     dplyr,
     rlang,
     reshape2,

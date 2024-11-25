@@ -6,8 +6,6 @@
   ![Downloads](https://cranlogs.r-pkg.org/badges/grand-total/gfoRmulaICE)
   <!-- badges: end -->
 
-(to verify each of the example works)
-
 ## How to install 
 
 Installation from CRAN:

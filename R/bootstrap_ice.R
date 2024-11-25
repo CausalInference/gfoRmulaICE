@@ -56,7 +56,7 @@
 #' \item{ref_model_err_mssg}{A list of strings for error messages of any model error from each bootstrap replicate for the reference intervention.}
 #' \item{ref_data_err_mssg}{A list of strings for error messages of any data error from each bootstrap replicate for the reference intervention.}
 #'
-#' @import doParallel parallel foreach tidyverse dplyr stringr
+#' @import doParallel parallel foreach magrittr dplyr stringr
 #' @importFrom data.table SJ
 #' @importFrom data.table as.data.table
 #' @importFrom data.table setkey

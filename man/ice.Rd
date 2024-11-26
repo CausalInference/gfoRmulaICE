@@ -224,20 +224,31 @@ The polynomial and spline terms could be used on lagged variables.
 
 data <- gfoRmulaICE::compData
 
-# Example 1: Dynamic Intervention
+# Example 1: Built-in and User-defined Interventions
 
 # We consider the following interventions. 
 # We intervene at all time points.
-# Intervention 1 on A2: at time t, if L1 = 0, then treat; otherwise, not treat. 
-# Intervention 2 on A2: never treat upon until L1 = 0, after which follows always treat.
-# Intervention 3 on A2: never treat upon until L1 = 0, after which follows natural course.
+# Intervention 1 on A1: always treat with value 3.
+# Intervention 1 on A2: always treat with value 1.
+# Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, 
+# set its value to -3. Otherwise, do not intervene.
+# Intervention 3 on A2: dynamic intervention (treat when L1 = 0) 
+# with uniform grace period of 2 periods
+# Intervention 4 on A1: at time t, if L2 < 0, then assign 1; 
+# if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
+# Intervention 4 on A2: at time t, if L1 = 0, then treat; otherwise, not treat.
+# Intervention 5 on A2: never treat upon until L1 = 0, after which follows always treat.
+# Intervention 6 on A2: never treat upon until L1 = 0, after which follows natural course.
+
 
 # We use classical pooled ICE estimator, 
 # natural course as the reference intervention, 
 # and the following models:
 # a. outcome model: Y ~ L1 + L2 + A1 + A2
-# b. censor model: C ~ L1 + L2 + A1 + A2
-# c. competing model: D ~ L1 + L2 + A1 + A2.
+# b. censor model: C ~ L1 + L2 + A1 + A2.
+
+dynamic_cat <- dplyr::case_when(data$L2 < 0 ~ 1,
+data$L2 >= 0 & data$L2 < 2 ~ 2, TRUE ~ 3)
 
 ice_fit1 <- ice(
 data = data, 
@@ -252,174 +263,34 @@ outcome_model = Y ~ L1 + L2 + A1 + A2,
 censor_model = C ~ L1 + L2 + A1 + A2,
 ref_idx = 0,
 estimator = pool(hazard = FALSE),
-int_descript = c("Dynamic Intervention 1", "Dynamic Intervention 2", 
-"Dynamic Intervention 3"),
-intervention1.A2 = list(dynamic("L1 == 0", static(0), static(1))),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1), absorb = T)),
-intervention3.A2 = list(dynamic("L1 == 0", static(0), natural_course()))
+int_descript = c("Static Intervention", "Threshold Intervention", 
+"Dynamic Intervention with Grace Period", "Dynamic Intervention 1", 
+"Dynamic Intervention 2", "Dynamic Intervention 3"),
+intervention1.A1 = list(static(3)),
+intervention1.A2 = list(static(1)),
+intervention2.L2 = list(threshold(-3, Inf)),
+intervention3.A2 = list(grace_period("uniform", 2, "L1 == 0")),
+intervention4.A1 = list(dynamic_cat),
+intervention4.A2 = list(dynamic("L1 == 0", static(0), static(1))),
+intervention5.A2 = list(dynamic("L1 == 0", static(0), static(1), absorb = T)),
+intervention6.A2 = list(dynamic("L1 == 0", static(0), natural_course()))
 )
 
 summary(ice_fit1)
 
 plot(ice_fit1)
 
-# Example 2: Built-in Interventions
+# Example 2: Hazard-based ICE Estimators
 
-# We consider the following interventions. 
-# We intervene at all time points.
-# Intervention 1 on A1: always treat with value 3.
-# Intervention 1 on A2: always treat with value 1.
-# Intervention 2 on L2: when the natural value of L2 at time t is lower than -3, 
-# set its value to -3. Otherwise, do not intervene.
-# Intervention 3 on A2: dynamic intervention (treat when L1 = 0) 
-# with uniform grace period of 2 periods
+# We use Intervention 1 in Example 1.
 
-# We use classical pooled ICE estimator, 
-# natural course as the reference intervention, 
-# and the following models:
-# a. outcome model: Y ~ L1 + L2 + A1 + A2
-# b. censor model: C ~ L1 + L2 + A1 + A2
-# c. competing model: D ~ L1 + L2 + A1 + A2.
-
-ice_fit2 <- ice(
-data = data, 
-time_points = 4, 
-id = "id", 
-time_name = "t0",
-censor_name = "C", 
-outcome_name = "Y",
-compevent_name = "D",
-comp_effect = 0,
-outcome_model = Y ~ L1 + L2 + A1 + A2, 
-censor_model = C ~ L1 + L2 + A1 + A2,
-ref_idx = 0,
-estimator = pool(hazard = FALSE),
-int_descript = c("Static Intervention", "Threshold Intervention", 
-"Dynamic Intervention with Grace Period"),
-intervention1.A1 = list(static(3)),
-intervention1.A2 = list(static(1)),
-intervention2.L2 = list(threshold(-3, Inf)),
-intervention3.A2 = list(grace_period("uniform", 2, "L1 == 0"))
-)
-
-summary(ice_fit2)
-
-plot(ice_fit2)
-
-# Example 3: User-defined Intervention
-
-# We consider the following interventions. 
-# We intervene at all time points.
-# Intervention 1 on A1: always treat with value 3.
-# Intervention 1 on A2: always treat with value 1.
-# Intervention 2 on A1: at time t, if L2 < 0, then assign 1; 
-# if 0 <= L2 < 2, then assign 2; otherwise, assign 3.
-# Intervention 2 on A2: at time t, if L1 = 0, then treat; 
-# otherwise, not treat. 
-
-# We use classical pooled ICE estimator, 
-# natural course as the reference intervention, 
-# and the following models:
-# a. outcome model: Y ~ L1 + L2 + A1 + A2
-# b. censor model: C ~ L1 + L2 + A1 + A2
-# c. competing model: D ~ L1 + L2 + A1 + A2.
-
-dynamic_cat <- dplyr::case_when(data$L2 < 0 ~ 1,
-data$L2 >= 0 & data$L2 < 2 ~ 2, TRUE ~ 3)
-
-ice_fit3 <- ice(
-data = data, 
-time_points = 4, 
-id = "id", 
-time_name = "t0",
-censor_name = "C", 
-outcome_name = "Y",
-compevent_name = "D",
-comp_effect = 0,
-outcome_model = Y ~ L1 + L2 + A1 + A2, 
-censor_model = C ~ L1 + L2 + A1 + A2,
-ref_idx = 0,
-estimator = pool(hazard = FALSE),
-int_descript = c("Static Intervention", "Dynamic Intervention"),
-intervention1.A1 = list(static(3)),
-intervention1.A2 = list(static(1)),
-intervention2.A1 = list(dynamic_cat),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
-)
-
-summary(ice_fit3)
-
-plot(ice_fit3)
-
-# Example 4: Different ICE Estimators
-
-# We use the interventions in Example 3 and implement each ICE estimator.
-
-# a. hazard-based pooled ICE:
-# hazard model is time-specific 
-# and shares the same model statement as the outcome model
-
-ice_fit4a <- ice(
-data = data, 
-time_points = 4, 
-id = "id", 
-time_name = "t0",
-censor_name = "C", 
-outcome_name = "Y",
-compevent_name = "D",
-comp_effect = 0,
-outcome_model = Y ~ L1 + L2 + A1 + A2, 
-censor_model = C ~ L1 + L2 + A1 + A2,
-competing_model = D ~ L1 + L2 + A1 + A2,
-ref_idx = 0,
-estimator = pool(hazard = TRUE),
-int_descript = c("Static Intervention", "Dynamic Intervention"),
-intervention1.A1 = list(static(3)),
-intervention1.A2 = list(static(1)),
-intervention2.A1 = list(dynamic_cat),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
-)
-
-summary(ice_fit4a)
-
-plot(ice_fit4a)
-
-# b. hazard-based pooled ICE: 
-# hazard model is time-specific and uses Y ~ L1 + L2
-
-ice_fit4b <- ice(
-data = data, 
-time_points = 4, 
-id = "id", 
-time_name = "t0",
-censor_name = "C", 
-outcome_name = "Y",
-compevent_name = "D",
-comp_effect = 0,
-outcome_model = Y ~ L1 + L2 + A1 + A2, 
-censor_model = C ~ L1 + L2 + A1 + A2,
-competing_model = D ~ L1 + L2 + A1 + A2,
-hazard_model = Y ~ L1 + L2,
-ref_idx = 0,
-estimator = pool(hazard = TRUE),
-int_descript = c("Static Intervention", "Dynamic Intervention"),
-intervention1.A1 = list(static(3)),
-intervention1.A2 = list(static(1)),
-intervention2.A1 = list(dynamic_cat),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
-)
-
-summary(ice_fit4b)
-
-plot(ice_fit4b)
-
-# c. hazard-based pooled ICE: 
+# a. hazard-based pooled ICE: 
 # hazard model is pooled-over-time and 
 # includes flexible terms of time variable
 
 library(splines)
 
-ice_fit4c <- ice(
+ice_fit2a <- ice(
 data = data, 
 time_points = 4, 
 id = "id", 
@@ -435,104 +306,17 @@ hazard_model = Y ~ L1 + L2 + A1 + A2 + ns(t0, df = 2),
 global_hazard = TRUE,
 ref_idx = 0,
 estimator = pool(hazard = TRUE),
-int_descript = c("Static Intervention", "Dynamic Intervention"),
+int_descript = c("Static Intervention"),
 intervention1.A1 = list(static(3)),
-intervention1.A2 = list(static(1)),
-intervention2.A1 = list(dynamic_cat),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
+intervention1.A2 = list(static(1))
 )
 
-summary(ice_fit4c)
+summary(ice_fit2a)
 
-plot(ice_fit4c)
-
-# d. classical stratified ICE:
-
-ice_fit4d <- ice(
-data = data, 
-time_points = 4, 
-id = "id", 
-time_name = "t0",
-censor_name = "C", 
-outcome_name = "Y",
-compevent_name = "D",
-comp_effect = 0,
-outcome_model = Y ~ L1 + L2, 
-censor_model = C ~ L1 + L2,
-ref_idx = 0,
-estimator = strat(hazard = FALSE),
-int_descript = c("Static Intervention", "Dynamic Intervention"),
-intervention1.A1 = list(static(3)),
-intervention1.A2 = list(static(1)),
-intervention2.A1 = list(dynamic_cat),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
-)
-
-summary(ice_fit4d)
-
-plot(ice_fit4d)
-
-# e. hazard-based stratified ICE:
-# hazard model is time-specific and uses Y ~ L1 
-# (Note: a pooled-over-time hazard model is not valid for stratified ICE.)
-
-ice_fit4e <- ice(
-data = data, 
-time_points = 4, 
-id = "id", 
-time_name = "t0",
-censor_name = "C", 
-outcome_name = "Y",
-compevent_name = "D",
-comp_effect = 0,
-outcome_model = Y ~ L1 + L2, 
-censor_model = C ~ L1 + L2,
-competing_model = D ~ L1 + L2,
-hazard_model = Y ~ L1,
-ref_idx = 0,
-estimator = strat(hazard = TRUE),
-int_descript = c("Static Intervention: Model 1", 
-"Dynamic Intervention: Model 1"),
-intervention1.A1 = list(static(3)),
-intervention1.A2 = list(static(1)),
-intervention2.A1 = list(dynamic_cat),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
-)
-
-summary(ice_fit4e)
-
-plot(ice_fit4e)
+plot(ice_fit2a)
 
 
-# f. doubly robust ICE:
-
-ice_fit4f <- ice(
-data = data, 
-time_points = 4, 
-id = "id", 
-time_name = "t0",
-censor_name = "C", 
-outcome_name = "Y",
-compevent_name = "D",
-comp_effect = 0,
-outcome_model = Y ~ L1 + L2, 
-censor_model = C ~ L1 + L2,
-ref_idx = 0,
-estimator = weight(list(A1 ~ L1 + L2, A2 ~ L1 + L2)),
-int_descript = c("Static Intervention", 
-"Dynamic Intervention"),
-intervention1.A1 = list(static(3)),
-intervention1.A2 = list(static(1)),
-intervention2.A1 = list(dynamic_cat),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
-)
-
-summary(ice_fit4f)
-
-plot(ice_fit4f)
-
-
-# g. hazard-based stratified ICE with intervention-specific models:
+# b. hazard-based stratified ICE with intervention-specific models:
 # hazard model is time-specific and same as the outcome model
 # consider the total effect for competing event,
 # using normal quantile for variance estimates,
@@ -542,7 +326,7 @@ plot(ice_fit4f)
 # competing model for intervention 1: D ~ L1 + L2,
 # competing model for intervention 2: D ~ L1
 
-ice_fit4g <- ice(
+ice_fit2b <- ice(
 data = data, 
 time_points = 4, 
 id = "id", 
@@ -556,79 +340,16 @@ competing_model = D ~ L1,
 comp_effect = 1,
 ref_idx = 0,
 estimator = strat(hazard = TRUE),
-int_descript = c("Static Intervention: Model 2",
-"Dynamic Intervention: Model 2"),
+int_descript = c("Static Intervention"),
 intervention1.A1 = list(static(3)),
 intervention1.A2 = list(static(1)),
-intervention2.A1 = list(dynamic_cat),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1))),
 outcomeModel.1 = Y ~ L1 + L2,
 compModel.2 = D ~ L1 + L2
 )
 
-# Compare with the ICE estimates in Example 4e:
-plot(ice_fit4e, ice_fit4g)
-summary(ice_fit4e, ice_fit4g)
+plot(ice_fit2b)
+summary(ice_fit2b)
 
-# Example 5: Flexible Model Specification
-
-# a. Complicated terms in model statement:
-# We use the same interventions and ICE estimator in Example 3, 
-# and include polynomial, spline, and lagged terms in models.
-
-library(Hmisc)
-
-ice_fit5a <- ice(
-data = data, 
-time_points = 4, 
-id = "id", 
-time_name = "t0",
-censor_name = "C", 
-outcome_name = "Y",
-compevent_name = "D",
-comp_effect = 0,
-outcome_model = Y ~ I(L1^2) + rcspline.eval(lag1_L2, knots = 1:3) + A1 + A2,
-censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
-ref_idx = 0,
-estimator = pool(hazard = FALSE),
-int_descript = c("Static Intervention", "Dynamic Intervention"),
-intervention1.A1 = list(static(3)),
-intervention1.A2 = list(static(1)),
-intervention2.A1 = list(dynamic_cat),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
-)
-
-summary(ice_fit5a)
-
-plot(ice_fit5a)
-
-# b. Using static intervention as reference:
-# We use the same interventions and ICE estimator in Example 3, 
-# but use static intervention as the reference intervention.
-
-ice_fit5b <- ice(
-data = data, 
-time_points = 4, 
-id = "id", 
-time_name = "t0",
-censor_name = "C", 
-outcome_name = "Y",
-compevent_name = "D",
-comp_effect = 0,
-outcome_model = Y ~ I(L1^2) + rcspline.eval(lag1_L2, knots = 1:3) + A1 + A2,
-censor_model = C ~ lag1_L1 + poly(L2, degree = 2) + A1 + A2,
-ref_idx = 1,
-estimator = pool(hazard = FALSE),
-int_descript = c("Static Intervention", "Dynamic Intervention"),
-intervention1.A1 = list(static(3)),
-intervention1.A2 = list(static(1)),
-intervention2.A1 = list(dynamic_cat),
-intervention2.A2 = list(dynamic("L1 == 0", static(0), static(1)))
-)
-
-summary(ice_fit5b)
-
-plot(ice_fit5b)
 
 
 }

@@ -81,13 +81,13 @@ natural_course_ipweighted <- function(data, id, censor_varname,
                                                competing_varname, competing_fit,
                                                total_effect)
     } else {
-      if (!is.null(competing_varname) & total_effect == F) {
+      if (!is.null(competing_varname) & total_effect == FALSE) {
         prob_censor <- stats::predict(competing_fit, newdata = data, type = "response")
         risk_weighted <- compute_weighted_hazard(prob_censor, data, id, competing_varname,
                                                  K, time0, outcome_varname,
                                                  NULL, NULL,
                                                  total_effect)
-      } else if (!is.null(competing_varname) & total_effect == T) {
+      } else if (!is.null(competing_varname) & total_effect == TRUE) {
         risk_weighted <- compute_weighted_hazard(rep(0, nrow(data)), data, id, censor_varname,
                                                  K, time0, outcome_varname,
                                                  competing_varname, competing_fit,
@@ -153,7 +153,7 @@ grace_period <- function(type, nperiod, condition,
   
   my.arrayofA <- 0
   
-  assign.global(T, "gp_indicator")
+  assign.global(TRUE, "gp_indicator")
 
   gp_interv_type <- type
   gp_treatment_var <- var
@@ -339,7 +339,7 @@ compute_weighted_hazard <- function(prob_censor, data, id, censor_varname,
     ipw_censor <- censor0_weight_cum
   }
 
-  if (!is.null(competing_varname) & total_effect == F){
+  if (!is.null(competing_varname) & total_effect == FALSE){
     comprisk_p0_inv <- rep(0, length = nrow(data))
     row_ind <- !is.na(data[[competing_varname]])
     comprisk_p0_inv[row_ind] <- 1 / (1 - stats::predict(competing_fit, type = 'response', newdata = data[row_ind, ]))
@@ -356,7 +356,7 @@ compute_weighted_hazard <- function(prob_censor, data, id, censor_varname,
     cur_time_ind <- data[[time_name]] == i
     w_cur <- ipw_censor[cur_time_ind]
 
-    if (!is.null(competing_varname) & total_effect == T) {
+    if (!is.null(competing_varname) & total_effect == TRUE) {
       w_cur_elimD <- ifelse(data[[competing_varname]][cur_time_ind] == 1, 0, w_cur)
       h_k[i + 1] <- weighted.mean(x = data[[outcome_name]][cur_time_ind], w = w_cur_elimD, na.rm = TRUE)
       h_k2[i + 1] <- weighted.mean(x = data[[competing_varname]][cur_time_ind], w = w_cur, na.rm = TRUE)
@@ -418,8 +418,8 @@ product <- function(data, columns){
 #' Indicator for the pooling over treatment history ICE estimator
 #'
 #' This function identifies the pooling over treatment history ICE estimator. The classical pooling over
-#' treatment history ICE estimator is specified by \code{pool(hazard = F)}. The hazard based pooling over treatment
-#' history ICE estimator is specified by \code{pool(hazard = T)}.
+#' treatment history ICE estimator is specified by \code{pool(hazard = FALSE)}. The hazard based pooling over treatment
+#' history ICE estimator is specified by \code{pool(hazard = TRUE)}.
 #'
 #' @param hazard a logical value indicating whether to use hazard-based ICE estimator.
 #'
@@ -433,8 +433,8 @@ pool <- function(hazard) {
 #' Indicator for the stratifying on treatment history ICE estimator
 #'
 #' This function identifies the stratifying on treatment history ICE estimator. The classical stratifying on 
-#' treatment history ICE estimator is specified by \code{strat(hazard = F)}. The hazard based stratifying on treatment
-#' history ICE estimator is specified by \code{strat(hazard = T)}.
+#' treatment history ICE estimator is specified by \code{strat(hazard = FALSE)}. The hazard based stratifying on treatment
+#' history ICE estimator is specified by \code{strat(hazard = TRUE)}.
 #'
 #' @param hazard a logical value indicating whether to use hazard-based ICE estimator.
 #'
@@ -724,7 +724,7 @@ get_models <- function(this_fit, model_name, descript) {
 #'
 #' @return None.
 #' @noRd
-give_warning <- function(err, err_mssg, model = F) {
+give_warning <- function(err, err_mssg, model = FALSE) {
   
   if (model) {
     err_explain <- ". The analysis should likely be repeated

@@ -7,10 +7,10 @@
 #'
 #' Users could specify which version ICE estimator to use through \code{estimator}.
 #' \itemize{
-#' \item{\code{pool(hazard = F)} specifies the classical pooling over treatment history ICE estimator. }
-#' \item{\code{pool(hazard = T)} specifies the hazard-based pooling over treatment history ICE estimator. }
-#' \item{\code{strat(hazard = F)} specifies the classical stratifying on treatment history ICE estimator. }
-#' \item{\code{strat(hazard = T)} specifies the hazard-based stratifying on treatment history ICE estimator. }
+#' \item{\code{pool(hazard = FALSE)} specifies the classical pooling over treatment history ICE estimator. }
+#' \item{\code{pool(hazard = TRUE)} specifies the hazard-based pooling over treatment history ICE estimator. }
+#' \item{\code{strat(hazard = FALSE)} specifies the classical stratifying on treatment history ICE estimator. }
+#' \item{\code{strat(hazard = TRUE)} specifies the hazard-based stratifying on treatment history ICE estimator. }
 #' \item{\code{weight(treat_model)} specifies the doubly robust weighted ICE estimator
 #' where \code{treat_model} specifies the treatment model.}
 #' }
@@ -26,15 +26,15 @@
 #'
 #' \code{fit_hazard_strat <- ice(data = data, K = 4, id = "id", time_name = "t0", } \cr
 #' \code{outcome_name = "Y", censor_name = "C", competing_name = "D", } \cr
-#' \code{estimator = strat(hazard = T), comp_effect = 1, } \cr
+#' \code{estimator = strat(hazard = TRUE), comp_effect = 1, } \cr
 #' \code{censor_model = C ~ L1 + L2, ref_idx = 0,} \cr
 #' \code{int_descript = c("Static Intervention", "Dynamic Intervention"),} \cr
 #' \code{outcome_model = Y ~ L1 + L2,} \cr
 #' \code{competing_model = D ~ L1 + L2,} \cr
 #' \code{intervention1.A1 = list(static(0)),} \cr
 #' \code{intervention1.A2 = list(static(1)),} \cr
-#' \code{intervention2.A1 = list(dynamic("L1 > 0", static(0), static(1), absorb = F)),} \cr
-#' \code{intervention2.A2 = list(dynamic("L2 == 0", static(0), static(1), absorb = T)),} \cr
+#' \code{intervention2.A1 = list(dynamic("L1 > 0", static(0), static(1), absorb = FALSE)),} \cr
+#' \code{intervention2.A2 = list(dynamic("L2 == 0", static(0), static(1), absorb = TRUE)),} \cr
 #' \code{outcomeModel.1 = Y ~ L1,} \cr
 #' \code{compModel.2 = D ~ L1} \cr
 #'
@@ -236,21 +236,15 @@ ice <- function(data, time_points, id, time_name,
                 outcome_name, censor_name = NULL,
                 compevent_name = NULL, comp_effect = 0,
                 outcome_model, censor_model = NULL, competing_model = NULL,
-                hazard_model = NULL, global_hazard = F, 
+                hazard_model = NULL, global_hazard = FALSE, 
                 ref_idx = 0,
                 estimator,
                 int_descript,
                 ci_method = "percentile",
                 nsamples = 0, seed = 1,
-                coverage = 95, parallel = F, ncores = 2,
+                coverage = 95, parallel = FALSE, ncores = 2,
                 verbose = TRUE,
                 ...) {
-  
-  # assign.global(as.data.frame(data), "interv_data")
-  # assign.global(id, "idvar")
-  # assign.global(id, "id_var")
-  # assign.global(time_name, "time0var")
-  # assign.global(outcome_name, "outcomevar")
   
   ## check if argument names are specified correctly
   input_args <- as.list(environment())
@@ -276,15 +270,15 @@ ice <- function(data, time_points, id, time_name,
   nboot <- nsamples
 
   if (nboot > 0) {
-    bootstrap <- T
+    bootstrap <- TRUE
   } else {
-    bootstrap <- F
+    bootstrap <- FALSE
   }
 
   if (ci_method == "normal") {
-    normal_quantile <- T
+    normal_quantile <- TRUE
   } else {
-    normal_quantile <- F
+    normal_quantile <- FALSE
   }
   
   significance_level <- 1 - coverage / 100
@@ -364,26 +358,6 @@ ice <- function(data, time_points, id, time_name,
   clean_kwarg_str <- preprocess_static$clean_kwarg_str
   kwarg_list <- preprocess_static$kwarg_list
   
-  # if (length(static_idx) > 0) {
-  #   static_kwarg <- kwarg_name_list[static_idx]
-  #   static_interv_list_split <- str_split(static_kwarg, "[.]")
-  #   static_interv_list <- lapply(static_interv_list_split, function(x) {x[1]})
-  #   static_interv_list_all_names <- lapply(static_interv_list_split, function(x) {x[2]})
-  #   
-  #   for (i in 1:length(static_idx)) {
-  #     ikwarg <- static_kwarg[i]
-  #     ivar <- as.character(static_interv_list_all_names[i])
-  #     raw_list <- str_remove_all(as.character(kwarg_list[ikwarg]), " ")
-  #     ikwarg_start_idx <- str_locate(pattern = paste0(ikwarg, "="), clean_kwarg_str)[1, 2]
-  #     ikwarg_end_idx <- ikwarg_start_idx + nchar(raw_list) + 1
-  #     static_arg_idx <- str_locate_all(pattern = "static[\\(][\\)]", raw_list)[[1]]
-  #     raw_list <- paste0(str_split(raw_list, "\\)")[[1]][1], ", data = data))")
-  #     
-  #     clean_kwarg_str <- paste0(substr(clean_kwarg_str, 1, ikwarg_start_idx), raw_list, 
-  #                               substr(clean_kwarg_str, ikwarg_end_idx, nchar(clean_kwarg_str)))
-  #   }
-  # }
-  
   ## preprocess grace period intervention
   
   preprocess_gp <- preprocess_intervention(clean_kwarg_str = clean_kwarg_str, 
@@ -408,43 +382,6 @@ ice <- function(data, time_points, id, time_name,
   
   clean_kwarg_str <- preprocess_nc$clean_kwarg_str
   kwarg_list <- preprocess_nc$kwarg_list
-  
-  # nc_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "natural_course")
-  # 
-  # if (length(nc_idx) > 0) {
-  #   nc_kwarg <- kwarg_name_list[nc_idx]
-  #   nc_interv_list_split <- str_split(nc_kwarg, "[.]")
-  #   nc_interv_list <- lapply(nc_interv_list_split, function(x) {x[1]})
-  #   nc_interv_list_all_names <- lapply(nc_interv_list_split, function(x) {x[2]})
-  # 
-  #   for (i in 1:length(nc_idx)) {
-  #     ikwarg <- nc_kwarg[i]
-  #     ivar <- as.character(nc_interv_list_all_names[i])
-  #     raw_list <- str_remove_all(as.character(kwarg_list[ikwarg]), " ")
-  #     ikwarg_start_idx <- str_locate(pattern = paste0(ikwarg, "="), clean_kwarg_str)[1, 2]
-  #     ikwarg_end_idx <- ikwarg_start_idx + nchar(raw_list) + 1
-  #     nc_arg_idx <- str_locate_all(pattern = "natural_course[\\(][\\)]", raw_list)[[1]]
-  #     num_nc <- nrow(nc_arg_idx)
-  #     add_string <- paste0("treat_var=\"", ivar, "\"")
-  #     
-  #     ## add the treatment variable in each call of natural course
-  #     
-  #     if (num_nc > 0) {
-  #     for (j in 1:num_nc) {
-  #       if (j == 1) {
-  #       idx_replace <- nc_arg_idx[j, 2] - 1
-  #       } else {
-  #         idx_replace <- str_locate_all(pattern = "natural_course[\\(][\\)]", raw_list)[[1]][1, 2] - 1
-  #       }
-  #       
-  #       raw_list <- paste0(substr(raw_list, 1, idx_replace), add_string, substr(raw_list, idx_replace + 1, nchar(raw_list)))
-  #     }
-  #     } 
-  #     
-  #     clean_kwarg_str <- paste0(substr(clean_kwarg_str, 1, ikwarg_start_idx), raw_list, 
-  #                               substr(clean_kwarg_str, ikwarg_end_idx, nchar(clean_kwarg_str)))
-  #   }
-  # }
 
   ## preprocess threshold intervention
   
@@ -585,7 +522,7 @@ ice <- function(data, time_points, id, time_name,
     }
   }
 
-  if (any(str_detect(as.character(substitute(estimator)), "pool")) == F & any(str_detect(as.character(substitute(estimator)), "strat")) == F & any(str_detect(as.character(substitute(estimator)), "weight")) == F) {
+  if (any(str_detect(as.character(substitute(estimator)), "pool")) == FALSE & any(str_detect(as.character(substitute(estimator)), "strat")) == FALSE & any(str_detect(as.character(substitute(estimator)), "weight")) == FALSE) {
     stop("Please input a valid estimator.
          pool(hazard = F) for classical pooling over treatment history ICE.
          pool(hazard = T) for hazard based pooling over treatment history ICE.
@@ -684,16 +621,16 @@ ice <- function(data, time_points, id, time_name,
   
 
   if (total_effect == 0) {
-    ref_total_effect_list <- list(F)
-    total_effect_lists <- list(list(rep(F, ninterv)))
+    ref_total_effect_list <- list(FALSE)
+    total_effect_lists <- list(list(rep(FALSE, ninterv)))
 
   } else if (total_effect == 1) {
-    ref_total_effect_list <- list(T)
-    total_effect_lists <- list(list(rep(T, ninterv)))
+    ref_total_effect_list <- list(TRUE)
+    total_effect_lists <- list(list(rep(TRUE, ninterv)))
 
   } else if (total_effect == 2) {
-    ref_total_effect_list <- list(T, F)
-    total_effect_lists <- list(list(rep(T, ninterv)), list(rep(F, ninterv)))
+    ref_total_effect_list <- list(TRUE, FALSE)
+    total_effect_lists <- list(list(rep(TRUE, ninterv)), list(rep(FALSE, ninterv)))
   }
 
   if (kwargs_len == 0) {
@@ -816,7 +753,7 @@ ice <- function(data, time_points, id, time_name,
                     outcome_model = outcome_model, censor_model = censor_model, competing_model = competing_model,
                     hazard_model = hazard_model, 
                     interventions = nc_interventions, intervention_names = nc_intervention_varlist,
-                    compute_nc_risk = T, 
+                    compute_nc_risk = TRUE, 
                     hazard_based = hazard, 
                     global_hazard = global_hazard,
                     intervention_description = nc_descript, 
@@ -848,7 +785,7 @@ ice <- function(data, time_points, id, time_name,
       }
 
       if (is.character(unlist(ref_intervention_varlist))) {
-        if (any(unlist(ref_intervention_varlist) %in% dta_cols) == F) {
+        if (any(unlist(ref_intervention_varlist) %in% dta_cols) == FALSE) {
           stop("The input treatment variable must be one of the columns in the data.")
         }
       }
@@ -859,7 +796,7 @@ ice <- function(data, time_points, id, time_name,
                     hazard_model = hazard_model, 
                     interventions = boot_interv, intervention_names = ref_intervention_varlist,
                     intervention_times = ref_int_times,
-                    compute_nc_risk = T, hazard_based = hazard, 
+                    compute_nc_risk = TRUE, hazard_based = hazard, 
                     global_hazard = global_hazard, 
                     intervention_description = ref_description, 
                     verbose = verbose)
@@ -965,7 +902,7 @@ ice <- function(data, time_points, id, time_name,
       }
 
       if (is.character(unlist(this_int_var))) {
-        if (any(unlist(this_int_var) %in% dta_cols) == F) {
+        if (any(unlist(this_int_var) %in% dta_cols) == FALSE) {
           stop("The input treatment variable must be one of the columns in the data.")
         }
       }
@@ -1180,12 +1117,12 @@ ice <- function(data, time_points, id, time_name,
     
     if (bootstrap) {
       
-      risk_time <- match_boot_values(risk_time, data.frame(se_all, check.names = F), "SE")
+      risk_time <- match_boot_values(risk_time, data.frame(se_all, check.names = FALSE), "SE")
       
-      if (normal_quantile == F) {
+      if (normal_quantile == FALSE) {
 
-      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper, check.names = F), "Critical_Value_Upper")
-      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower, check.names = F), "Critical_Value_Lower")
+      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper, check.names = FALSE), "Critical_Value_Upper")
+      risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower, check.names = FALSE), "Critical_Value_Lower")
       }
     }
 
@@ -1202,7 +1139,7 @@ ice <- function(data, time_points, id, time_name,
     comp_by_step <- outcome_by_step <- hazard_by_step <- np_model <- outcome_init <- comp_init <- c()
 
     if (any(str_detect(as.character(substitute(estimator)), "strat"))) {
-      weight <- F
+      weight <- FALSE
       this_treat_model <- list()
       this_obs_treatment_varnames <- as.list(unique(unlist(intervention_varnames)))
       hazard <- estimator
@@ -1211,11 +1148,11 @@ ice <- function(data, time_points, id, time_name,
         warning("Only time specific hazard model is valid for Stratified ICE.")
       }
     } else {
-      weight <- T
+      weight <- TRUE
       this_treat_model <- estimator$treat_model
       obs_treatment_name <- estimator$obs_treat
       this_obs_treatment_varnames <- as.list(obs_treatment_name)
-      hazard <- F
+      hazard <- FALSE
 
     }
 
@@ -1230,7 +1167,7 @@ ice <- function(data, time_points, id, time_name,
     }
 
     if (weight) {
-      if (any(unlist(lapply(this_treat_model, function(i) is_formula(i)))) == F | length(this_treat_model) != length(this_obs_treatment_varnames)) {
+      if (any(unlist(lapply(this_treat_model, function(i) is_formula(i)))) == FALSE | length(this_treat_model) != length(this_obs_treatment_varnames)) {
       stop("Please input a formula to specify the treatment model statement for each treatment variable.")
       }
     }
@@ -1248,7 +1185,7 @@ ice <- function(data, time_points, id, time_name,
     nc_interventions <- list(nc_interventions)
     
     if (any(!is.na(unlist(compModels)))) {
-      if ((any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F) & (ref_total_effect == F)) | (any(str_detect(as.character(substitute(estimator)), "weight")) & (hazard == F) & (ref_total_effect == F))) {
+      if ((any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == FALSE) & (ref_total_effect == FALSE)) | (any(str_detect(as.character(substitute(estimator)), "weight")) & (hazard == FALSE) & (ref_total_effect == FALSE))) {
       warning("The competing model is used for observed risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
       } 
     }
@@ -1258,7 +1195,7 @@ ice <- function(data, time_points, id, time_name,
                      outcome_model = outcome_model, censor_model = censor_model, competing_model = competing_model,
                      hazard_model = hazard_model,
                      interventions = nc_interventions, intervention_names = nc_intervention_varlist,
-                     compute_nc_risk = T, hazard_based = hazard, weighted = weight,
+                     compute_nc_risk = TRUE, hazard_based = hazard, weighted = weight,
                      intervention_description = nc_descript,
                      treat_model = this_treat_model,
                      obs_treatment_names = this_obs_treatment_varnames, 
@@ -1291,13 +1228,13 @@ ice <- function(data, time_points, id, time_name,
       }
 
       if (is.character(unlist(ref_intervention_varlist))) {
-        if (any(unlist(ref_intervention_varlist) %in% dta_cols) == F) {
+        if (any(unlist(ref_intervention_varlist) %in% dta_cols) == FALSE) {
           stop("The input treatment variable must be one of the columns in the data.")
         }
       }
       
       if (any(!is.na(unlist(compModels)))) {
-        if ((any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == F) & (ref_total_effect == F)) | (any(str_detect(as.character(substitute(estimator)), "weight")) & (hazard == F) & (ref_total_effect == F))) {
+        if ((any(str_detect(as.character(substitute(estimator)), "strat")) & (hazard == FALSE) & (ref_total_effect == FALSE)) | (any(str_detect(as.character(substitute(estimator)), "weight")) & (hazard == FALSE) & (ref_total_effect == FALSE))) {
           warning("The competing model is used for nonparametric risk estimation for direct effect case in stratified ICE. The keyword argument competing model statments are ignored.")
         } 
       }
@@ -1308,7 +1245,7 @@ ice <- function(data, time_points, id, time_name,
                       competing_model = ref_competing_model,
                       hazard_model = hazard_model,
                       interventions = boot_interv, intervention_names = ref_intervention_varlist,
-                      compute_nc_risk = T, hazard_based = hazard, weighted = weight,
+                      compute_nc_risk = TRUE, hazard_based = hazard, weighted = weight,
                       intervention_description = ref_description, intervention_times = ref_int_times,
                       treat_model = this_treat_model,
                       obs_treatment_names = this_obs_treatment_varnames, 
@@ -1414,7 +1351,7 @@ ice <- function(data, time_points, id, time_name,
       }
 
       if (is.character(unlist(this_int_var))) {
-        if (any(unlist(this_int_var) %in% dta_cols) == F) {
+        if (any(unlist(this_int_var) %in% dta_cols) == FALSE) {
           stop("The input treatment variable must be one of the columns in the data.")
         }
       }
@@ -1614,11 +1551,11 @@ ice <- function(data, time_points, id, time_name,
     
     if (bootstrap) {
       
-      risk_time <- match_boot_values(risk_time, data.frame(se_all, check.names = F), "SE")
+      risk_time <- match_boot_values(risk_time, data.frame(se_all, check.names = FALSE), "SE")
       
-      if (normal_quantile == F) {
-        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper, check.names = F), "Critical_Value_Upper")
-        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower, check.names = F), "Critical_Value_Lower")
+      if (normal_quantile == FALSE) {
+        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_upper, check.names = FALSE), "Critical_Value_Upper")
+        risk_time <- match_boot_values(risk_time, data.frame(critical_value_all_lower, check.names = FALSE), "Critical_Value_Lower")
       }
     }
 

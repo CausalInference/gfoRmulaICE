@@ -88,14 +88,14 @@
 #' ice_static <- ice_strat(data = data, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
-#' total_effect = F,
+#' total_effect = FALSE,
 #' outcome_model = Y ~ L1 + L2,
 #' censor_model = C ~ L1 + L2,
 #' competing_model = D ~ L1 + L2,
 #' hazard_model = Y ~ L1 + L2,
 #' interventions = list(static(1)),
 #' intervention_names = list("A"),
-#' hazard_based = T,
+#' hazard_based = TRUE,
 #' obs_treatment_names = list("A"),
 #' intervention_description = "Always Treat")
 #'
@@ -108,13 +108,13 @@
 #' ice_natural_course <- ice_strat(data = data, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
-#' total_effect = T,
+#' total_effect = TRUE,
 #' outcome_model = Y ~ L1 + L2,
 #' censor_model = C ~ L1 + L2,
 #' interventions = list(natural_course()),
 #' intervention_names = list("A"),
-#' compute_nc_risk = T,
-#' hazard_based = F,
+#' compute_nc_risk = TRUE,
+#' hazard_based = FALSE,
 #' obs_treatment_names = list("A"),
 #' intervention_description = "Natural Course")
 #'
@@ -128,12 +128,12 @@
 #' ice_dynamic <- ice_strat(data = data, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
-#' total_effect = F,
+#' total_effect = FALSE,
 #' outcome_model = Y ~ L1 + L2,
 #' censor_model = C ~ L1 + L2,
-#' interventions = list(dynamic("L1 > 0", static(0), static(1), absorb = T)),
+#' interventions = list(dynamic("L1 > 0", static(0), static(1), absorb = TRUE)),
 #' intervention_names = list("A"),
-#' hazard_based = F,
+#' hazard_based = FALSE,
 #' obs_treatment_names = list("A"),
 #' intervention_description = "Dynamic Treat")
 #'
@@ -148,13 +148,13 @@
 #' ice_weighted <- ice_strat(data = data, K = 5, id = "id",
 #' time_name = "t0", outcome_name = "Y",
 #' competing_name = "D", censor_name = "C",
-#' total_effect = T,
+#' total_effect = TRUE,
 #' outcome_model = Y ~ L1 + L2,
 #' censor_model = C ~ L1 + L2,
 #' competing_model = D ~ L1 + L2,
 #' interventions = list(static(1)),
 #' intervention_names = list("A"),
-#' weighted = T, treat_model = list(A ~ L1),
+#' weighted = TRUE, treat_model = list(A ~ L1),
 #' obs_treatment_names = list("A"),
 #' intervention_description = "Always Treat")
 #'
@@ -166,7 +166,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
                       outcome_model, censor_model = NULL, competing_model = NULL,
                       hazard_model = NULL,
                       interventions, intervention_names, intervention_times = NULL,
-                      compute_nc_risk = T, hazard_based, weighted = F,
+                      compute_nc_risk = TRUE, hazard_based, weighted = FALSE,
                       treat_model, obs_treatment_names,
                       intervention_description, verbose = TRUE) {
 
@@ -191,7 +191,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   }
 
   if (weighted) {
-    hazard_based <- F
+    hazard_based <- FALSE
     treat_model_covar <- list()
     for (l in 1:length(treat_model)) {
       treat_model_covar <- c(treat_model_covar, list(str_remove_all(unlist(str_split(as.character(treat_model[[l]])[3], "[+]")), " ")))
@@ -413,7 +413,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         competing_covar_nc <- competing_covar
       }
 
-      if (total_effect == F) {
+      if (total_effect == FALSE) {
         competing_formula <- as.formula(paste0(competing_varname, "~",
                                                paste0(competing_covar_nc, collapse = "+")))
       competing_fit <- speedglm(competing_formula, data = data, family = binomial())
@@ -459,9 +459,9 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   if (is.null(censor_varname)) {
     data$C <- 0
     censor_varname <- "C"
-    null_censor <- T
+    null_censor <- TRUE
   } else {
-    null_censor <- F
+    null_censor <- FALSE
   }
 
   abar_all <- list()
@@ -528,7 +528,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
   ## 3a. if weighted ICE, then
 
-  if (weighted & hazard_based == F) {
+  if (weighted & hazard_based == FALSE) {
     ## weighted ICE
     ntreatment = length(obs_treatment_varnames)
     data[, "pred_obs_prod"] <- 1
@@ -607,7 +607,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
       cformula <- as.formula(paste0(censor_varname, "~", paste0(c(censor_covar, treatment_i), collapse = "+")))
 
-      if (!is.null(competing_varname) & total_effect == F) {
+      if (!is.null(competing_varname) & total_effect == FALSE) {
         dformula <- as.formula(paste0(competing_varname, "~", paste0(c(competing_covar, treatment_i), collapse = "+")))
       }
 
@@ -618,7 +618,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         data$pred_c = predict(cfit, newdata = data, type="response")
       }
 
-      if (!is.null(competing_varname) & total_effect == F) {
+      if (!is.null(competing_varname) & total_effect == FALSE) {
         dfit = speedglm(dformula, family = binomial(), data = data)
         data$pred_d = predict(dfit, newdata = data, type="response")
 
@@ -628,7 +628,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
 
       if (nA_level > 2) {
-        afit = multinom(aformula, data = data, trace = F)
+        afit = multinom(aformula, data = data, trace = FALSE)
         predicted_df <- fitted(afit)
         A_names <- sort(unique(data[, treatment_i]))
         for (i in 1:nA_level) {
@@ -642,7 +642,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
         pred_obsa <- 1- data$pred_c
 
-        if (!is.null(competing_varname) & total_effect == F) {
+        if (!is.null(competing_varname) & total_effect == FALSE) {
           pred_da = ifelse(data$pred_d != 0, (data$pred_d) * pred_obsa, pred_obsa)
           data[, paste0("pred_obs_", treatment_i)] = pred_da
         } else {
@@ -661,7 +661,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
           pred_obsa <- 1- data$pred_c
 
-          if (!is.null(competing_varname) & total_effect == F) {
+          if (!is.null(competing_varname) & total_effect == FALSE) {
             pred_da = ifelse(data$pred_d != 0, (data$pred_d) * pred_obsa, pred_obsa)
             data[, paste0("pred_obs_", treatment_i)] = pred_da
           } else {
@@ -791,7 +791,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         int_time <- intervention_times[[1]][[treat]]
 
         ## change here the index of competing variable
-        if (!is.null(competing_varname) & total_effect == F) {
+        if (!is.null(competing_varname) & total_effect == FALSE) {
           stratify_dta <- c(paste0(censor_varname, "_", i), paste0(competing_varname, "_", i-1),
                             sapply(0:(i-1), function(x){paste0(intervention_variable, "_", x)}))
         } else {
@@ -804,7 +804,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         if (is.character(abar)) {
           abar_names_extra <- sapply(0:(i-1), function(x){paste0(abar, "_", x)})
 
-          if (!is.null(competing_varname) & total_effect == F) {
+          if (!is.null(competing_varname) & total_effect == FALSE) {
             stratify_dta <- sapply(stratify_dta,
                                    function(x){
                                      idx <- which(stratify_dta == x) - 2
@@ -826,7 +826,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
 
         } else {
-          if (!is.null(competing_varname) & total_effect == F) {
+          if (!is.null(competing_varname) & total_effect == FALSE) {
             stratify_dta <- sapply(stratify_dta,
                                    function(x){
                                      if (grepl(censor_varname, x)) {
@@ -895,7 +895,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
                             vcov = fit_haz_vcov, 
                             rmse = fit_haz_rmse)
     
-    if (!is.null(competing_varname) & total_effect == T) {
+    if (!is.null(competing_varname) & total_effect == TRUE) {
       comp_pred_times <- list()
       fit_comp <- fit_comp_summary <- fit_comp_stderr <- fit_comp_vcov <- fit_comp_rmse <- c()
 
@@ -999,18 +999,18 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   ## 6. regression at each time point
   
   if (verbose) {
-    cat("Running ", intervention_description[[1]], "... \n")
+    message("Running ", intervention_description[[1]], "... \n")
   }
   
   meany <- matrix(NA, ncol = K + 1, nrow = length(my.arrayofA))
 
   for (i in 1:K) {
     t <- K - i + 1
-    it_run <- T
+    it_run <- TRUE
     it <- t
     
     if (verbose) {
-      cat(paste0("Running Time ", t, "...", "\n"))
+      message(paste0("Running Time ", t, "...", "\n"))
     }
 
     if (hazard_based) {
@@ -1018,7 +1018,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       if (t == 1) {
         fitdata <- tmpdata
         fitdata[, paste0("y", t, "pred")] <- predict(this_fit, newdata = fitdata, type="response")
-        it_run <- F
+        it_run <- FALSE
       }
 
       it <- t - 1
@@ -1051,7 +1051,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
             times_extra <- 0:q
 
-            if (!is.null(competing_varname) & total_effect == F) {
+            if (!is.null(competing_varname) & total_effect == FALSE) {
               stratify_names_extra <- c(paste0(censor_varname, "_", q+1), paste0(competing_varname, "_", q),
                                         sapply(times_extra, function(x){paste0(intervention_variable, "_", x)}))
             } else {
@@ -1062,7 +1062,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
             if (is.character(abar)) {
               abar_names_extra <- sapply(times_extra, function(x){paste0(abar, "_", x)})
 
-              if (!is.null(competing_varname) & total_effect == F) {
+              if (!is.null(competing_varname) & total_effect == FALSE) {
                 stratify_names_extra <- sapply(stratify_names_extra,
                                                function(x){
                                                  idx <- which(stratify_names_extra == x) - 2
@@ -1086,7 +1086,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
               }
 
             } else {
-              if (!is.null(competing_varname) & total_effect == F) {
+              if (!is.null(competing_varname) & total_effect == FALSE) {
                 stratify_names_extra <- sapply(stratify_names_extra,
                                                function(x){
                                                  if (grepl(censor_varname, x)) {
@@ -1147,7 +1147,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           }
         }
 
-        if (weighted & hazard_based == F) {
+        if (weighted & hazard_based == FALSE) {
           fitdata$w <- 1/fitdata[, paste0("pi", q)]
 
           if (q == t - 1) {
@@ -1196,7 +1196,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           }
 
           if (hazard_based) {
-            if (!is.null(competing_varname) & total_effect == F) {
+            if (!is.null(competing_varname) & total_effect == FALSE) {
               stratify_names <- c(paste0(censor_varname, "_", q+1), paste0(competing_varname, "_", q),
                                   sapply(times, function(x){paste0(intervention_variable, "_", x)}))
             } else {
@@ -1204,7 +1204,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
                                   sapply(times, function(x){paste0(intervention_variable, "_", x)}))
             }
           } else {
-            if (!is.null(competing_varname) & total_effect == F) {
+            if (!is.null(competing_varname) & total_effect == FALSE) {
               stratify_names <- c(paste0(censor_varname, "_", q), paste0(competing_varname, "_", q-1),
                                   sapply(times, function(x){paste0(intervention_variable, "_", x)}))
             } else {
@@ -1216,7 +1216,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           if (is.character(abar)){
             abar_names <- sapply(times, function(x){paste0(abar, "_", x)})
 
-            if (!is.null(competing_varname) & total_effect == F) {
+            if (!is.null(competing_varname) & total_effect == FALSE) {
               stratify_names <- sapply(stratify_names,
                                        function(x){
                                          idx <- which(stratify_names == x) - 2
@@ -1235,7 +1235,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
             }
           } else {
 
-            if (!is.null(competing_varname) & total_effect == F) {
+            if (!is.null(competing_varname) & total_effect == FALSE) {
               stratify_names <- sapply(stratify_names,
                                        function(x){
                                          if (grepl(censor_varname, x)) {
@@ -1262,7 +1262,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           fitdata <- tmpdata %>% dplyr::filter(eval(parse(text = stratify_names_combine)))
         }
 
-        if (weighted & hazard_based == F) {
+        if (weighted & hazard_based == FALSE) {
           fitdata$w <- 1/fitdata[, paste0("pi", q)]
           fitdata[, paste0("y", t, "pred")] = predict(fit, newdata = fitdata, type="response", weight = fitdata$w)
 
@@ -1273,7 +1273,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         if (hazard_based) {
           weight_haz <- predict(outcome_pred_times[[q+1]], newdata = fitdata, type="response")
 
-          if (!is.null(competing_varname) & total_effect == T) {
+          if (!is.null(competing_varname) & total_effect == TRUE) {
             weight_comp <- predict(comp_pred_times[[q+1]], newdata = fitdata, type="response")
             fitdata[, paste0("y", t, "pred")] <- fitdata[, paste0("y", t, "pred")] * (1 - weight_haz) * (1 - weight_comp) + weight_haz
           } else {
@@ -1282,7 +1282,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
           }
         } else {
           if (q != 0) {
-            if (!is.null(competing_varname) & total_effect == T) {
+            if (!is.null(competing_varname) & total_effect == TRUE) {
               fitdata[, paste0("y", t, "pred")] = case_when(fitdata[, paste0(competing_varname, "_", q-1)] == 1 ~ 0,
                                                             (fitdata[, paste0(outcome_varname, "_", q)] == 1) & (fitdata[, paste0(competing_varname, "_", q-1)] == 0) ~ 1,
                                                             (fitdata[, paste0(outcome_varname, "_", q)] == 0) & (fitdata[, paste0(competing_varname, "_", q-1)] == 0) ~ fitdata[, paste0("y", t, "pred")])

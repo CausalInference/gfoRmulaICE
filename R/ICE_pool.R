@@ -87,15 +87,15 @@
 #' ice_static <- ice_pool(data = data, K = 5, 
 #' id = "id", time_name = "t0", outcome_name = "Y",
 #' censor_name = "C", competing_name = "D",
-#' total_effect = F, 
+#' total_effect = FALSE, 
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' competing_model = D ~ L1 + L2 + A1 + A2, 
 #' hazard_model = Y ~ L1 + L2 + A1 + A2,
 #' interventions = list(static(1)),
 #' intervention_names = list("A"),
-#' hazard_based = T, 
-#' global_hazard = F,
+#' hazard_based = TRUE, 
+#' global_hazard = FALSE,
 #' intervention_description = "Always Treat")
 #' 
 #' ice_static
@@ -107,12 +107,12 @@
 #' ice_natural_course <- ice_pool(data = data, K = 5, 
 #' id = "id", time_name = "t0", outcome_name = "Y",
 #' censor_name = "C", competing_name = "D",
-#' total_effect = T, 
+#' total_effect = TRUE, 
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' interventions = list(natural_course()),
 #' intervention_names = list("A"),
-#' hazard_based = F, 
+#' hazard_based = FALSE, 
 #' intervention_description = "Natural Course")
 #'
 #' ice_natural_course
@@ -126,12 +126,12 @@
 #' ice_dynamic <- ice_pool(data = data, K = 5, 
 #' id = "id", time_name = "t0", outcome_name = "Y",
 #' censor_name = "C", competing_name = "D",
-#' total_effect = F, 
+#' total_effect = FALSE, 
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
-#' interventions = list(dynamic("L1 > 0", static(0), static(1), absorb = T)),
+#' interventions = list(dynamic("L1 > 0", static(0), static(1), absorb = TRUE)),
 #' intervention_names = list("A"),
-#' hazard_based = F, 
+#' hazard_based = FALSE, 
 #' intervention_description = "Dynamic Treat")
 #'
 #' ice_dynamic
@@ -143,14 +143,14 @@
 #' ice_grace_period <- ice_pool(data = data, K = 5, 
 #' id = "id", time_name = "t0", outcome_name = "Y",
 #' censor_name = "C", competing_name = "D",
-#' total_effect = T, 
+#' total_effect = TRUE, 
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' competing_model = D ~ L1 + L2 + A1 + A2,
 #' hazard_model = Y ~ L1 + L2 + A1 + A2,
 #' interventions = list(grace_period("uniform", 2, "L1 = 0")),
 #' intervention_names = list("A"),
-#' hazard_based = T,
+#' hazard_based = TRUE,
 #' intervention_description = "Dynamic Treat Grace Period")
 #'
 #' ice_grace_period
@@ -163,14 +163,14 @@
 #' ice_threshold <- ice_pool(data = data, K = 5, 
 #' id = "id", time_name = "t0", outcome_name = "Y",
 #' censor_name = "C", competing_name = "D",
-#' total_effect = T, 
+#' total_effect = TRUE, 
 #' outcome_model = Y ~ L1 + L2 + A1 + A2, 
 #' censor_model = C ~ L1 + L2 + A1 + A2,
 #' competing_model = D ~ L1 + L2 + A1 + A2,
 #' hazard_model = Y ~ L1 + L2 + A1 + A2, 
 #' interventions = list(threshold(-3, Inf)),
 #' intervention_names = list("A"),
-#' hazard_based = T,
+#' hazard_based = TRUE,
 #' intervention_description = "Threshold Intervention")
 #'
 #' ice_threshold
@@ -181,7 +181,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
                      competing_model = NULL, hazard_model = NULL, 
                      interventions,
                      intervention_names, intervention_times = NULL,
-                     compute_nc_risk = T, hazard_based, global_hazard = NULL,
+                     compute_nc_risk = TRUE, hazard_based, global_hazard = NULL,
                      intervention_description, verbose = TRUE)
                      # global_haz_model, )
 {
@@ -194,8 +194,8 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   intervention_varnames <- intervention_names
   time0 <- time_name
   
-  if (hazard_based == F) {
-    global_hazard <- F
+  if (hazard_based == FALSE) {
+    global_hazard <- FALSE
   }
 
   if (is.null(intervention_times) | (length(intervention_times[[1]]) == 0)) {
@@ -427,7 +427,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         competing_covar_nc <- competing_covar
       }
 
-      if (total_effect == F) {
+      if (total_effect == FALSE) {
 
         competing_formula <- as.formula(paste0(competing_varname, "~",
                                                paste0(competing_covar_nc, collapse = "+")))
@@ -477,7 +477,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   abar_all <- list()
   data <- as.data.frame(data)
 
-  assign.global(F, "gp_indicator")
+  assign.global(FALSE, "gp_indicator")
   
   assign.global(data, "interv_data")
   
@@ -572,7 +572,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   
   comp_init <- c()
 
-  if (!is.null(competing_varname) & (total_effect == T) & hazard_based) {
+  if (!is.null(competing_varname) & (total_effect == TRUE) & hazard_based) {
     formula_full_comp <- as.formula(paste0(competing_varname,"~", paste0(c(competing_covar), collapse = "+")))
     yfitog_comp = speedglm(formula_full_comp, family = binomial(), data = data)
     paramcomp = (yfitog_comp)$coef
@@ -723,14 +723,14 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   ## 5. regression at each time point
   
   if (verbose) {
-  cat("Running ", intervention_description[[1]], "... \n")
+  message("Running ", intervention_description[[1]], "... \n")
   }
     for (i in 1:K) {
 
       t <- K - i + 1
       
       if (verbose) {
-      cat(paste0("Running Time ", t, "...", "\n"))
+      message(paste0("Running Time ", t, "...", "\n"))
       }
 
       covar_t <- paste0(outcome_covar, sep = paste0("_", t - 1))
@@ -739,7 +739,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         if (t == 1) {
           data_pred_tmp <- data_fit <- tmpdata
         } else {
-          if (!is.null(competing_varname) & total_effect == F) {
+          if (!is.null(competing_varname) & total_effect == FALSE) {
           data_pred_tmp <- data_fit <- tmpdata[!is.na(tmpdata[, paste0(censor_varname, "_", t - 1)]) & tmpdata[, paste0(censor_varname, "_", t - 1)] == 0 &
                                                  !is.na(tmpdata[, paste0(competing_varname, "_", t - 2)]) & tmpdata[, paste0(competing_varname, "_", t - 2)] == 0, ]
           } else {
@@ -819,7 +819,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
               data_fit = tmpdata
             } else {
 
-              if (!is.null(competing_varname) & total_effect == F) {
+              if (!is.null(competing_varname) & total_effect == FALSE) {
               data_fit = tmpdata[!is.na(tmpdata[, paste0(censor_varname, "_", iter - 1)]) & tmpdata[, paste0(censor_varname, "_", iter - 1)] == 0 &
                                    !is.na(tmpdata[, paste0(competing_varname, "_", iter - 2)]) & tmpdata[, paste0(competing_varname, "_", iter - 2)] == 0, ]
               } else {
@@ -868,7 +868,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
                   has_time <- str_detect(haz_global_covar, time_name)
                   
                   if (any(has_time)) {
-                    time_idx <- which(has_time == T)
+                    time_idx <- which(has_time == TRUE)
                     haz_global_covar_tmp <- haz_global_covar[-time_idx]
                     pred_data <- data.frame(matrix(NA, 
                                                    ncol = length(haz_global_covar_tmp) + length(time_idx), 
@@ -894,7 +894,7 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
                 }
 
               ## need to calculate d_hat and multiply it with the hazard
-              if (!is.null(competing_varname) & total_effect == T) {
+              if (!is.null(competing_varname) & total_effect == TRUE) {
                 predict_comp <- plogis(as.matrix(covar_mat)  %*% matrix(paramcomp, nrow = length(paramcomp)))
                 data_fit[, paste0("y", t, "pred")] <- predict(fit_temp, newdata = data_fit, type = "response") * (1 - predict_tmp) * (1 - predict_comp) + predict_tmp
               } else {

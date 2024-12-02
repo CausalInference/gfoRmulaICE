@@ -17,7 +17,7 @@ ice(
   censor_model = NULL,
   competing_model = NULL,
   hazard_model = NULL,
-  global_hazard = F,
+  global_hazard = FALSE,
   ref_idx = 0,
   estimator,
   int_descript,
@@ -25,7 +25,7 @@ ice(
   nsamples = 0,
   seed = 1,
   coverage = 95,
-  parallel = F,
+  parallel = FALSE,
   ncores = 2,
   verbose = TRUE,
   ...
@@ -152,10 +152,10 @@ See Wen et al. (2021) for more details regarding the parametric g-formula iterat
 \details{
 Users could specify which version ICE estimator to use through \code{estimator}.
 \itemize{
-\item{\code{pool(hazard = F)} specifies the classical pooling over treatment history ICE estimator. }
-\item{\code{pool(hazard = T)} specifies the hazard-based pooling over treatment history ICE estimator. }
-\item{\code{strat(hazard = F)} specifies the classical stratifying on treatment history ICE estimator. }
-\item{\code{strat(hazard = T)} specifies the hazard-based stratifying on treatment history ICE estimator. }
+\item{\code{pool(hazard = FALSE)} specifies the classical pooling over treatment history ICE estimator. }
+\item{\code{pool(hazard = TRUE)} specifies the hazard-based pooling over treatment history ICE estimator. }
+\item{\code{strat(hazard = FALSE)} specifies the classical stratifying on treatment history ICE estimator. }
+\item{\code{strat(hazard = TRUE)} specifies the hazard-based stratifying on treatment history ICE estimator. }
 \item{\code{weight(treat_model)} specifies the doubly robust weighted ICE estimator
 where \code{treat_model} specifies the treatment model.}
 }
@@ -171,15 +171,15 @@ For example, the following input specifies \code{Y ~ L1} as outcome model for in
 
 \code{fit_hazard_strat <- ice(data = data, K = 4, id = "id", time_name = "t0", } \cr
 \code{outcome_name = "Y", censor_name = "C", competing_name = "D", } \cr
-\code{estimator = strat(hazard = T), comp_effect = 1, } \cr
+\code{estimator = strat(hazard = TRUE), comp_effect = 1, } \cr
 \code{censor_model = C ~ L1 + L2, ref_idx = 0,} \cr
 \code{int_descript = c("Static Intervention", "Dynamic Intervention"),} \cr
 \code{outcome_model = Y ~ L1 + L2,} \cr
 \code{competing_model = D ~ L1 + L2,} \cr
 \code{intervention1.A1 = list(static(0)),} \cr
 \code{intervention1.A2 = list(static(1)),} \cr
-\code{intervention2.A1 = list(dynamic("L1 > 0", static(0), static(1), absorb = F)),} \cr
-\code{intervention2.A2 = list(dynamic("L2 == 0", static(0), static(1), absorb = T)),} \cr
+\code{intervention2.A1 = list(dynamic("L1 > 0", static(0), static(1), absorb = FALSE)),} \cr
+\code{intervention2.A2 = list(dynamic("L2 == 0", static(0), static(1), absorb = TRUE)),} \cr
 \code{outcomeModel.1 = Y ~ L1,} \cr
 \code{compModel.2 = D ~ L1} \cr
 

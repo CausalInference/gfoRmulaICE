@@ -14,6 +14,6 @@ a logical value on whether to use hazard-based ICE estimator.
 }
 \description{
 This function identifies the stratifying on treatment history ICE estimator. The classical stratifying on 
-treatment history ICE estimator is specified by \code{strat(hazard = F)}. The hazard based stratifying on treatment
-history ICE estimator is specified by \code{strat(hazard = T)}.
+treatment history ICE estimator is specified by \code{strat(hazard = FALSE)}. The hazard based stratifying on treatment
+history ICE estimator is specified by \code{strat(hazard = TRUE)}.
 }

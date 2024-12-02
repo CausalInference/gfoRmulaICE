@@ -92,7 +92,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
   nshow <- floor(nboot / 10)
   }
   
-  if (parallel == T) {
+  if (parallel == TRUE) {
     
     old_dir <- getwd()
 
@@ -108,13 +108,13 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
                              
      unique_idx <- unique(data[, id])
      nidx <- length(unique_idx)
-     select_ids <- as.data.table(sample(1:nidx, nidx, replace = T))
+     select_ids <- as.data.table(sample(1:nidx, nidx, replace = TRUE))
      select_ids[, "new_id"] <- 1:nidx
      colnames(select_ids)[1] <- id
      boot_data <- data
      boot_data <- as.data.table(boot_data)
      setkey(boot_data, id)
-     boot_data <- boot_data[SJ(select_ids), allow.cartesian = T]
+     boot_data <- boot_data[SJ(select_ids), allow.cartesian = TRUE]
      boot_data <- as.data.frame(boot_data)
      boot_data[, id] <- boot_data[, "new_id"]
      row_idx <- match_ids(as.vector(select_ids[, id]), data[, id])
@@ -124,7 +124,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         f(data = boot_data, total_effect = total_effect, id = id, K = K,
                interventions = interv_boot(interventions, row_idx), intervention_names = intervention_varnames,
                intervention_description = intervention_description, intervention_times = intervention_times, ...),
-        silent = T
+        silent = TRUE
       )
 
 
@@ -132,7 +132,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         f(data = boot_data, total_effect = total_effect, id = id, K = K,
                interventions = interv_boot(ref_intervention, row_idx), intervention_names = ref_intervention_varnames,
                intervention_description = ref_description, intervention_times = ref_intervention_times, ...),
-        silent = T
+        silent = TRUE
       )
 
       if (inherits(ice, "try-error")) {
@@ -246,7 +246,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
 
                            }
     
-    cat(paste0(" Bootstrap Progress: ", intervention_description, "\n"))
+    message(paste0(" Bootstrap Progress: ", intervention_description, "\n"))
 
     
     data_err <- stats::na.omit(unlist(boot_result[names(boot_result) == "data_issue"]))
@@ -303,9 +303,9 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     ref_comp_by_step <- get_boot_models("ref_comp_by_step_boot", boot_result)
     ref_hazard_by_step <- get_boot_models("ref_hazard_by_step_boot", boot_result)
     
-    result <- matrix(unlist(boot_result[names(boot_result) == "boot_out"]), byrow = T, nrow = nboot)
+    result <- matrix(unlist(boot_result[names(boot_result) == "boot_out"]), byrow = TRUE, nrow = nboot)
 
-    agg_result <- apply(result, 2, stats::sd, na.rm = T)
+    agg_result <- apply(result, 2, stats::sd, na.rm = TRUE)
     ice_se <- agg_result[1]
     ref_se <- agg_result[2]
     rr_se <- agg_result[3]
@@ -315,7 +315,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     ref_ipw_se_all <- agg_result[(7+2*K):(length(agg_result))]
 
 
-    quantile_result_upper <- apply(result, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = T)
+    quantile_result_upper <- apply(result, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = TRUE)
     ice_cv_upper <- quantile_result_upper[1]
     ref_cv_upper <- quantile_result_upper[2]
     rr_cv_upper <- quantile_result_upper[3]
@@ -324,7 +324,7 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     ref_cv_all_upper <- quantile_result_upper[(6+K):(6+2*K)]
     ref_ipw_cv_all_upper <- quantile_result_upper[(7+2*K):(length(quantile_result_upper))]
     
-    quantile_result_lower <- apply(result, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = T)
+    quantile_result_lower <- apply(result, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = TRUE)
     ice_cv_lower <- quantile_result_lower[1]
     ref_cv_lower <- quantile_result_lower[2]
     rr_cv_lower <- quantile_result_lower[3]
@@ -350,13 +350,13 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
 
       unique_idx <- unique(data[, id])
       nidx <- length(unique_idx)
-      select_ids <- as.data.table(sample(1:nidx, nidx, replace = T))
+      select_ids <- as.data.table(sample(1:nidx, nidx, replace = TRUE))
       select_ids[, "new_id"] <- 1:nidx
       colnames(select_ids)[1] <- id
       boot_data <- data
       boot_data <- as.data.table(boot_data)
       setkey(boot_data, id)
-      boot_data <- boot_data[SJ(select_ids), allow.cartesian = T]
+      boot_data <- boot_data[SJ(select_ids), allow.cartesian = TRUE]
       boot_data <- as.data.frame(boot_data)
       boot_data[, id] <- boot_data[, "new_id"]
       
@@ -368,14 +368,14 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
         f(data = boot_data, total_effect = total_effect, id = id, K = K,
                interventions = interv_boot(interventions, row_idx), intervention_names = intervention_varnames,
                intervention_description = intervention_description, intervention_times = intervention_times, ...),
-        silent = T
+        silent = TRUE
       )
 
       ref <- try(
         f(data = boot_data, total_effect = total_effect, id = id, K = K,
                interventions = interv_boot(ref_intervention, row_idx), intervention_names = ref_intervention_varnames,
                intervention_description = ref_description, intervention_times = ref_intervention_times, ...), 
-        silent = T
+        silent = TRUE
       )
       
         if (inherits(ice, "try-error")) {
@@ -502,34 +502,34 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
       model_err_mssg <- c(model_issue_mssg, model_err_mssg)
       
       if (i %% nshow == 0) {
-        cat(paste0(intervention_description, " Bootstrap Progress: ", i, "/", nboot, "\n"))
+        message(paste0(intervention_description, " Bootstrap Progress: ", i, "/", nboot, "\n"))
       }
 
     }
     
-    ice_se <- stats::sd(unlist(ice_boot), na.rm = T)
-    ice_cv_upper <- stats::quantile(unlist(ice_boot), probs = (100 - sig_level/2)/100, na.rm = T)
-    ice_cv_lower <- stats::quantile(unlist(ice_boot), probs = (sig_level/2)/100, na.rm = T)
-    ref_se <- stats::sd(unlist(ref_boot), na.rm = T)
-    ref_cv_upper <- stats::quantile(unlist(ref_boot), probs = (100 - sig_level/2)/100, na.rm = T)
-    ref_cv_lower <- stats::quantile(unlist(ref_boot), probs = (sig_level/2)/100, na.rm = T)
-    rr_se <- stats::sd(unlist(rr_boot), na.rm = T)
-    rr_cv_upper <- stats::quantile(unlist(rr_boot), probs = (100 - sig_level/2)/100, na.rm = T)
-    rr_cv_lower <- stats::quantile(unlist(rr_boot), probs = (sig_level/2)/100, na.rm = T)
-    rd_se <- stats::sd(unlist(rd_boot), na.rm = T)
-    rd_cv_upper <- stats::quantile(unlist(rd_boot), probs = (100 - sig_level/2)/100, na.rm = T)
-    rd_cv_lower <- stats::quantile(unlist(rd_boot), probs = (sig_level/2)/100, na.rm = T)
-    ice_se_all <- apply(ice_boot_all, 2, stats::sd, na.rm = T)
-    ref_se_all <- apply(ref_boot_all, 2, stats::sd, na.rm = T)
-    ref_ipw_se_all <- apply(ref_ipw_boot_all, 2, stats::sd, na.rm = T)
+    ice_se <- stats::sd(unlist(ice_boot), na.rm = TRUE)
+    ice_cv_upper <- stats::quantile(unlist(ice_boot), probs = (100 - sig_level/2)/100, na.rm = TRUE)
+    ice_cv_lower <- stats::quantile(unlist(ice_boot), probs = (sig_level/2)/100, na.rm = TRUE)
+    ref_se <- stats::sd(unlist(ref_boot), na.rm = TRUE)
+    ref_cv_upper <- stats::quantile(unlist(ref_boot), probs = (100 - sig_level/2)/100, na.rm = TRUE)
+    ref_cv_lower <- stats::quantile(unlist(ref_boot), probs = (sig_level/2)/100, na.rm = TRUE)
+    rr_se <- stats::sd(unlist(rr_boot), na.rm = TRUE)
+    rr_cv_upper <- stats::quantile(unlist(rr_boot), probs = (100 - sig_level/2)/100, na.rm = TRUE)
+    rr_cv_lower <- stats::quantile(unlist(rr_boot), probs = (sig_level/2)/100, na.rm = TRUE)
+    rd_se <- stats::sd(unlist(rd_boot), na.rm = TRUE)
+    rd_cv_upper <- stats::quantile(unlist(rd_boot), probs = (100 - sig_level/2)/100, na.rm = TRUE)
+    rd_cv_lower <- stats::quantile(unlist(rd_boot), probs = (sig_level/2)/100, na.rm = TRUE)
+    ice_se_all <- apply(ice_boot_all, 2, stats::sd, na.rm = TRUE)
+    ref_se_all <- apply(ref_boot_all, 2, stats::sd, na.rm = TRUE)
+    ref_ipw_se_all <- apply(ref_ipw_boot_all, 2, stats::sd, na.rm = TRUE)
     
-    ice_cv_all_upper <- apply(ice_boot_all, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = T)
-    ref_cv_all_upper <- apply(ref_boot_all, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = T)
-    ref_ipw_cv_all_upper <- apply(ref_ipw_boot_all, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = T)
+    ice_cv_all_upper <- apply(ice_boot_all, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = TRUE)
+    ref_cv_all_upper <- apply(ref_boot_all, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = TRUE)
+    ref_ipw_cv_all_upper <- apply(ref_ipw_boot_all, 2, stats::quantile, probs = (100 - sig_level/2)/100, na.rm = TRUE)
     
-    ice_cv_all_lower <- apply(ice_boot_all, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = T)
-    ref_cv_all_lower <- apply(ref_boot_all, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = T)
-    ref_ipw_cv_all_lower <- apply(ref_ipw_boot_all, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = T)
+    ice_cv_all_lower <- apply(ice_boot_all, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = TRUE)
+    ref_cv_all_lower <- apply(ref_boot_all, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = TRUE)
+    ref_ipw_cv_all_lower <- apply(ref_ipw_boot_all, 2, stats::quantile, probs = (sig_level/2)/100, na.rm = TRUE)
     
     data_err <- stats::na.omit(data_err)
     model_err <- stats::na.omit(model_err)

@@ -428,8 +428,7 @@ ice <- function(data, time_points, id, time_name,
   
   clean_kwarg_str <- preprocess_dynamic$clean_kwarg_str
   kwarg_list <- preprocess_dynamic$kwarg_list
-  
-  # print(clean_kwarg_str)
+
   ## get argument list
   args <- c(as.list(environment()), eval(parse(text = clean_kwarg_str)))
   kwargs_len <- length(eval(parse(text = clean_kwarg_str)))
@@ -583,11 +582,13 @@ ice <- function(data, time_points, id, time_name,
     interv_var_single <- list()
     interv_time_single <- list()
 
+
     for (treat in 1:length(interv_idx)) {
 
       treat_idx <- interv_idx[treat]
       treat_name <- paste0("intervention", interv_list_origin[treat_idx])
       interv <- as.list(arg_interv[[which(names(arg_interv) == treat_name)]])[[1]]
+      
       interv_var <- interv_all_names[treat]
       des <- as.list(int_descript[i])
       if (length(arg_interv[[which(names(arg_interv) == treat_name)]]) == 2) {
@@ -595,6 +596,7 @@ ice <- function(data, time_points, id, time_name,
       } else {
         times <- 0:(K-1)
       }
+
 
       interv_single <- c(interv_single, list(interv))
       interv_var_single <- c(interv_var_single, list(interv_var))
@@ -1727,6 +1729,9 @@ construct_interv_value <- function(data, timevar, int_value, int_time, int_var){
 
   for (i in 1:nint) {
     this_int_value <- int_value[[i]]
+    if (is.data.frame(this_int_value)) {
+      this_int_value <- this_int_value[, "interv_values"]
+    }
     not_int_idx <- which(!data[, timevar] %in% int_time[[i]])
     
     if (length(not_int_idx) > 0) {

@@ -1,7 +1,7 @@
 Package: gfoRmulaICE
 Type: Package
 Title: Parametric Iterative Conditional Expectation G-Formula
-Version: 0.1.0
+Version: 1.1.0
 Authors@R: c(person("Zhaoxi", "Cheng", role = c("aut", "cre"), 
                      email = "zcheng@hsph.harvard.edu"),
               person("Jing", "Li", role = c("aut"), 

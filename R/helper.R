@@ -623,12 +623,17 @@ dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE,
   
   first <- absorb
   
-    
-    strategy_before_values <- strategy_before
-    strategy_after_values <- strategy_after
-    
-    interv_values <- get_dynamic_interv_values(condition, strategy_before_values, 
-                                               strategy_after_values, first, id, time, data)
+  is_nc_strategy_before <- str_detect("natural_course", as.character(substitute(strategy_before)))
+  is_nc_strategy_after <- str_detect("natural_course", as.character(substitute(strategy_after)))
+  
+  strategy_before_values <- strategy_before
+  strategy_after_values <- strategy_after
+  
+  interv_values <- get_dynamic_interv_values(condition, strategy_before_values, 
+                                             strategy_after_values, 
+                                             is_nc_strategy_before,
+                                             is_nc_strategy_after,
+                                             first, id, time, data)
   
   return(interv_values)
 }
@@ -638,6 +643,8 @@ dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE,
 #' @param condition a character string that specifies a logical expression, upon which is met, the strategy specified in \code{strategy_after} is followed.
 #' @param strategy_before_values a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed after the condition in \code{condition} is met.
 #' @param strategy_after_values a function or vector of intervened values in the same length as the number of rows in the observed data \code{data} that specifies the strategy followed before the condition in \code{condition} is met.
+#' @param is_nc_strategy_before a logical indicating whether the strategy specified in \code{strategy_before} is the natural course.
+#' @param is_nc_strategy_after a logical indicating whether the strategy specified in \code{strategy_after} is the natural course.
 #' @param first a logical indicating whether the strategy specified in \code{strategy_after} starts upon the first time when the condition specified in \code{condition} is met.
 #' @param id a character string indicating the ID variable name in \code{data}.
 #' @param time a character string indicating the time variable name in \code{data}.
@@ -645,16 +652,20 @@ dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE,
 #'
 #' @return a vector containing the intervened value in the same size as the number of rows in \code{data}.
 #' @noRd
-get_dynamic_interv_values <- function(condition, strategy_before_values, strategy_after_values, first, id, time, data) {
+get_dynamic_interv_values <- function(condition, strategy_before_values, strategy_after_values, 
+                                      is_nc_strategy_before, is_nc_strategy_after,
+                                      first, id, time, data) {
+  
+  data <- as.data.frame(data)
   
   unique_times <- unique(data[, time])
   
   if (first) {
-  init_info <- data %>% group_by(id) %>%
-    mutate(first_init = unique_times[which(eval(parse(text = condition)))[1]]) %>%
-    ungroup()
-  
-  init_info[, "is_init"] <- init_info[, time] >= init_info[, "first_init"]
+    init_info <- data %>% group_by(id) %>%
+      mutate(first_init = unique_times[which(eval(parse(text = condition)))[1]]) %>%
+      ungroup()
+    
+    init_info[, "is_init"] <- init_info[, time] >= init_info[, "first_init"]
   } else {
     init_info <- data %>% 
       mutate(is_init = eval(parse(text = condition)))
@@ -666,7 +677,17 @@ get_dynamic_interv_values <- function(condition, strategy_before_values, strateg
   
   init_info[, "interv_values"] <- ifelse(init_info$is_init, strategy_after_values, strategy_before_values)
   
-  return(init_info[, "interv_values"]) 
+  init_info[, "is_nc"] <- 0
+
+  if (any(is_nc_strategy_before)) {
+    init_info[, "is_nc"] <- ifelse(init_info$is_init, 0, 1)
+  }
+
+  if (any(is_nc_strategy_after)) {
+    init_info[, "is_nc"] <- ifelse(init_info$is_init, 1, 0)
+  }
+  
+  return(init_info[, c("interv_values", "is_nc")]) 
   
 }
 

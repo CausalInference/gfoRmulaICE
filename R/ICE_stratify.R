@@ -167,7 +167,7 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
                       hazard_model = NULL,
                       interventions, intervention_names, intervention_times = NULL,
                       compute_nc_risk = TRUE, hazard_based, weighted = FALSE,
-                      treat_model, obs_treatment_names,
+                      treat_model, obs_treatment_names, 
                       intervention_description, verbose = TRUE) {
 
   ## 0. some pre-processing
@@ -416,7 +416,17 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       if (total_effect == FALSE) {
         competing_formula <- as.formula(paste0(competing_varname, "~",
                                                paste0(competing_covar_nc, collapse = "+")))
-      competing_fit <- speedglm(competing_formula, data = data, family = binomial())
+      competing_fit <- tryCatch(speedglm(competing_formula, data = data, family = binomial()),
+                                warning = function(w) {list(warn = conditionMessage(w))}, 
+                                error = function(e) {list(error = conditionMessage(e))}
+      )
+      
+      if (class(competing_fit)[1] != "speedglm") {
+        if (names(competing_fit) == "error" | (names(competing_fit) == "warn" & str_detect(competing_fit$warn, "without convergence"))) {
+          message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+          competing_fit <- glm(competing_formula, data = data, family = binomial())
+        }
+      }
 
       ## add in this competing fit
 
@@ -479,8 +489,14 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
     if (any(str_detect(as.character(substitute(interventions[[treat]])), "grace_period"))) {
       my.arrayofA <- paste0("interv_it_", treatment_varname)
     } else {
+      
       interv_it <- intervention_f
-      interv_data[, paste0("interv_it_", treatment_varname, "_", treat)] <- interv_it
+      if (is.data.frame(interv_it)) {
+        interv_data[, paste0("interv_it_", treatment_varname, "_", treat)] <- interv_it[, "interv_values"]
+        interv_data[, paste0(treatment_varname, "_is_nc")] <- interv_it[, "is_nc"]
+      } else {
+        interv_data[, paste0("interv_it_", treatment_varname, "_", treat)] <- interv_it
+      }
       my.arrayofA <- paste0("interv_it_", treatment_varname, "_", treat)
     }
     
@@ -614,12 +630,34 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       if (null_censor) {
         data$pred_c = 0
       } else {
-        cfit = speedglm(cformula, family = binomial(), data = data)
+        cfit = tryCatch(speedglm(cformula, family = binomial(), data = data),
+                        warning = function(w) {list(warn = conditionMessage(w))}, 
+                        error = function(e) {list(error = conditionMessage(e))}
+        )
+        
+        if (class(cfit)[1] != "speedglm") {
+          if (names(cfit) == "error" | (names(cfit) == "warn" & str_detect(cfit$warn, "without convergence"))) {
+            message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+            cfit <- glm(cformula, family = binomial(), data = data)
+          }
+        }
+        
         data$pred_c = predict(cfit, newdata = data, type="response")
       }
 
       if (!is.null(competing_varname) & total_effect == FALSE) {
-        dfit = speedglm(dformula, family = binomial(), data = data)
+        dfit = tryCatch(speedglm(dformula, family = binomial(), data = data),
+                        warning = function(w) {list(warn = conditionMessage(w))}, 
+                        error = function(e) {list(error = conditionMessage(e))}
+        )
+        
+        if (class(dfit)[1] != "speedglm") {
+          if (names(dfit) == "error" | (names(dfit) == "warn" & str_detect(dfit$warn, "without convergence"))) {
+            message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+            dfit <- glm(dformula, family = binomial(), data = data)
+          }
+        }
+        
         data$pred_d = predict(dfit, newdata = data, type="response")
 
         data$pred_d = (1- data$pred_d) * (1-data$pred_c)
@@ -652,7 +690,17 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         data <- data %>% dplyr::select(-c("pred_obs_all"))
 
         } else {
-          afit = speedglm(aformula, family = binomial(), data = data)
+          afit = tryCatch(speedglm(aformula, family = binomial(), data = data),
+                          warning = function(w) {list(warn = conditionMessage(w))}, 
+                          error = function(e) {list(error = conditionMessage(e))}
+          )
+          
+          if (class(afit)[1] != "speedglm") {
+            if (names(afit) == "error" | (names(afit) == "warn" & str_detect(afit$warn, "without convergence"))) {
+              message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+              afit <- glm(aformula, family = binomial(), data = data)
+            }
+          }
           
 
 
@@ -666,6 +714,10 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
             data[, paste0("pred_obs_", treatment_i)] = pred_da
           } else {
             data[, paste0("pred_obs_", treatment_i)] = pred_obsa
+          }
+          
+          if (paste0(treatment_i, "_is_nc") %in% colnames(data)) {
+            data[, paste0("pred_obs_", treatment_i)] <- ifelse(data[, paste0(treatment_i, "_is_nc")], 1, data[, paste0("pred_obs_", treatment_i)])
           }
 
         }
@@ -712,7 +764,17 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
   ## 4. reshape data and fit outcome model
   tmpdata = as.data.frame(dffullwide)
   formula_full <- as.formula(paste0(outcome_varname,"~", paste0(c(outcome_covar), collapse = "+")))
-  yfitog = speedglm(formula_full, family = binomial(), data = data) #This is from the data generation mechanism
+  yfitog = tryCatch(speedglm(formula_full, family = binomial(), data = data), #This is from the data generation mechanism
+                    warning = function(w) {list(warn = conditionMessage(w))}, 
+                    error = function(e) {list(error = conditionMessage(e))}
+  )
+  
+  if (class(yfitog)[1] != "speedglm") {
+    if (names(yfitog) == "error" | (names(yfitog) == "warn" & str_detect(yfitog$warn, "without convergence"))) {
+      message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+      yfitog <- glm(formula_full, family = binomial(), data = data)
+    }
+  }
 
   paramtmp = (yfitog)$coef
 
@@ -868,7 +930,17 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
       outcome_formula <- as.formula(paste0(outcome_varname, "_", i, "~",
                                            paste0(covar_outcome_t, collapse = "+")))
 
-      tmp_fit <- speedglm(outcome_formula, family = binomial(), data = pred_data)
+      tmp_fit <- tryCatch(speedglm(outcome_formula, family = binomial(), data = pred_data),
+                          warning = function(w) {list(warn = conditionMessage(w))}, 
+                          error = function(e) {list(error = conditionMessage(e))}
+      )
+      
+      if (class(tmp_fit)[1] != "speedglm") {
+        if (names(tmp_fit) == "error" | (names(tmp_fit) == "warn" & str_detect(tmp_fit$warn, "without convergence"))) {
+          message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+          tmp_fit <- glm(outcome_formula, family = binomial(), data = pred_data)
+        }
+      }
 
       outcome_pred_times[[i]] <- tmp_fit
 
@@ -966,7 +1038,17 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
         comp_formula <- as.formula(paste0(competing_varname, "_", i-1, "~",
                                           paste0(covar_competing_t, collapse = "+")))
 
-        tmp_fit <- speedglm(comp_formula, family = binomial(), data = pred_data)
+        tmp_fit <- tryCatch(speedglm(comp_formula, family = binomial(), data = pred_data),
+                            warning = function(w) {list(warn = conditionMessage(w))}, 
+                            error = function(e) {list(error = conditionMessage(e))}
+        )
+        
+        if (class(tmp_fit)[1] != "speedglm") {
+          if (names(tmp_fit) == "error" | (names(tmp_fit) == "warn" & str_detect(tmp_fit$warn, "without convergence"))) {
+            message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+            tmp_fit <- glm(comp_formula, family = binomial(), data = pred_data)
+          }
+        }
 
         comp_pred_times[[i]] <- tmp_fit
 
@@ -1149,19 +1231,63 @@ ice_strat <- function(data, K, id, time_name, outcome_name,
 
         if (weighted & hazard_based == FALSE) {
           fitdata$w <- 1/fitdata[, paste0("pi", q)]
+          
 
           if (q == t - 1) {
-            fit <- speedglm(temp_formula, family = quasibinomial(), weights = fitdata$w, data = fitdata)
+            fit <- tryCatch(speedglm(temp_formula, family = quasibinomial(), weights = fitdata$w, data = fitdata),
+                            warning = function(w) {list(warn = conditionMessage(w))}, 
+                            error = function(e) {list(error = conditionMessage(e))}
+            )
+            
+            if (class(fit)[1] != "speedglm") {
+              if (names(fit) == "error" | (names(fit) == "warn" & str_detect(fit$warn, "without convergence"))) {
+                message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+                fit <- glm(temp_formula, family = quasibinomial(), weights = fitdata$w, data = fitdata)
+              }
+            }
+            
           } else {
-            fit <- speedglm(temp_formula, family = quasibinomial(), weights = fitdata$w, data = fitdata)
+            fit <- tryCatch(speedglm(temp_formula, family = quasibinomial(), weights = fitdata$w, data = fitdata),
+                            warning = function(w) {list(warn = conditionMessage(w))}, 
+                            error = function(e) {list(error = conditionMessage(e))}
+            )
+            
+            if (class(fit)[1] != "speedglm") {
+              if (names(fit) == "error" | (names(fit) == "warn" & str_detect(fit$warn, "without convergence"))) {
+                message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+                fit <- glm(temp_formula, family = quasibinomial(), weights = fitdata$w, data = fitdata)
+              }
+            }
+            
           }
 
         } else {
 
           if (q == t - 1) {
-            fit <- speedglm(temp_formula, family = binomial(), data = fitdata)
+            fit <- tryCatch(speedglm(temp_formula, family = binomial(), data = fitdata),
+                            warning = function(w) {list(warn = conditionMessage(w))}, 
+                            error = function(e) {list(error = conditionMessage(e))}
+            )
+            
+            if (class(fit)[1] != "speedglm") {
+              if (names(fit) == "error" | (names(fit) == "warn" & str_detect(fit$warn, "without convergence"))) {
+                message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+                fit <- glm(temp_formula, family = binomial(), data = fitdata)
+              }
+            }
+                            
           } else {
-            fit <- speedglm(temp_formula, family = quasibinomial(), data = fitdata)
+            fit <- tryCatch(speedglm(temp_formula, family = quasibinomial(), data = fitdata),
+                            warning = function(w) {list(warn = conditionMessage(w))}, 
+                            error = function(e) {list(error = conditionMessage(e))}
+            )
+            
+            if (class(fit)[1] != "speedglm") {
+              if (names(fit) == "error" | (names(fit) == "warn" & str_detect(fit$warn, "without convergence"))) {
+                message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+                fit <- glm(temp_formula, family = quasibinomial(), data = fitdata)
+              }
+            }
           }
 
         }

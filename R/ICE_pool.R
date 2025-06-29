@@ -431,7 +431,18 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
 
         competing_formula <- as.formula(paste0(competing_varname, "~",
                                                paste0(competing_covar_nc, collapse = "+")))
-        competing_fit <- speedglm(competing_formula, data = data, family = binomial())
+        competing_fit <- tryCatch(speedglm(competing_formula, data = data, family = binomial()),
+                                  warning = function(w) {list(warn = conditionMessage(w))}, 
+                                  error = function(e) {list(error = conditionMessage(e))}
+        )
+        
+        if (class(competing_fit)[1] != "speedglm") {
+        
+          if (names(competing_fit) == "error" | (names(competing_fit) == "warn" & str_detect(competing_fit$warn, "without convergence"))) {
+            message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+            competing_fit <- glm(competing_formula, data = data, family = binomial())
+          }
+        }
 
         ## add in this competing fit
 
@@ -491,7 +502,13 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   
     intervention_f <- interventions[[1]][[treat]]
     interv_it <- intervention_f
-    interv_data[, paste0("interv_it_", treatment_varname, "_", treat)] <- interv_it
+    if (is.data.frame(interv_it)) {
+      interv_data[, paste0("interv_it_", treatment_varname, "_", treat)] <- interv_it[, "interv_values"]
+      interv_data[, paste0(treatment_varname, "_is_nc")] <- interv_it[, "is_nc"]
+    } else {
+      interv_data[, paste0("interv_it_", treatment_varname, "_", treat)] <- interv_it
+    }
+    
     my.arrayofA <- paste0("interv_it_", treatment_varname, "_", treat)
     
     ## check if this treatment variable is lagged
@@ -540,7 +557,6 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
 
   data <- interv_data
 
-
   ## 3. reshape data and fit outcome model
   dffullwide <- reshape(data, idvar = id, timevar = time0, direction = "wide", sep = "_")
 
@@ -552,7 +568,18 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   ## if outcome model and hazard model share the same input argument, how do you separate model fit here?
   ## this fit will be used for prediction of outcome in the first iteration and only for hazard estimation.
   ## but for global option, if the user specifies time in the model, then it must be different than the outcome model.
-  yfitog = speedglm(formula_full, family = binomial(), data = data) #This is from the data generation mechanism
+  yfitog = tryCatch(speedglm(formula_full, family = binomial(), data = data), #This is from the data generation mechanism
+                    warning = function(w) {list(warn = conditionMessage(w))}, 
+                    error = function(e) {list(error = conditionMessage(e))}
+  )
+  
+  if (class(yfitog)[1] != "speedglm") {
+  
+    if (names(yfitog) == "error" | (names(yfitog) == "warn" & str_detect(yfitog$warn, "without convergence"))) {
+      message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+      yfitog <- glm(formula_full, family = binomial(), data = data)
+    }
+  }
 
   paramtmp = (yfitog)$coef
 
@@ -574,7 +601,19 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
 
   if (!is.null(competing_varname) & (total_effect == TRUE) & hazard_based) {
     formula_full_comp <- as.formula(paste0(competing_varname,"~", paste0(c(competing_covar), collapse = "+")))
-    yfitog_comp = speedglm(formula_full_comp, family = binomial(), data = data)
+    yfitog_comp = tryCatch(speedglm(formula_full_comp, family = binomial(), data = data),
+                           warning = function(w) {list(warn = conditionMessage(w))}, 
+                           error = function(e) {list(error = conditionMessage(e))}
+    )
+    
+    if (class(yfitog_comp)[1] != "speedglm") {
+    
+      if (names(yfitog_comp) == "error" | (names(yfitog_comp) == "warn" & str_detect(yfitog_comp$warn, "without convergence"))) {
+        message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+        yfitog_comp <- glm(formula_full_comp, family = binomial(), data = data)
+      }
+      
+    }
     paramcomp = (yfitog_comp)$coef
 
     ## add in this competing fit
@@ -604,7 +643,18 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
     if (global_hazard) {
       
       formula_haz_global <- as.formula(paste0(outcome_varname,"~", paste0(c(haz_global_covar), collapse = "+")))
-      haz_fit_global <- speedglm(formula_haz_global, family = binomial(), data = data) 
+      haz_fit_global <- tryCatch(speedglm(formula_haz_global, family = binomial(), data = data),
+                                 warning = function(w) {list(warn = conditionMessage(w))}, 
+                                 error = function(e) {list(error = conditionMessage(e))}
+      )
+      
+      if (class(haz_fit_global)[1] != "speedglm") {
+      
+        if (names(haz_fit_global) == "error" | (names(haz_fit_global) == "warn" & str_detect(haz_fit_global$warn, "without convergence"))) {
+          message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+          haz_fit_global <- glm(formula_haz_global, family = binomial(), data = data)
+        }
+      }
       paramhaz <- haz_fit_global$coef
       
       this_haz_fit <- list(haz_fit_global)
@@ -649,7 +699,18 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         haz_formula_t <- as.formula(paste0(outcome_varname, "_", i, "~",
                                              paste0(haz_covar_t, collapse = "+")))
         
-        tmp_fit <- speedglm(haz_formula_t, family = binomial(), data = tmpdata)
+        tmp_fit <- tryCatch(speedglm(haz_formula_t, family = binomial(), data = tmpdata),
+                            warning = function(w) {list(warn = conditionMessage(w))}, 
+                            error = function(e) {list(error = conditionMessage(e))}
+        )
+        
+        if (class(tmp_fit)[1] != "speedglm") {
+        
+          if (names(tmp_fit) == "error" | (names(tmp_fit) == "warn" & str_detect(tmp_fit$warn, "without convergence"))) {
+            message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+            tmp_fit <- glm(haz_formula_t, family = binomial(), data = tmpdata)
+          }
+        }
         
         haz_pred_times[[i]] <- tmp_fit
         
@@ -798,7 +859,17 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
 
             fit_formula <- as.formula(paste0("y", t, "pred", "~",
                                              paste0(c(covar_iter, interact_covar), collapse = "+")))
-            fit_temp = speedglm(fit_formula, family = quasibinomial(), data = data_fit)
+            fit_temp = tryCatch(speedglm(fit_formula, family = quasibinomial(), data = data_fit),
+                                warning = function(w) {list(warn = conditionMessage(w))}, 
+                                error = function(e) {list(error = conditionMessage(e))}
+            )
+            
+            if (class(fit_temp)[1] != "speedglm") {
+              if (names(fit_temp) == "error" | (names(fit_temp) == "warn" & str_detect(fit_temp$warn, "without convergence"))) {
+                message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+                fit_temp <- glm(fit_formula, family = quasibinomial(), data = data_fit)
+              }
+            }
 
             this_outcome_fit <- list(fit_temp)
             this_outcome_summary <- list(get_summary(fit_temp))

@@ -437,11 +437,15 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         )
         
         if (class(competing_fit)[1] != "speedglm") {
+          
+          speedglm_mssg <- cat("Error or warning:", as.character(competing_fit[[1]]), "occurs in speedglm. Replacing by glm.")
+          message(speedglm_mssg)
+          competing_fit <- glm(competing_formula, data = data, family = binomial())
         
-          if (names(competing_fit) == "error" | (names(competing_fit) == "warn" & str_detect(competing_fit$warn, "without convergence"))) {
-            message("Error or non-convergence occurs in speedglm. Replacing by glm.")
-            competing_fit <- glm(competing_formula, data = data, family = binomial())
-          }
+          # if (names(competing_fit) == "error" | (names(competing_fit) == "warn" & str_detect(competing_fit$warn, "without convergence"))) {
+          #   message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+          #   competing_fit <- glm(competing_formula, data = data, family = binomial())
+          # }
         }
 
         ## add in this competing fit
@@ -574,11 +578,15 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
   )
   
   if (class(yfitog)[1] != "speedglm") {
+    
+    speedglm_mssg <- cat("Error or warning:", as.character(yfitog[[1]]), "occurs in speedglm. Replacing by glm.")
+    message(speedglm_mssg)
+    yfitog <- glm(formula_full, family = binomial(), data = data)
   
-    if (names(yfitog) == "error" | (names(yfitog) == "warn" & str_detect(yfitog$warn, "without convergence"))) {
-      message("Error or non-convergence occurs in speedglm. Replacing by glm.")
-      yfitog <- glm(formula_full, family = binomial(), data = data)
-    }
+    # if (names(yfitog) == "error" | (names(yfitog) == "warn" & str_detect(yfitog$warn, "without convergence"))) {
+    #   message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+    #   yfitog <- glm(formula_full, family = binomial(), data = data)
+    # }
   }
 
   paramtmp = (yfitog)$coef
@@ -607,11 +615,15 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
     )
     
     if (class(yfitog_comp)[1] != "speedglm") {
+      
+      speedglm_mssg <- cat("Error or warning:", as.character(yfitog_comp[[1]]), "occurs in speedglm. Replacing by glm.")
+      message(speedglm_mssg)
+      yfitog_comp <- glm(formula_full_comp, family = binomial(), data = data)
     
-      if (names(yfitog_comp) == "error" | (names(yfitog_comp) == "warn" & str_detect(yfitog_comp$warn, "without convergence"))) {
-        message("Error or non-convergence occurs in speedglm. Replacing by glm.")
-        yfitog_comp <- glm(formula_full_comp, family = binomial(), data = data)
-      }
+      # if (names(yfitog_comp) == "error" | (names(yfitog_comp) == "warn" & str_detect(yfitog_comp$warn, "without convergence"))) {
+      #   message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+      #   yfitog_comp <- glm(formula_full_comp, family = binomial(), data = data)
+      # }
       
     }
     paramcomp = (yfitog_comp)$coef
@@ -649,11 +661,15 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
       )
       
       if (class(haz_fit_global)[1] != "speedglm") {
+        
+        speedglm_mssg <- cat("Error or warning:", as.character(haz_fit_global[[1]]), "occurs in speedglm. Replacing by glm.")
+        message(speedglm_mssg)
+        haz_fit_global <- glm(formula_haz_global, family = binomial(), data = data)
       
-        if (names(haz_fit_global) == "error" | (names(haz_fit_global) == "warn" & str_detect(haz_fit_global$warn, "without convergence"))) {
-          message("Error or non-convergence occurs in speedglm. Replacing by glm.")
-          haz_fit_global <- glm(formula_haz_global, family = binomial(), data = data)
-        }
+        # if (names(haz_fit_global) == "error" | (names(haz_fit_global) == "warn" & str_detect(haz_fit_global$warn, "without convergence"))) {
+        #   message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+        #   haz_fit_global <- glm(formula_haz_global, family = binomial(), data = data)
+        # }
       }
       paramhaz <- haz_fit_global$coef
       
@@ -705,11 +721,15 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
         )
         
         if (class(tmp_fit)[1] != "speedglm") {
+          
+          speedglm_mssg <- cat("Error or warning:", as.character(tmp_fit[[1]]), "occurs in speedglm. Replacing by glm.")
+          message(speedglm_mssg)
+          tmp_fit <- glm(haz_formula_t, family = binomial(), data = tmpdata)
         
-          if (names(tmp_fit) == "error" | (names(tmp_fit) == "warn" & str_detect(tmp_fit$warn, "without convergence"))) {
-            message("Error or non-convergence occurs in speedglm. Replacing by glm.")
-            tmp_fit <- glm(haz_formula_t, family = binomial(), data = tmpdata)
-          }
+          # if (names(tmp_fit) == "error" | (names(tmp_fit) == "warn" & str_detect(tmp_fit$warn, "without convergence"))) {
+          #   message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+          #   tmp_fit <- glm(haz_formula_t, family = binomial(), data = tmpdata)
+          # }
         }
         
         haz_pred_times[[i]] <- tmp_fit
@@ -865,10 +885,15 @@ ice_pool <- function(data, K, id, time_name, outcome_name,
             )
             
             if (class(fit_temp)[1] != "speedglm") {
-              if (names(fit_temp) == "error" | (names(fit_temp) == "warn" & str_detect(fit_temp$warn, "without convergence"))) {
-                message("Error or non-convergence occurs in speedglm. Replacing by glm.")
-                fit_temp <- glm(fit_formula, family = quasibinomial(), data = data_fit)
-              }
+              
+              speedglm_mssg <- cat("Error or warning:", as.character(fit_temp[[1]]), "occurs in speedglm. Replacing by glm.")
+              message(speedglm_mssg)
+              fit_temp <- glm(fit_formula, family = quasibinomial(), data = data_fit)
+              
+              # if (names(fit_temp) == "error" | (names(fit_temp) == "warn" & str_detect(fit_temp$warn, "without convergence"))) {
+              #   message("Error or non-convergence occurs in speedglm. Replacing by glm.")
+              #   fit_temp <- glm(fit_formula, family = quasibinomial(), data = data_fit)
+              # }
             }
 
             this_outcome_fit <- list(fit_temp)

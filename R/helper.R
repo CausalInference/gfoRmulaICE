@@ -14,6 +14,8 @@
 #' data <- gfoRmulaICE::compData
 #' always_treat <- static(value = 1, data = data)
 static <- function(value, data) {
+  
+  data <- as.data.frame(data)
 
   interv_it <- rep(value, nrow(data))
 
@@ -35,6 +37,8 @@ static <- function(value, data) {
 #' natural_course <- natural_course(data = data, treat_var = "A1")
 #' 
 natural_course <- function(data, treat_var) {
+  
+  data <- as.data.frame(data)
   
   interv_it <- data[, treat_var]
 
@@ -69,6 +73,8 @@ natural_course_ipweighted <- function(data, id, censor_varname,
                                       K, time0, outcome_varname, covar,
                                       competing_varname, competing_fit,
                                       total_effect) {
+  
+  data <- as.data.frame(data)
   risk_weighted <- NULL
   logit_censor <- NULL
 
@@ -128,6 +134,8 @@ natural_course_ipweighted <- function(data, id, censor_varname,
 grace_period <- function(type, nperiod, condition,
                          data, id, time_name, 
                          outcome_name) {
+  
+  data <- as.data.frame(data)
   
   
   ## separate var and logical from condition
@@ -330,6 +338,8 @@ compute_weighted_hazard <- function(prob_censor, data, id, censor_varname,
                                     time_points, time_name, outcome_name,
                                     competing_varname, competing_fit,
                                     total_effect) {
+  
+  data <- as.data.frame(data)
 
   censor0_weight <- 1/ (1 - prob_censor)
   censor0_weight_cum <- unlist(tapply(censor0_weight, data[[id]], FUN = cumprod))
@@ -398,6 +408,8 @@ compute_weighted_hazard <- function(prob_censor, data, id, censor_varname,
 #' @noRd
 #'
 product <- function(data, columns){
+  
+  data <- as.data.frame(data)
 
   ncol <- length(columns)
 
@@ -484,6 +496,8 @@ weight <- function(treat_model = list()) {
 #' data <- gfoRmulaICE::compData
 #' threshold_treat <- threshold(lower_bound = 0, upper_bound = 2, var = "A1", data = data)
 threshold <- function(lower_bound, upper_bound, var, data){
+  
+  data <- as.data.frame(data)
   
   interv_it <- case_when(data[, var] >= lower_bound & data[, var] <= upper_bound ~ data[, var],
                          data[, var] > upper_bound ~ upper_bound,
@@ -621,6 +635,8 @@ get_column_name_covar <- function(icovar) {
 dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE, 
                     id, time, data) {
   
+  data <- as.data.frame(data)
+  
   first <- absorb
   
   is_nc_strategy_before <- str_detect("natural_course", as.character(substitute(strategy_before)))
@@ -655,8 +671,6 @@ dynamic <- function(condition, strategy_before, strategy_after, absorb = FALSE,
 get_dynamic_interv_values <- function(condition, strategy_before_values, strategy_after_values, 
                                       is_nc_strategy_before, is_nc_strategy_after,
                                       first, id, time, data) {
-  
-  data <- as.data.frame(data)
   
   unique_times <- unique(data[, time])
   

@@ -3,7 +3,7 @@ Type: Package
 Title: Parametric Iterative Conditional Expectation G-Formula
 Version: 1.1.0
 Authors@R: c(person("Zhaoxi", "Cheng", role = c("aut", "cre"), 
-                     email = "zcheng@hsph.harvard.edu"),
+                     email = "carrie.cheng@duke.edu"),
               person("Jing", "Li", role = c("aut"), 
                       email = "jing_li@hsph.harvard.edu"),
               person("Sophia", "Rein", role = c("aut"), 

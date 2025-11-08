@@ -24,8 +24,11 @@ test_that(
     )
 
     plot1 <- plot(ice_fit1)
-    expect_equal(class(plot1), c("gg", "ggplot"))
+    expect_s3_class(plot1, "ggplot")
     })
+
+# -------------------------------------------------------------------------
+
 
 test_that(
   "check different interventions",
@@ -49,7 +52,7 @@ test_that(
     )
     
     plot2 <- plot(ice_fit2)
-    expect_equal(class(plot2), c("gg", "ggplot"))
+    expect_s3_class(plot2, "ggplot")
     })
 
 test_that(
@@ -74,7 +77,7 @@ test_that(
     )
     
     plot3 <- plot(ice_fit3)
-    expect_equal(class(plot3), c("gg", "ggplot"))
+    expect_s3_class(plot3, "ggplot")
     })
 
 test_that(
@@ -101,7 +104,7 @@ test_that(
     )
     
     plot4a <- plot(ice_fit4a)
-    expect_equal(class(plot4a), c("gg", "ggplot"))
+    expect_s3_class(plot4a, "ggplot")
     })
 
 test_that(
@@ -129,8 +132,11 @@ test_that(
     )
     
     plot4b <- plot(ice_fit4b)
-    expect_equal(class(plot4b), c("gg", "ggplot"))
+    expect_s3_class(plot4b, "ggplot")
     })
+
+# -------------------------------------------------------------------------
+
 
 test_that(
   "plot hazard-based pooled ICE - pooled-over-time hazard model",
@@ -158,7 +164,7 @@ test_that(
     )
     
     plot4c <- plot(ice_fit4c)
-    expect_equal(class(plot4c), c("gg", "ggplot"))
+    expect_s3_class(plot4c, "ggplot")
     })
 
 test_that(
@@ -184,7 +190,7 @@ test_that(
     )
     
     plot4d <- plot(ice_fit4d)
-    expect_equal(class(plot4d), c("gg", "ggplot"))
+    expect_s3_class(plot4d, "ggplot")
     })
 
 test_that(
@@ -212,7 +218,7 @@ test_that(
     )
     
     plot4e <- plot(ice_fit4e)
-    expect_equal(class(plot4e), c("gg", "ggplot"))
+    expect_s3_class(plot4e, "ggplot")
     })
 
 test_that(
@@ -238,7 +244,7 @@ test_that(
     )
     
     plot4f <- plot(ice_fit4f)
-    expect_equal(class(plot4f), c("gg", "ggplot"))
+    expect_s3_class(plot4f, "ggplot")
     })
 
 test_that(
@@ -267,7 +273,7 @@ test_that(
     )
     
     plot4h <- plot(ice_fit4h)
-    expect_equal(class(plot4h), c("gg", "ggplot"))
+    expect_s3_class(plot4h, "ggplot")
     })
 
 test_that(
@@ -293,7 +299,7 @@ test_that(
     )
     
     plot5a <- plot(ice_fit5a)
-    expect_equal(class(plot5a), c("gg", "ggplot"))
+    expect_s3_class(plot5a, "ggplot")
     })
 
 test_that(
@@ -319,7 +325,7 @@ test_that(
     )
     
     plot5b <- plot(ice_fit5b)
-    expect_equal(class(plot5b), c("gg", "ggplot"))
+    expect_s3_class(plot5b, "ggplot")
     })
 
 test_that(
@@ -348,7 +354,7 @@ test_that(
     )
     
     plot6a <- plot(ice_fit6a)
-    expect_equal(class(plot6a), c("gg", "ggplot"))
+    expect_s3_class(plot6a, "ggplot")
     })
 
 test_that(
@@ -375,7 +381,7 @@ test_that(
     )
     
     plot6b <- plot(ice_fit6b)
-    expect_equal(class(plot6b), c("gg", "ggplot"))
+    expect_s3_class(plot6b, "ggplot")
     })
 
 test_that(
@@ -531,7 +537,7 @@ test_that(
     
     plots <- plot(ice_fit7a, ice_fit7b, ice_fit7c, ice_fit7d, 
                        ice_fit7e, ice_fit7f, ice_fit7g, ice_fit7h)
-    expect_equal(class(plots), c("gg", "ggplot"))
+    expect_s3_class(plots, "ggplot")
  
     })
 

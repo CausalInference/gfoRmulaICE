@@ -99,9 +99,13 @@ bootstrap_ice <- function(f, K, nboot, coverage, parallel, ncores, ref_descripti
     cl <- makeCluster(ncores)
     registerDoParallel(cl)
 
+    on.exit({
+    try(parallel::stopCluster(cl), silent = TRUE)
+    foreach::registerDoSEQ()
+    }, add = TRUE)
+
     result <- matrix(NA, ncol = 4, nrow = nboot)
     result <- as.data.frame(result)
-    
 
     boot_result <- foreach(i = 1:nboot, .combine = "c", .packages = c("tidyverse", "nnet", "stringr", "base"),
                            .errorhandling='pass') %do% {

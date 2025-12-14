@@ -341,11 +341,12 @@ ice <- function(data, time_points, id, time_name,
   clean_kwarg_str <- paste0(str_remove_all(as.character(deparse(sub_kwarg)), " "), collapse = "")
   kwarg_list <- as.list(sub_kwarg)
   kwarg_name_list <- names(kwarg_list)
-  threshold_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "threshold")
-  static_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "static")
-  dynamic_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "dynamic")
-  grace_period_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "grace_period")
-  nc_idx <- str_which(str_split(as.character(substitute(list(...))), " = "), "natural_course")
+
+  threshold_idx <- which(sapply(kwarg_list, function(x) any(str_detect(as.character(x), "threshold"))))
+  static_idx <- which(sapply(kwarg_list, function(x) any(str_detect(as.character(x), "static"))))
+  dynamic_idx <- which(sapply(kwarg_list, function(x) any(str_detect(as.character(x), "dynamic"))))
+  grace_period_idx <- which(sapply(kwarg_list, function(x) any(str_detect(as.character(x), "grace_period"))))
+  nc_idx <- which(sapply(kwarg_list, function(x) any(str_detect(as.character(x), "natural_course"))))
   
   ## preprocess static intervention
   
